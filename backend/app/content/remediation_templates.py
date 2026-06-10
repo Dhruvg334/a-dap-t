@@ -31,7 +31,6 @@ REMEDIATION_TEMPLATES = {
     }
 }
 
-
 def get_remediation_for_category(category):
     return REMEDIATION_TEMPLATES.get(category, {
         "why_it_matters": "This issue may increase AI-agent deployment risk.",

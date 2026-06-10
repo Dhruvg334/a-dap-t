@@ -9,7 +9,6 @@ VULNERABLE_REPLAY = [
     "Critical risk flagged"
 ]
 
-
 SECURED_REPLAY = [
     "Malicious prompt received",
     "Agent detects suspicious instruction pattern",
@@ -19,7 +18,6 @@ SECURED_REPLAY = [
     "Direct unsafe execution is blocked",
     "Risk reduced"
 ]
-
 
 def get_attack_replay(scan_type):
     if scan_type == "demo_secured":
