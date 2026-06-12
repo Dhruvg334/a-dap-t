@@ -71,6 +71,37 @@ SENSITIVE_JSON_KEYS: list[str] = [
 
 # Window size for data-exposure masking check (Requirement 17.2)
 DATA_EXPOSURE_WINDOW = 10
+# Mitigation keywords — presence reduces or suppresses tool findings
+APPROVAL_KEYWORDS_MITIGATIONS = [
+    "request_human_review",
+    "requires_approval",
+    "approval_required",
+    "approval_gate",
+    "human_review",
+]
+
+AUDIT_KEYWORDS_MITIGATIONS = [
+    "audit_log",
+    "log_event",
+    "trace_id",
+    "tool_call_id",
+    "logger",
+]
+
+WRAPPER_KEYWORDS_MITIGATIONS = [
+    "safe_",
+    "with_approval",
+    "_with_approval",
+    "safe_refund",
+    "refund_with_approval",
+]
+
+_MITIGATION_RE = re.compile(
+    "|".join(re.escape(kw) for kw in (
+        APPROVAL_KEYWORDS_MITIGATIONS + AUDIT_KEYWORDS_MITIGATIONS + WRAPPER_KEYWORDS_MITIGATIONS
+    )),
+    re.IGNORECASE,
+)
 
 # ---------------------------------------------------------------------------
 # Function definition patterns (Requirement 7.4)
@@ -133,6 +164,23 @@ def _has_masking_in_window(lines: list[str], line_number: int) -> bool:
     return any(mk in window_text for mk in MASKING_KEYWORDS)
 
 
+def _has_mitigation_in_window(lines: list[str], line_number: int, window: int = 15) -> dict:
+    """
+    Search for mitigation keywords within a window around *line_number*.
+
+    Returns a dict with boolean flags: {'approval': bool, 'audit': bool, 'wrapper': bool}
+    """
+    start = max(0, line_number - 1 - window)
+    end = min(len(lines), line_number + window)
+    window_text = "\n".join(lines[start:end]).lower()
+
+    approval = any(kw.lower() in window_text for kw in APPROVAL_KEYWORDS_MITIGATIONS)
+    audit = any(kw.lower() in window_text for kw in AUDIT_KEYWORDS_MITIGATIONS)
+    wrapper = any(kw.lower() in window_text for kw in WRAPPER_KEYWORDS_MITIGATIONS)
+
+    return {"approval": approval, "audit": audit, "wrapper": wrapper}
+
+
 def _collect_json_keys(obj: object, found: set[str]) -> None:
     """Recursively collect all dict keys from a parsed JSON object into *found*."""
     if isinstance(obj, dict):
@@ -168,24 +216,46 @@ def _scan_code_file(filepath: str, text: str, ext: str) -> list[Finding]:
         result = _classify_tool_keyword(func_name)
         if result is not None:
             severity, matched_kw = result
-            findings.append(Finding(
-                title=f"Risky function '{func_name}' detected",
-                severity=severity,
-                category="Tool Permission Risk",
-                file=filepath,
-                line=lineno,
-                why_it_matters=(
-                    f"The function '{func_name}' performs or exposes a "
-                    f"'{matched_kw}' operation. If this function is registered "
-                    "as an AI-agent tool, the agent can autonomously invoke a "
-                    "high-impact action without additional constraints."
-                ),
-                suggested_fix=(
-                    f"Add a human-approval gate or confirmation step before "
-                    f"executing '{func_name}'. Scope the function's permissions "
-                    "to the minimum required and log every invocation for audit."
-                ),
-            ))
+
+            # Check for nearby mitigations (approval, audit logging, wrappers)
+            mitigations = _has_mitigation_in_window(lines, lineno)
+
+            # If strong mitigations exist (approval AND audit OR explicit safe wrapper), suppress the finding
+            if (mitigations.get("approval") and mitigations.get("audit")) or mitigations.get("wrapper"):
+                # don't report a Tool Permission finding — mitigations present
+                pass
+            else:
+                # If some mitigations exist, reduce severity substantially
+                if mitigations.get("approval") or mitigations.get("audit"):
+                    new_severity = "Medium" if severity == "Critical" else "Low"
+                    why = (
+                        f"The function '{func_name}' performs or exposes a '{matched_kw}' operation. "
+                        "A partial mitigation was detected nearby, so the effective risk is reduced. "
+                    )
+                    suggested = (
+                        f"Ensure a robust approval AND audit trail around '{func_name}', or move the action behind "
+                        "a dedicated safe wrapper to eliminate residual risk."
+                    )
+                else:
+                    new_severity = severity
+                    why = (
+                        f"The function '{func_name}' performs or exposes a '{matched_kw}' operation. If this function is registered "
+                        "as an AI-agent tool, the agent can autonomously invoke a high-impact action without additional constraints."
+                    )
+                    suggested = (
+                        f"Add a human-approval gate or confirmation step before executing '{func_name}'. Scope the function's permissions "
+                        "to the minimum required and log every invocation for audit."
+                    )
+
+                findings.append(Finding(
+                    title=f"Risky function '{func_name}' detected",
+                    severity=new_severity,
+                    category="Tool Permission Risk",
+                    file=filepath,
+                    line=lineno,
+                    why_it_matters=why,
+                    suggested_fix=suggested,
+                ))
 
         # ── Data Exposure Risk ────────────────────────────────────────────
         da_kw = _classify_data_access_keyword(func_name)

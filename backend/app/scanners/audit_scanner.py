@@ -144,7 +144,8 @@ def run(tool_findings: list[Finding], files: dict[str, str]) -> list[Finding]:
     # Cache split lines per file to avoid re-splitting on each finding
     line_cache: dict[str, list[str]] = {}
 
-    for finding in tool_findings:
+    # Only consider Tool Permission Risk findings — ignore other categories
+    for finding in (f for f in tool_findings if getattr(f, "category", "") == "Tool Permission Risk"):
         filepath = finding.file
 
         # Requirement 9.6 — skip gracefully if source is unavailable

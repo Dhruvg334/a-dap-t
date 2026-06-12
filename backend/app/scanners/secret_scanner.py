@@ -193,7 +193,23 @@ def _scan_prompt_injection_in_py(filepath: str, text: str) -> list[Finding]:
     """Scan .py file for direct user-input concatenation (Requirement 16.3)."""
     findings: list[Finding] = []
     lines = text.splitlines()
+    # Detect direct returns or assignments of system prompt variables (under-detected case)
+    _SYSTEM_PROMPT_VARS = [
+        "system_prompt",
+        "SYSTEM_PROMPT",
+        "prompt_template",
+        "base_prompt",
+    ]
+    _RETURN_SYSTEM_RE = re.compile(
+        r"\breturn\s+(?:" + "|".join(re.escape(v) for v in _SYSTEM_PROMPT_VARS) + r")\b",
+        re.IGNORECASE,
+    )
+    _ASSIGN_SYSTEM_RE = re.compile(
+        r"\b(?:response|output|result|reply)\s*=\s*(?:" + "|".join(re.escape(v) for v in _SYSTEM_PROMPT_VARS) + r")\b",
+        re.IGNORECASE,
+    )
     for lineno, line in enumerate(lines, start=1):
+        # Direct concatenation or f-string usage (user-input → prompt)
         if _FSTRING_RE.search(line) or _CONCAT_RE.search(line):
             findings.append(Finding(
                 title="Direct user-input concatenation into string",
@@ -210,6 +226,24 @@ def _scan_prompt_injection_in_py(filepath: str, text: str) -> list[Finding]:
                     "Sanitise and validate user input before including it in prompts. "
                     "Use a structured message format (e.g. separate role/content dict) "
                     "rather than raw string concatenation."
+                ),
+            ))
+
+        # Return or assignment of system prompt variables — high severity
+        if _RETURN_SYSTEM_RE.search(line) or _ASSIGN_SYSTEM_RE.search(line):
+            findings.append(Finding(
+                title="System prompt exposed via return/assignment",
+                severity="High",
+                category="Prompt Injection Risk",
+                file=filepath,
+                line=lineno,
+                why_it_matters=(
+                    "Returning or assigning the system prompt variable directly exposes the agent's instructions. "
+                    "This makes it trivial for adversaries to learn or manipulate system-level instructions, enabling prompt injection."
+                ),
+                suggested_fix=(
+                    "Keep system prompts out of return values and avoid assigning them into outputs. "
+                    "Load prompts server-side and never return or include them in agent responses."
                 ),
             ))
     return findings
