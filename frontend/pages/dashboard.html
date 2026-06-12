@@ -274,7 +274,7 @@
         </div>
         <div class="cl-item" onclick="toggleCheck(this)">
           <div class="cl-check"><span class="cl-check-tick">✓</span></div>
-          <div><p class="cl-text">Move <code>OPENAI_API_KEY</code> out of <code>agent.py</code> into environment variables</p><span class="cl-sev" style="color:var(--red)">CRITICAL · Secret Exposure Risk</span></div>
+          <div><p class="cl-text">Move <code>Move hardcoded API keys out of source files into environment variables</p><span class="cl-sev" style="color:var(--red)">CRITICAL · Secret Exposure Risk</span></div>
         </div>
         <div class="cl-item" onclick="toggleCheck(this)">
           <div class="cl-check"><span class="cl-check-tick">✓</span></div>
@@ -356,7 +356,7 @@ if (result?.category_scores) {
     if (idx !== undefined && bars[idx]) {
       bars[idx].dataset.w = val;
       vals[idx].textContent = val + ' / 100';
-      vals[idx].style.color = val < 40 ? 'var(--red)' : val < 70 ? 'var(--yel)' : 'var(--gl)';
+      vals[idx].style.color = val >= 70 ? 'var(--red)' : val >= 40 ? 'var(--yel)' : 'var(--gl)';
     }
   });
 }
@@ -374,5 +374,6 @@ function toggleCheck(el) {
 </script>
 </body>
 </html>
+
 
 

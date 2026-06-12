@@ -25,35 +25,94 @@
 .ic-key  { font-family: var(--M); font-size: .58rem; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; }
 .ic-val  { font-size: .88rem; color: var(--wht); font-weight: 500; }
 
-/* FINDINGS TABLE */
-.findings-wrap { overflow-x: auto; }
-.find-tbl { width: 100%; border-collapse: collapse; font-size: .82rem; min-width: 900px; }
-.find-tbl th { font-family: var(--M); font-size: .57rem; letter-spacing: .13em; color: var(--muted); text-transform: uppercase; text-align: left; padding: .55rem 1rem; border-bottom: 1px solid var(--bd); white-space: nowrap; }
-.find-tbl td { padding: 0; border-bottom: 1px solid var(--bd); vertical-align: top; }
-.td-inner { padding: .9rem 1rem; }
-.find-tbl tbody tr:hover td { background: var(--bg2); }
-.find-tbl tbody tr.expanded td { background: var(--bg2); }
+/* FINDINGS CARDS */
+.findings-cards { display: flex; flex-direction: column; gap: 1rem; }
 
-/* expandable row */
-.expand-row td { border-bottom: 1px solid var(--bd); }
-.expand-content {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;
-  padding: 0 1rem;
-  max-height: 0; overflow: hidden;
-  transition: max-height .25s ease, padding .25s ease;
+.finding-card {
+  background: var(--bg2);
+  border: 1px solid var(--bd);
+  border-radius: 6px;
+  overflow: hidden;
 }
-.expand-content.open {
-  max-height: 300px;
-  padding: 0 1rem 1rem;
-}
-.exp-block { background: var(--bg3); border: 1px solid var(--bd); border-radius: var(--r); padding: 1rem; }
-.exp-label { font-family: var(--M); font-size: .58rem; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; margin-bottom: .5rem; display: block; }
-.exp-text { font-size: .8rem; color: var(--dim); line-height: 1.7; }
-.exp-code { font-family: var(--M); font-size: .72rem; color: var(--gl); line-height: 1.65; }
 
-.row-toggle { cursor: pointer; }
-.row-toggle::after { content: '▸'; font-size: .7rem; color: var(--muted); margin-left: .5rem; transition: transform .15s; display: inline-block; }
-.row-toggle.open::after { transform: rotate(90deg); }
+/* header row: icon | meta | right badges */
+.finding-card-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+}
+.finding-card-icon {
+  width: 2.2rem; height: 2.2rem;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.finding-card-meta { flex: 1; min-width: 0; }
+.finding-card-top {
+  display: flex; align-items: center; gap: .6rem;
+  margin-bottom: .28rem; flex-wrap: wrap;
+}
+.finding-card-id {
+  font-family: var(--M); font-size: .57rem;
+  color: var(--muted); letter-spacing: .1em;
+}
+.finding-card-category {
+  font-family: var(--M); font-size: .56rem;
+  color: var(--muted); letter-spacing: .06em;
+}
+.finding-card-title {
+  font-size: .88rem; font-weight: 600;
+  color: var(--wht); line-height: 1.3;
+}
+.finding-card-right {
+  display: flex; align-items: center; gap: .6rem;
+  flex-shrink: 0; flex-wrap: wrap;
+}
+.finding-card-file {
+  font-family: var(--M); font-size: .62rem;
+  color: var(--dim);
+}
+
+/* two equal panels side by side */
+.finding-card-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1px solid var(--bd);
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .25s ease;
+}
+
+/* WHY panel — green tinted */
+.finding-panel-why {
+  padding: 1rem 1.25rem;
+  background: rgba(56,196,106,.06);
+  border-right: 1px solid var(--bd);
+}
+/* FIX panel — blue tinted */
+.finding-panel-fix {
+  padding: 1rem 1.25rem;
+  background: rgba(74,143,212,.06);
+}
+
+.finding-panel-label {
+  font-family: var(--M); font-size: .56rem;
+  letter-spacing: .12em; text-transform: uppercase;
+  margin-bottom: .55rem;
+  display: flex; align-items: center; gap: .35rem;
+}
+.finding-panel-why .finding-panel-label { color: var(--gl); }
+.finding-panel-fix .finding-panel-label { color: var(--blue); }
+
+.finding-panel-text {
+  font-size: .8rem; color: var(--dim); line-height: 1.7;
+}
+
+@media (max-width: 700px) {
+  .finding-card-panels { grid-template-columns: 1fr; }
+  .finding-panel-why { border-right: none; border-bottom: 1px solid var(--bd); }
+  .finding-card-right { margin-top: .4rem; }
+}
 
 @media (max-width: 900px) {
   .sum-row { grid-template-columns: repeat(2,1fr); }
@@ -86,7 +145,7 @@
     <h1 class="rep-h1">AI AGENT<br>RISK REPORT</h1>
     <div class="rep-meta">
       <span>REPORT ID: <span id="rep-id">ADPT-2025-0024</span></span>
-      <span>PROJECT: <span id="rep-project">support-agent-v1</span></span>
+      <span>PROJECT: <span id="rep-project">vulnerable-support-agent</span></span>
       <span>GENERATED: <span id="rep-date">—</span></span>
     </div>
     <div class="rep-acts">
@@ -116,24 +175,9 @@
       <div class="ic-field"><span class="ic-key">Summary</span><span class="ic-val" id="info-summary" style="font-size:.8rem;color:var(--dim);line-height:1.55">—</span></div>
     </div>
 
-    <!-- Findings table -->
-    <span class="sec-label">FINDINGS — click a row to expand</span>
-    <div class="findings-wrap">
-      <table class="find-tbl">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>FINDING</th>
-            <th>CATEGORY</th>
-            <th>SEVERITY</th>
-            <th>FILE</th>
-            <th>STATUS</th>
-          </tr>
-        </thead>
-        <tbody id="findings-body">
-        </tbody>
-      </table>
-    </div>
+    <!-- Findings cards -->
+    <span class="sec-label">FINDINGS</span>
+    <div id="findings-body" class="findings-cards"></div>
 
   </div>
 </div>
@@ -207,10 +251,10 @@ let   findings    = (result?.findings && result.findings.length > 0) ? result.fi
 if (!findings) {
   findings = [
     { id:'F-001', title:'No input sanitisation on user message',        category:'Prompt Injection Risk', cat_key:'injection', severity:'critical', file:'agent.py:42',            status:'open', why:'User input is passed directly into the LLM prompt with no filtering. An attacker can override the system prompt.', fix:'Add a guardrail layer that strips injection-like patterns before appending user input to the prompt.' },
-    { id:'F-002', title:'OPENAI_API_KEY hardcoded in source',           category:'Secret Exposure Risk',  cat_key:'secret',    severity:'critical', file:'agent.py:8',             status:'open', why:'A live API key is embedded in the source file. Anyone with repository access can use or rotate this key.', fix:'Remove the key from source. Load it from an environment variable: os.environ["OPENAI_API_KEY"].' },
+    { id:'F-002', title:'Move hardcoded API keys into environment variables',           category:'Secret Exposure Risk',  cat_key:'secret',    severity:'critical', file:'agent.py:8',             status:'open', why:'A live API key is embedded in the source file. Anyone with repository access can use or rotate this key.', fix:'Remove the key from source. Load it from an environment variable: os.environ["API_KEY"].' },
     { id:'F-003', title:'send_email tool has no recipient restriction',  category:'Tool Permission Risk',  cat_key:'tool',      severity:'critical', file:'tools/email_tool.py:15', status:'open', why:'The tool accepts any "to" address. A malicious prompt could exfiltrate data to an attacker-controlled address.', fix:'Add an allowlist of permitted recipient domains. Reject any tool call where "to" does not match.' },
     { id:'F-004', title:'query_database allows writes without approval', category:'Human Approval Risk',   cat_key:'approval',  severity:'high',     file:'tools/db_tool.py:28',    status:'open', why:'The database tool permits UPDATE and DELETE without any human confirmation step.', fix:'Split into read-only and write variants. Require explicit human approval before any write or delete.' },
-    { id:'F-005', title:'PII passed to external LLM without redaction', category:'Data Exposure Risk',    cat_key:'data',      severity:'high',     file:'agent.py:88',            status:'open', why:'Customer records including names and emails are inserted into the prompt sent to the OpenAI API.', fix:'Implement a PII redaction step before building the LLM context using Microsoft Presidio or a regex masker.' },
+    { id:'F-005', title:'PII passed to external LLM without redaction', category:'Data Exposure Risk',    cat_key:'data',      severity:'high',     file:'agent.py:88',            status:'open', why:'Customer records including names and emails are inserted into the prompt sent to the AI API.', fix:'Implement a PII redaction step before building the LLM context using Microsoft Presidio or a regex masker.' },
     { id:'F-006', title:'Agent actions not logged to audit trail',      category:'Auditability Risk',      cat_key:'audit',     severity:'medium',   file:'agent.py',               status:'open', why:'No structured log records which tools were called. Post-incident investigation is impossible.', fix:'Add structured logging around every tool call: timestamp, tool name, arguments (redacted), session ID.' },
   ];
 }
@@ -266,52 +310,62 @@ const sevClass = { critical:'tag-cr', high:'tag-hi', medium:'tag-md', low:'tag-l
 const statusClass = { open:'tag-cr', resolved:'tag-ok', review:'tag-hi' };
 const statusLabel = { open:'OPEN', resolved:'RESOLVED', review:'IN REVIEW' };
 
-const tbody = document.getElementById('findings-body');
+const container = document.getElementById('findings-body');
 
 findings.forEach((f, i) => {
-  // Main row
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td><div class="td-inner mono" style="color:var(--muted)">${f.id}</div></td>
-    <td><div class="td-inner"><span class="row-toggle" onclick="toggleRow(this, 'exp-${i}')">${getIcon(f.cat_key || f.cat_icon)} ${f.title}</span></div></td>
-    <td><div class="td-inner" style="font-size:.78rem;color:var(--dim);white-space:nowrap">${f.category}</div></td>
-    <td><div class="td-inner"><span class="tag ${sevClass[f.severity]}">${f.severity.toUpperCase()}</span></div></td>
-    <td><div class="td-inner mono" style="color:var(--dim);font-size:.72rem">${f.file}</div></td>
-    <td><div class="td-inner"><span class="tag ${statusClass[f.status]}">${statusLabel[f.status]}</span></div></td>
-  `;
-  tbody.appendChild(tr);
-
-  // Expand row
-  const expTr = document.createElement('tr');
-  expTr.className = 'expand-row';
-  expTr.innerHTML = `
-    <td colspan="6">
-      <div class="expand-content" id="exp-${i}">
-        <div class="exp-block">
-          <span class="exp-label">Why it matters</span>
-          <p class="exp-text">${f.why}</p>
+  const card = document.createElement('div');
+  card.className = 'finding-card';
+  card.innerHTML = `
+    <div class="finding-card-header">
+      <div class="finding-card-icon">${getIcon(f.cat_key || f.cat_icon)}</div>
+      <div class="finding-card-meta">
+        <div class="finding-card-top">
+          <span class="finding-card-id">${f.id}</span>
+          <span class="finding-card-category">${f.category}</span>
         </div>
-        <div class="exp-block">
-          <span class="exp-label">Suggested fix</span>
-          <p class="exp-text">${f.fix}</p>
-        </div>
+        <div class="finding-card-title">${f.title}</div>
       </div>
-    </td>
+      <div class="finding-card-right">
+        <span class="finding-card-file">${f.file}</span>
+        <span class="tag ${sevClass[f.severity]}">${f.severity.toUpperCase()}</span>
+        <span class="tag ${statusClass[f.status]}">${statusLabel[f.status]}</span>
+      </div>
+    </div>
+    <div class="finding-card-panels">
+      <div class="finding-panel-why">
+        <div class="finding-panel-label">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          WHY IT MATTERS
+        </div>
+        <p class="finding-panel-text">${f.why}</p>
+      </div>
+      <div class="finding-panel-fix">
+        <div class="finding-panel-label">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          SUGGESTED FIX
+        </div>
+        <p class="finding-panel-text">${f.fix}</p>
+      </div>
+    </div>
   `;
-  tbody.appendChild(expTr);
+  container.appendChild(card);
+
+  // click header to expand/collapse panels
+  card.querySelector('.finding-card-header').addEventListener('click', () => {
+    const panels = card.querySelector('.finding-card-panels');
+    const isOpen = card.classList.contains('open');
+    document.querySelectorAll('.finding-card.open .finding-card-panels').forEach(p => {
+      p.style.maxHeight = null;
+    });
+    document.querySelectorAll('.finding-card.open').forEach(c => c.classList.remove('open'));
+    if (!isOpen) {
+      card.classList.add('open');
+      panels.style.maxHeight = panels.scrollHeight + 'px';
+    }
+  });
 });
 
-function toggleRow(btn, id) {
-  const content = document.getElementById(id);
-  const isOpen = content.classList.contains('open');
-  // close all
-  document.querySelectorAll('.expand-content.open').forEach(el => el.classList.remove('open'));
-  document.querySelectorAll('.row-toggle.open').forEach(el => el.classList.remove('open'));
-  if (!isOpen) {
-    content.classList.add('open');
-    btn.classList.add('open');
-  }
-}
 </script>
 </body>
 </html>
+

@@ -19,5 +19,6 @@ lenisScript.onload = () => {
 
   requestAnimationFrame(raf);
 };
-    ``
+
 document.head.appendChild(lenisScript);
+
