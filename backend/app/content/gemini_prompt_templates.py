@@ -21,6 +21,8 @@ Rules:
 - Prefer practical fixes over generic security advice.
 - Mention limitations when needed.
 - Use concise, developer-friendly language.
+- Avoid heavy Markdown formatting unless specifically requested.
+- Prefer compact paragraphs or short bullet lists.
 """
 
 
