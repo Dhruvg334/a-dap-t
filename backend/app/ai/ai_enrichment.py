@@ -114,6 +114,17 @@ def enrich_scan_result_with_ai(scan_result: Dict[str, Any]) -> Dict[str, Any]:
             build_scan_summary_prompt(scan_result),
             GEMINI_SYSTEM_INSTRUCTION
         )
+        # Ensure the AI summary explicitly contains the numeric score and status
+        try:
+            score = scan_result.get("safety_score")
+            status = scan_result.get("status")
+            if score is not None and status:
+                enriched_result["ai_summary"] = (
+                    enriched_result["ai_summary"].rstrip() +
+                    f"\n\nSafety score: {score}/100 — {status}"
+                )
+        except Exception:
+            pass
 
         remediation_text = service.generate_text(
             build_remediation_plan_prompt(scan_result),
@@ -129,6 +140,17 @@ def enrich_scan_result_with_ai(scan_result: Dict[str, Any]) -> Dict[str, Any]:
             build_report_summary_prompt(scan_result),
             GEMINI_SYSTEM_INSTRUCTION
         )
+        # Ensure the AI report summary contains the numeric score and status
+        try:
+            score = scan_result.get("safety_score")
+            status = scan_result.get("status")
+            if score is not None and status:
+                enriched_result["ai_report_summary"] = (
+                    enriched_result["ai_report_summary"].rstrip() +
+                    f"\n\nSafety score: {score}/100 — {status}"
+                )
+        except Exception:
+            pass
 
         next_steps_text = service.generate_text(
             build_developer_next_steps_prompt(scan_result),

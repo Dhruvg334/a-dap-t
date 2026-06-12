@@ -52,7 +52,8 @@
   transition: border-color .2s;
 }
 .cat-card:hover { border-color: var(--bd2); }
-.cat-icon { font-size: 1.3rem; flex-shrink: 0; }
+.cat-icon { display: flex; align-items: center; flex-shrink: 0; width: 2rem; height: 2rem; color: var(--gl); }
+.cat-icon svg { width: 100%; height: 100%; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
 .cat-name { font-family: var(--M); font-size: .66rem; font-weight: 700; letter-spacing: .06em; color: var(--wht); display: block; }
 .cat-desc { font-size: .75rem; color: var(--muted); margin-top: .15rem; line-height: 1.4; }
 
@@ -71,6 +72,7 @@
 }
 </style>
 </head>
+<script src="main.js"></script>
 <body>
 <nav class="nav">
   <div class="nav-i">
@@ -156,12 +158,12 @@
   <div class="c">
     <span class="eye">Risk categories</span>
     <div class="cats-grid">
-      <div class="cat-card"><span class="cat-icon">💉</span><div><span class="cat-name">Prompt Injection Risk</span><p class="cat-desc">Unguarded inputs that let users override agent instructions</p></div></div>
-      <div class="cat-card"><span class="cat-icon">🔑</span><div><span class="cat-name">Secret Exposure Risk</span><p class="cat-desc">API keys, tokens, or credentials hardcoded in prompts or config</p></div></div>
-      <div class="cat-card"><span class="cat-icon">🛠️</span><div><span class="cat-name">Tool Permission Risk</span><p class="cat-desc">Tools with overly broad access — delete, write, or send without scope limits</p></div></div>
-      <div class="cat-card"><span class="cat-icon">🧑‍⚖️</span><div><span class="cat-name">Human Approval Risk</span><p class="cat-desc">High-stakes actions that execute without human-in-the-loop confirmation</p></div></div>
-      <div class="cat-card"><span class="cat-icon">📤</span><div><span class="cat-name">Data Exposure Risk</span><p class="cat-desc">PII, internal data, or sensitive context sent to external models or APIs</p></div></div>
-      <div class="cat-card"><span class="cat-icon">📋</span><div><span class="cat-name">Auditability Risk</span><p class="cat-desc">Agents with no logging, traceability, or audit trail for actions taken</p></div></div>
+      <div class="cat-card"><span class="cat-icon"><span class="ico ico-red ico-lg"><svg viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg></span></span><div><span class="cat-name">Prompt Injection Risk</span><p class="cat-desc">Unguarded inputs that let users override agent instructions</p></div></div>
+      <div class="cat-card"><span class="cat-icon"><span class="ico ico-yel ico-lg"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span></span><div><span class="cat-name">Secret Exposure Risk</span><p class="cat-desc">API keys, tokens, or credentials hardcoded in prompts or config</p></div></div>
+      <div class="cat-card"><span class="cat-icon"><span class="ico ico-dim ico-lg"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span></span><div><span class="cat-name">Tool Permission Risk</span><p class="cat-desc">Tools with overly broad access — delete, write, or send without scope limits</p></div></div>
+      <div class="cat-card"><span class="cat-icon"><span class="ico ico-lg"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span></span><div><span class="cat-name">Human Approval Risk</span><p class="cat-desc">High-stakes actions that execute without human-in-the-loop confirmation</p></div></div>
+      <div class="cat-card"><span class="cat-icon"><span class="ico ico-red ico-lg"><svg viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></span></span><div><span class="cat-name">Data Exposure Risk</span><p class="cat-desc">PII, internal data, or sensitive context sent to external models or APIs</p></div></div>
+      <div class="cat-card"><span class="cat-icon"><span class="ico ico-dim ico-lg"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span></span><div><span class="cat-name">Auditability Risk</span><p class="cat-desc">Agents with no logging, traceability, or audit trail for actions taken</p></div></div>
     </div>
   </div>
 </section>
@@ -183,11 +185,10 @@
 <footer class="footer">
   <div class="c footer-i">
     <span class="logo">A<em>-</em>DAP<em>-</em>T</span>
-    <span class="foot-copy">© 2025 A-DAP-T · Pre-Deployment AI Agent Risk Scanner</span>
+    <span class="foot-copy">© 2026 A-DAP-T · Pre-Deployment AI Agent Risk Scanner</span>
   </div>
 </footer>
 
 <script>document.body.classList.add('ready');</script>
 </body>
 </html>
-
