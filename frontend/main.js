@@ -22,3 +22,4 @@ lenisScript.onload = () => {
 
 document.head.appendChild(lenisScript);
 
+
