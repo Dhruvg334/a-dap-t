@@ -4,8 +4,7 @@
 
 It helps developers identify common AI-agent safety and security risks before deployment, including exposed secrets, unsafe tool permissions, missing human approval gates, weak auditability, sensitive data exposure, and prompt-injection-prone workflows.
 
----
-
+Live Deployment Link: https://a-dap-t.vercel.app/
 ## Problem
 
 AI agents are increasingly connected to tools, APIs, files, databases, customer records, emails, and business workflows.
