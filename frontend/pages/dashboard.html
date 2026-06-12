@@ -274,7 +274,7 @@
         </div>
         <div class="cl-item" onclick="toggleCheck(this)">
           <div class="cl-check"><span class="cl-check-tick">✓</span></div>
-          <div><p class="cl-text">Move <code>Move hardcoded API keys out of source files into environment variables</p><span class="cl-sev" style="color:var(--red)">CRITICAL · Secret Exposure Risk</span></div>
+          <div><p class="cl-text">Move hardcoded API keys out of source files into environment variables</p><span class="cl-sev" style="color:var(--red)">CRITICAL · Secret Exposure Risk</span></div>
         </div>
         <div class="cl-item" onclick="toggleCheck(this)">
           <div class="cl-check"><span class="cl-check-tick">✓</span></div>
@@ -312,61 +312,241 @@
 <script>
 document.body.classList.add('ready');
 
-// ── Load backend result and populate dynamic fields ───────────────────────
-const raw = sessionStorage.getItem('adpt_result');
-const result = raw ? JSON.parse(raw) : null;
+// Load backend result from scanner page
+let result = null;
+try {
+  const raw = sessionStorage.getItem('adpt_result');
+  result = raw ? JSON.parse(raw) : null;
+} catch (error) {
+  console.warn('Could not parse stored scan result', error);
+  result = null;
+}
+
+function riskColor(value) {
+  const val = Number(value) || 0;
+  if (val >= 70) return 'var(--red)';
+  if (val >= 40) return 'var(--yel)';
+  return 'var(--gl)';
+}
+
+function safetyColor(score) {
+  const val = Number(score) || 0;
+  if (val < 40) return 'var(--red)';
+  if (val < 75) return 'var(--yel)';
+  return 'var(--green)';
+}
+
+function normalizeStatus(status, score) {
+  const s = String(status || '').toLowerCase();
+
+  if (s.includes('critical') || s.includes('high')) return 'UNSAFE TO DEPLOY';
+  if (s.includes('moderate')) return 'NEEDS REVIEW';
+  if (s.includes('low') || s.includes('strong')) return 'LOW RISK';
+
+  if (score < 40) return 'UNSAFE TO DEPLOY';
+  if (score < 75) return 'NEEDS REVIEW';
+  return 'LOW RISK';
+}
+
+function statusTagClass(status, score) {
+  const label = normalizeStatus(status, score);
+  if (label === 'UNSAFE TO DEPLOY') return 'tag-cr';
+  if (label === 'NEEDS REVIEW') return 'tag-hi';
+  return 'tag-ok';
+}
+
+function categoryLabelToKey(label) {
+  const text = String(label || '').toLowerCase();
+
+  if (text.includes('prompt')) return 'prompt_injection';
+  if (text.includes('secret')) return 'secret_exposure';
+  if (text.includes('tool')) return 'tool_permission';
+  if (text.includes('approval')) return 'human_approval';
+  if (text.includes('data')) return 'data_exposure';
+  if (text.includes('audit')) return 'auditability';
+
+  return '';
+}
+
+function severityColor(severity) {
+  const s = String(severity || '').toLowerCase();
+  if (s === 'critical') return 'var(--red)';
+  if (s === 'high') return 'var(--yel)';
+  if (s === 'medium') return 'var(--yel)';
+  return 'var(--gl)';
+}
 
 const agentName = result?.project_name || 'vulnerable-support-agent';
-const scanType  = result?.scan_type    || 'Vulnerable Demo';
-const score     = result?.safety_score ?? 34;
+const scanType = result?.scan_type || 'Vulnerable Demo';
+const score = Number(result?.safety_score ?? 34);
+const findings = Array.isArray(result?.findings) ? result.findings : [];
+const summary = result?.summary || {};
+const categoryScores = result?.category_scores || {};
 
-const now     = new Date();
-const dateStr = now.toLocaleString('en-US', { month:'short', day:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', timeZone:'UTC', hour12:false }) + ' UTC';
+const now = new Date();
+const dateStr = now.toLocaleString('en-US', {
+  month: 'short',
+  day: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZone: 'UTC',
+  hour12: false
+}) + ' UTC';
 
 const projEl = document.getElementById('dash-project');
 if (projEl) projEl.textContent = agentName;
+
 const dateEl = document.getElementById('dash-date');
 if (dateEl) dateEl.textContent = dateStr;
 
-// Update score ring and number
-const ringEl = document.getElementById('score-ring');
-const numEl  = document.querySelector('.br-num');
-if (numEl) numEl.textContent = score;
+const metaEl = document.querySelector('.pg-meta');
+if (metaEl) {
+  metaEl.innerHTML = `PROJECT: <em id="dash-project">${agentName}</em> &nbsp;·&nbsp; SCAN TYPE: <em>${scanType}</em> &nbsp;·&nbsp; SCANNED: <em id="dash-date">${dateStr}</em>`;
+}
 
-// Animate ring: dashoffset = 326 * (1 - score/100)
+// Score card
+const ringEl = document.getElementById('score-ring');
+const numEl = document.querySelector('.br-num');
+const verdictEl = document.querySelector('.score-verdict');
+const scoreLabelEl = document.querySelector('.score-label');
+const scoreTagEl = document.querySelector('.score-card .tag');
+
+if (numEl) numEl.textContent = score;
+if (verdictEl) verdictEl.textContent = result?.status || normalizeStatus(result?.status, score);
+if (scoreLabelEl) {
+  const critical = summary.critical || findings.filter(f => String(f.severity || '').toLowerCase() === 'critical').length;
+  scoreLabelEl.textContent = `${findings.length} findings · ${critical} critical`;
+}
+if (scoreTagEl) {
+  scoreTagEl.className = `tag ${statusTagClass(result?.status, score)}`;
+  scoreTagEl.textContent = normalizeStatus(result?.status, score);
+}
+
 const offset = 326 * (1 - score / 100);
 setTimeout(() => {
   if (ringEl) {
     ringEl.style.strokeDashoffset = String(offset);
-    ringEl.style.stroke = score < 40 ? 'var(--red)' : score < 70 ? 'var(--yel)' : 'var(--green)';
+    ringEl.style.stroke = safetyColor(score);
   }
 }, 300);
 
-// Update category bars from backend category_scores if available
-if (result?.category_scores) {
-  const cs = result.category_scores;
-  const barMap = {
-    'prompt_injection': 0, 'secret_exposure': 1, 'tool_permission': 2,
-    'human_approval': 3,   'data_exposure': 4,   'auditability': 5
-  };
-  const bars = document.querySelectorAll('.cat-bar-f');
-  const vals = document.querySelectorAll('.cat-val');
-  Object.entries(cs).forEach(([key, val]) => {
-    const idx = barMap[key];
-    if (idx !== undefined && bars[idx]) {
-      bars[idx].dataset.w = val;
-      vals[idx].textContent = val + ' / 100';
-      vals[idx].style.color = val >= 70 ? 'var(--red)' : val >= 40 ? 'var(--yel)' : 'var(--gl)';
-    }
-  });
-}
+// Category score rows
+const categoryRows = document.querySelectorAll('.cat-row');
+categoryRows.forEach((row) => {
+  const nameEl = row.querySelector('.cat-row-name');
+  const barEl = row.querySelector('.cat-bar-f');
+  const valEl = row.querySelector('.cat-val');
+
+  const key = categoryLabelToKey(nameEl?.textContent);
+  if (!key || categoryScores[key] === undefined) return;
+
+  const val = Number(categoryScores[key]) || 0;
+  const color = riskColor(val);
+
+  if (barEl) {
+    barEl.dataset.w = val;
+    barEl.style.background = color;
+  }
+
+  if (valEl) {
+    valEl.textContent = `${val} / 100`;
+    valEl.style.color = color;
+  }
+});
 
 // Animate category bars
 setTimeout(() => {
   document.querySelectorAll('.cat-bar-f').forEach(el => {
-    el.style.width = el.dataset.w + '%';
+    el.style.width = (el.dataset.w || 0) + '%';
   });
 }, 400);
+
+// Tool graph from backend graph if available
+function renderToolGraph() {
+  const toolList = document.querySelector('.tool-list');
+  const graph = result?.graph;
+
+  if (!toolList || !graph || !Array.isArray(graph.nodes)) return;
+
+  const toolNodes = graph.nodes.filter(node => {
+    const type = String(node.type || '').toLowerCase();
+    const label = String(node.label || node.id || '').toLowerCase();
+    return type.includes('tool') || label.includes('refund') || label.includes('email') || label.includes('policy') || label.includes('customer');
+  });
+
+  if (!toolNodes.length) return;
+
+  toolList.innerHTML = toolNodes.slice(0, 6).map(node => {
+    const risk = String(node.risk || 'medium').toLowerCase();
+    const permClass = risk.includes('critical') || risk.includes('high') ? 'perm-danger' : risk.includes('medium') ? 'perm-warn' : 'perm-ok';
+    const label = node.label || node.id || 'tool';
+
+    return `
+      <div class="tool-row">
+        <span class="tool-icon"><span class="ico ico-dim"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span></span>
+        <span class="tool-name">${label}</span>
+        <div class="tool-perms">
+          <span class="perm ${permClass}">${risk || 'medium'} risk</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Attack replay from backend
+function renderAttackReplay() {
+  const replayList = document.querySelector('.replay-list');
+  const replay = result?.attack_replay;
+
+  if (!replayList || !Array.isArray(replay) || !replay.length) return;
+
+  replayList.innerHTML = replay.map((step, index) => {
+    const text = String(step);
+    const risky = /critical|blocked|risk|approval|audit|unsafe|malicious|expose|refund/i.test(text);
+    const outcomeClass = risky ? 'ro-fail' : 'ro-pass';
+    const outcome = risky ? 'FLAGGED' : 'STEP';
+
+    return `
+      <div class="replay-item">
+        <div class="replay-header">
+          <span class="replay-name">STEP ${index + 1}</span>
+          <span class="replay-outcome ${outcomeClass}">${outcome}</span>
+        </div>
+        <p class="replay-payload">${text}</p>
+      </div>
+    `;
+  }).join('');
+}
+
+// Remediation checklist from backend
+function renderChecklist() {
+  const checklist = document.getElementById('checklist');
+  const items = Array.isArray(result?.remediation_checklist) ? result.remediation_checklist : [];
+
+  if (!checklist || !items.length) return;
+
+  checklist.innerHTML = items.slice(0, 8).map((item, index) => {
+    const finding = findings[index] || {};
+    const severity = String(finding.severity || 'Medium');
+    const category = finding.category || 'Remediation';
+    const color = severityColor(severity);
+
+    return `
+      <div class="cl-item" onclick="toggleCheck(this)">
+        <div class="cl-check"><span class="cl-check-tick">✓</span></div>
+        <div>
+          <p class="cl-text">${item}</p>
+          <span class="cl-sev" style="color:${color}">${severity.toUpperCase()} · ${category}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+renderToolGraph();
+renderAttackReplay();
+renderChecklist();
 
 function toggleCheck(el) {
   el.classList.toggle('done');

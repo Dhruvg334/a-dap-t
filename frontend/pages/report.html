@@ -108,6 +108,13 @@
   font-size: .8rem; color: var(--dim); line-height: 1.7;
 }
 
+.ai-text,
+.ai-block p,
+#info-summary {
+  white-space: pre-line;
+  line-height: 1.75;
+}
+
 @media (max-width: 700px) {
   .finding-card-panels { grid-template-columns: 1fr; }
   .finding-panel-why { border-right: none; border-bottom: 1px solid var(--bd); }
@@ -220,115 +227,263 @@
 <script>
 document.body.classList.add('ready');
 
-
-
 const ICONS = {
-  injection: `<span class="ico ico-red" style="vertical-align:middle;margin-right:.4rem"><svg viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg></span>`,
-  secret: `<span class="ico ico-yel" style="vertical-align:middle;margin-right:.4rem"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>`,
-  tool: `<span class="ico ico-dim" style="vertical-align:middle;margin-right:.4rem"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>`,
-  approval: `<span class="ico" style="vertical-align:middle;margin-right:.4rem"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>`,
-  data: `<span class="ico ico-red" style="vertical-align:middle;margin-right:.4rem"><svg viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></span>`,
-  audit: `<span class="ico ico-dim" style="vertical-align:middle;margin-right:.4rem"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>`,
+  injection: `<span class="ico ico-red" style="vertical-align:middle"><svg viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg></span>`,
+  secret: `<span class="ico ico-yel" style="vertical-align:middle"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>`,
+  tool: `<span class="ico ico-dim" style="vertical-align:middle"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>`,
+  approval: `<span class="ico" style="vertical-align:middle"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>`,
+  data: `<span class="ico ico-red" style="vertical-align:middle"><svg viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></span>`,
+  audit: `<span class="ico ico-dim" style="vertical-align:middle"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>`,
 };
 
-function getIcon(key) {
-  return ICONS[key] || '';
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
 }
 
-// ── Load full backend response from sessionStorage ────────────────────────
-const raw = sessionStorage.getItem('adpt_result');
-const result = raw ? JSON.parse(raw) : null;
+function getCategoryKey(category) {
+  const c = String(category || '').toLowerCase();
 
-// Map backend fields — with safe fallbacks for when loaded directly (no scan)
-const agentName   = result?.project_name   || 'vulnerable-support-agent';
-const scanType    = result?.scan_type      || 'Vulnerable Demo';
-const score       = result?.safety_score   ?? 34;
-const verdict     = result?.status         || (score < 40 ? 'UNSAFE' : score < 70 ? 'MODERATE' : 'SAFE');
-const summary     = result?.summary        || result?.ai_report_summary || 'Agent has multiple unguarded inputs, hardcoded secrets, and overly permissive tool access.';
-let   findings    = (result?.findings && result.findings.length > 0) ? result.findings : null;
+  if (c.includes('prompt') || c.includes('injection')) return 'injection';
+  if (c.includes('secret')) return 'secret';
+  if (c.includes('tool')) return 'tool';
+  if (c.includes('approval')) return 'approval';
+  if (c.includes('data')) return 'data';
+  if (c.includes('audit')) return 'audit';
 
-// Fallback demo findings when no backend result is present
-if (!findings) {
-  findings = [
-    { id:'F-001', title:'No input sanitisation on user message',        category:'Prompt Injection Risk', cat_key:'injection', severity:'critical', file:'agent.py:42',            status:'open', why:'User input is passed directly into the LLM prompt with no filtering. An attacker can override the system prompt.', fix:'Add a guardrail layer that strips injection-like patterns before appending user input to the prompt.' },
-    { id:'F-002', title:'Move hardcoded API keys into environment variables',           category:'Secret Exposure Risk',  cat_key:'secret',    severity:'critical', file:'agent.py:8',             status:'open', why:'A live API key is embedded in the source file. Anyone with repository access can use or rotate this key.', fix:'Remove the key from source. Load it from an environment variable: os.environ["API_KEY"].' },
-    { id:'F-003', title:'send_email tool has no recipient restriction',  category:'Tool Permission Risk',  cat_key:'tool',      severity:'critical', file:'tools/email_tool.py:15', status:'open', why:'The tool accepts any "to" address. A malicious prompt could exfiltrate data to an attacker-controlled address.', fix:'Add an allowlist of permitted recipient domains. Reject any tool call where "to" does not match.' },
-    { id:'F-004', title:'query_database allows writes without approval', category:'Human Approval Risk',   cat_key:'approval',  severity:'high',     file:'tools/db_tool.py:28',    status:'open', why:'The database tool permits UPDATE and DELETE without any human confirmation step.', fix:'Split into read-only and write variants. Require explicit human approval before any write or delete.' },
-    { id:'F-005', title:'PII passed to external LLM without redaction', category:'Data Exposure Risk',    cat_key:'data',      severity:'high',     file:'agent.py:88',            status:'open', why:'Customer records including names and emails are inserted into the prompt sent to the AI API.', fix:'Implement a PII redaction step before building the LLM context using Microsoft Presidio or a regex masker.' },
-    { id:'F-006', title:'Agent actions not logged to audit trail',      category:'Auditability Risk',      cat_key:'audit',     severity:'medium',   file:'agent.py',               status:'open', why:'No structured log records which tools were called. Post-incident investigation is impossible.', fix:'Add structured logging around every tool call: timestamp, tool name, arguments (redacted), session ID.' },
-  ];
+  return 'tool';
 }
 
-// ── Populate header & summary fields ──────────────────────────────────────
-const now     = new Date();
-const dateStr = now.toLocaleString('en-US', { month:'short', day:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', timeZone:'UTC', hour12:false }) + ' UTC';
-const repId   = 'ADPT-' + now.getFullYear() + '-' + String(Math.floor(Math.random()*9000)+1000);
-
-document.getElementById('rep-id').textContent       = repId;
-document.getElementById('rep-project').textContent  = agentName;
-document.getElementById('rep-date').textContent     = dateStr;
-document.getElementById('info-project').textContent  = agentName;
-document.getElementById('info-scantype').textContent = scanType;
-
-const verdictClass = verdict === 'UNSAFE' ? 'tag-cr' : verdict === 'SAFE' ? 'tag-ok' : 'tag-hi';
-const verdictLabel = verdict === 'UNSAFE' ? 'UNSAFE' : verdict === 'SAFE' ? 'SAFE' : 'MODERATE';
-document.getElementById('info-status').innerHTML    = `<span class="tag ${verdictClass}">${verdictLabel}</span>`;
-document.getElementById('info-summary').textContent = summary;
-
-const scoreEl = document.getElementById('stat-score');
-scoreEl.textContent = score;
-scoreEl.style.color = score < 40 ? 'var(--red)' : score < 70 ? 'var(--yel)' : 'var(--gl)';
-document.getElementById('stat-total').textContent    = findings.length;
-document.getElementById('stat-critical').textContent = findings.filter(f => f.severity === 'critical').length;
-document.getElementById('stat-high').textContent     = findings.filter(f => f.severity === 'high').length;
-
-// ── AI enrichment sections (rendered if backend provided them) ─────────────
-function renderAiBlock(id, content) {
-  const el = document.getElementById(id);
-  if (!el || !content) return;
-  el.textContent = content;
-  const block = el.closest('.ai-block');
-  if (block) block.style.display = 'block';
-  document.getElementById('ai-enrichment-wrap').style.display = 'block';
+function getIcon(categoryOrKey) {
+  const key = ICONS[categoryOrKey] ? categoryOrKey : getCategoryKey(categoryOrKey);
+  return ICONS[key] || ICONS.tool;
 }
-if (result) {
-  renderAiBlock('ai-summary-text',        result.ai_summary);
-  renderAiBlock('ai-remediation-text',    result.ai_remediation_plan);
-  renderAiBlock('ai-report-summary-text', result.ai_report_summary);
-  renderAiBlock('ai-next-steps-text',     result.ai_next_steps);
-  const badge = document.getElementById('ai-enrichment-status');
-  if (badge && result.ai_enrichment_status) {
-    badge.textContent = result.ai_enrichment_status;
-    badge.style.display = 'inline-block';
+
+function normalizeSeverity(severity) {
+  return String(severity || 'Info').toLowerCase();
+}
+
+function normalizeStatus(status) {
+  return String(status || 'open').toLowerCase();
+}
+
+function normalizeScanStatus(status, score) {
+  const s = String(status || '').toLowerCase();
+
+  if (s.includes('critical') || s.includes('high')) return 'UNSAFE';
+  if (s.includes('moderate')) return 'MODERATE';
+  if (s.includes('low') || s.includes('strong')) return 'SAFE';
+
+  if (score < 40) return 'UNSAFE';
+  if (score < 75) return 'MODERATE';
+  return 'SAFE';
+}
+
+function formatSummaryForDisplay(result) {
+  if (!result) return 'No scan result found. Run a scan from the scanner page.';
+
+  if (result.ai_report_summary) return result.ai_report_summary;
+  if (result.ai_summary) return result.ai_summary;
+
+  const summary = result.summary;
+
+  if (!summary) return 'Scan completed. Review findings and remediation guidance below.';
+
+  if (typeof summary === 'string') return summary;
+
+  if (typeof summary === 'object') {
+    return `Scan found ${summary.critical || 0} critical, ${summary.high || 0} high, ${summary.medium || 0} medium, and ${summary.low || 0} low findings.`;
+  }
+
+  return String(summary);
+}
+
+function cleanAiLine(value) {
+  return String(value ?? '')
+    .replace(/^\s*\d+\.\s*/, '')
+    .replace(/^\s*[-*]\s*/, '')
+    .trim();
+}
+
+function formatAiTextForDisplay(value) {
+  if (!value) return '';
+
+  if (Array.isArray(value)) {
+    return value
+      .filter(Boolean)
+      .map((item, index) => `${index + 1}. ${cleanAiLine(item)}`)
+      .join('\n\n');
+  }
+
+  return String(value)
+    .replace(/,\s*(?=\d+\.)/g, '\n\n')
+    .replace(/\.\s*(?=\d+\.)/g, '.\n\n')
+    .trim();
+}
+
+function normalizeFindingForFrontend(finding, index) {
+  const category = finding.category || 'Uncategorized';
+  const catKey = finding.cat_key || getCategoryKey(category);
+  const severity = normalizeSeverity(finding.severity);
+  const status = normalizeStatus(finding.status);
+
+  return {
+    ...finding,
+    id: finding.id || `F-${String(index + 1).padStart(3, '0')}`,
+    category,
+    cat_key: catKey,
+    severity,
+    status,
+    why: finding.why || finding.why_it_matters || 'No explanation provided.',
+    fix: finding.fix || finding.suggested_fix || 'No suggested fix provided.',
+    file_display: finding.line ? `${finding.file || 'unknown'}:${finding.line}` : (finding.file || 'unknown')
+  };
+}
+
+function getStoredResult() {
+  try {
+    const raw = sessionStorage.getItem('adpt_result');
+    return raw ? JSON.parse(raw) : null;
+  } catch (error) {
+    console.warn('Could not parse stored scan result', error);
+    return null;
   }
 }
 
-const sevOrder = { critical: 0, high: 1, medium: 2, low: 3 };
-findings.sort((a,b) => sevOrder[a.severity] - sevOrder[b.severity]);
+function normalizeAdaptBackendResult(scanResult) {
+  if (!scanResult) return null;
 
-const sevClass = { critical:'tag-cr', high:'tag-hi', medium:'tag-md', low:'tag-lo' };
-const statusClass = { open:'tag-cr', resolved:'tag-ok', review:'tag-hi' };
-const statusLabel = { open:'OPEN', resolved:'RESOLVED', review:'IN REVIEW' };
+  return {
+    ...scanResult,
+    findings: Array.isArray(scanResult.findings)
+      ? scanResult.findings.map(normalizeFindingForFrontend)
+      : [],
+    summary_text: formatSummaryForDisplay(scanResult),
+    ai_summary_text: formatAiTextForDisplay(scanResult.ai_summary),
+    ai_report_summary_text: formatAiTextForDisplay(scanResult.ai_report_summary),
+    ai_remediation_plan_text: formatAiTextForDisplay(scanResult.ai_remediation_plan),
+    ai_next_steps_text: formatAiTextForDisplay(scanResult.ai_next_steps),
+  };
+}
+
+const fallbackResult = {
+  project_name: 'vulnerable-support-agent',
+  scan_type: 'Vulnerable Demo',
+  safety_score: 34,
+  status: 'High Risk',
+  summary: { critical: 2, high: 3, medium: 1, low: 0 },
+  findings: [
+    {
+      title: 'No scan result found',
+      category: 'Auditability Risk',
+      severity: 'Medium',
+      file: 'scanner.html',
+      line: 1,
+      why_it_matters: 'This page was opened directly without running a scan first.',
+      suggested_fix: 'Go to the Scanner page and run a vulnerable, secured, or ZIP upload scan.'
+    }
+  ]
+};
+
+const result = normalizeAdaptBackendResult(getStoredResult() || fallbackResult);
+const findings = result.findings;
+
+const now = new Date();
+const dateStr = now.toLocaleString('en-US', {
+  month: 'short',
+  day: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZone: 'UTC',
+  hour12: false
+}) + ' UTC';
+
+const repId = 'ADPT-' + now.getFullYear() + '-' + String(Math.floor(Math.random() * 9000) + 1000);
+const score = Number(result.safety_score ?? 0);
+const scanVerdict = normalizeScanStatus(result.status, score);
+const verdictClass = scanVerdict === 'UNSAFE' ? 'tag-cr' : scanVerdict === 'SAFE' ? 'tag-ok' : 'tag-hi';
+
+document.getElementById('rep-id').textContent = repId;
+document.getElementById('rep-project').textContent = result.project_name || 'vulnerable-support-agent';
+document.getElementById('rep-date').textContent = dateStr;
+
+document.getElementById('info-project').textContent = result.project_name || 'vulnerable-support-agent';
+document.getElementById('info-scantype').textContent = result.scan_type || 'Vulnerable Demo';
+document.getElementById('info-status').innerHTML = `<span class="tag ${verdictClass}">${scanVerdict}</span>`;
+document.getElementById('info-summary').textContent = result.summary_text;
+
+const criticalCount = findings.filter(f => f.severity === 'critical').length;
+const highCount = findings.filter(f => f.severity === 'high').length;
+
+const scoreEl = document.getElementById('stat-score');
+scoreEl.textContent = score;
+scoreEl.style.color = score < 40 ? 'var(--red)' : score < 75 ? 'var(--yel)' : 'var(--gl)';
+
+document.getElementById('stat-total').textContent = findings.length;
+document.getElementById('stat-critical').textContent = criticalCount;
+document.getElementById('stat-high').textContent = highCount;
+
+function renderAiBlock(id, content) {
+  const el = document.getElementById(id);
+  if (!el || !content) return;
+
+  el.textContent = content;
+  el.classList.add('ai-text');
+
+  const block = el.closest('.ai-block');
+  if (block) block.style.display = 'block';
+
+  const wrap = document.getElementById('ai-enrichment-wrap');
+  if (wrap) wrap.style.display = 'block';
+}
+
+renderAiBlock('ai-summary-text', result.ai_summary_text);
+renderAiBlock('ai-report-summary-text', result.ai_report_summary_text);
+renderAiBlock('ai-remediation-text', result.ai_remediation_plan_text);
+renderAiBlock('ai-next-steps-text', result.ai_next_steps_text);
+
+const badge = document.getElementById('ai-enrichment-status');
+if (badge && result.ai_enrichment_status) {
+  badge.textContent = result.ai_enrichment_status;
+  badge.style.display = 'inline-block';
+}
+
+const sevOrder = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
+findings.sort((a, b) => (sevOrder[a.severity] ?? 5) - (sevOrder[b.severity] ?? 5));
+
+const sevClass = { critical: 'tag-cr', high: 'tag-hi', medium: 'tag-md', low: 'tag-lo', info: 'tag-lo' };
+const statusClass = { open: 'tag-cr', resolved: 'tag-ok', review: 'tag-hi' };
+const statusLabel = { open: 'OPEN', resolved: 'RESOLVED', review: 'IN REVIEW' };
 
 const container = document.getElementById('findings-body');
+container.innerHTML = '';
 
-findings.forEach((f, i) => {
+findings.forEach((f) => {
   const card = document.createElement('div');
   card.className = 'finding-card';
+
+  const sev = f.severity || 'info';
+  const stat = f.status || 'open';
+
   card.innerHTML = `
     <div class="finding-card-header">
-      <div class="finding-card-icon">${getIcon(f.cat_key || f.cat_icon)}</div>
+      <div class="finding-card-icon">${getIcon(f.cat_key || f.category)}</div>
       <div class="finding-card-meta">
         <div class="finding-card-top">
-          <span class="finding-card-id">${f.id}</span>
-          <span class="finding-card-category">${f.category}</span>
+          <span class="finding-card-id">${escapeHtml(f.id)}</span>
+          <span class="finding-card-category">${escapeHtml(f.category)}</span>
         </div>
-        <div class="finding-card-title">${f.title}</div>
+        <div class="finding-card-title">${escapeHtml(f.title || 'Untitled finding')}</div>
       </div>
       <div class="finding-card-right">
-        <span class="finding-card-file">${f.file}</span>
-        <span class="tag ${sevClass[f.severity]}">${f.severity.toUpperCase()}</span>
-        <span class="tag ${statusClass[f.status]}">${statusLabel[f.status]}</span>
+        <span class="finding-card-file">${escapeHtml(f.file_display)}</span>
+        <span class="tag ${sevClass[sev] || 'tag-lo'}">${escapeHtml(sev.toUpperCase())}</span>
+        <span class="tag ${statusClass[stat] || 'tag-cr'}">${escapeHtml(statusLabel[stat] || stat.toUpperCase())}</span>
       </div>
     </div>
     <div class="finding-card-panels">
@@ -337,34 +492,35 @@ findings.forEach((f, i) => {
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           WHY IT MATTERS
         </div>
-        <p class="finding-panel-text">${f.why}</p>
+        <p class="finding-panel-text">${escapeHtml(f.why)}</p>
       </div>
       <div class="finding-panel-fix">
         <div class="finding-panel-label">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
           SUGGESTED FIX
         </div>
-        <p class="finding-panel-text">${f.fix}</p>
+        <p class="finding-panel-text">${escapeHtml(f.fix)}</p>
       </div>
     </div>
   `;
+
   container.appendChild(card);
 
-  // click header to expand/collapse panels
   card.querySelector('.finding-card-header').addEventListener('click', () => {
     const panels = card.querySelector('.finding-card-panels');
     const isOpen = card.classList.contains('open');
-    document.querySelectorAll('.finding-card.open .finding-card-panels').forEach(p => {
-      p.style.maxHeight = null;
+
+    document.querySelectorAll('.finding-card.open .finding-card-panels').forEach(panel => {
+      panel.style.maxHeight = null;
     });
-    document.querySelectorAll('.finding-card.open').forEach(c => c.classList.remove('open'));
+    document.querySelectorAll('.finding-card.open').forEach(openCard => openCard.classList.remove('open'));
+
     if (!isOpen) {
       card.classList.add('open');
       panels.style.maxHeight = panels.scrollHeight + 'px';
     }
   });
 });
-
 </script>
 </body>
 </html>
