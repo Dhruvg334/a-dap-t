@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Methodology | A-DAP-T</title>
+<link rel="stylesheet" href="../shared.css"/>
+<style>
+.pg-hero { padding: 4rem 0 3rem; border-bottom: 1px solid var(--bd); }
+.meth-h1 { font-size: clamp(5rem,13vw,11rem); font-weight: 700; color: var(--wht); letter-spacing: -.04em; line-height: .88; margin-bottom: 1.1rem; }
+.meth-tag { font-family: var(--M); font-size: .72rem; letter-spacing: .07em; color: var(--dim); line-height: 1.65; max-width: 400px; text-transform: uppercase; }
+.hero-row { display: flex; align-items: center; gap: 4rem; justify-content: space-between; }
+.hero-right { flex-shrink: 0; }
+.stat-block { background: var(--bg2); border: 1px solid var(--bd); border-radius: var(--r); padding: 1.5rem 2rem; display: flex; flex-direction: column; gap: .4rem; min-width: 200px; text-align: center; }
+.stat-num { font-family: var(--M); font-size: 2.5rem; font-weight: 700; color: var(--gl); }
+.stat-lbl { font-family: var(--M); font-size: .6rem; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; }
+
+/* HOW IT WORKS STEPS */
+.steps { padding: 3.5rem 0; border-top: 1px solid var(--bd); }
+.steps-list { display: flex; flex-direction: column; gap: 0; }
+.step-item { display: grid; grid-template-columns: 80px 1fr; gap: 2rem; padding: 2rem 0; border-bottom: 1px solid var(--bd); align-items: start; }
+.step-item:last-child { border-bottom: none; }
+.step-n { font-family: var(--M); font-size: 2.5rem; font-weight: 700; color: var(--gd); line-height: 1; padding-top: .1rem; }
+.step-content {}
+.step-h { font-size: 1.1rem; font-weight: 700; color: var(--wht); margin-bottom: .6rem; }
+.step-p { font-size: .85rem; color: var(--dim); line-height: 1.8; max-width: 620px; }
+.step-tags { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .85rem; }
+.step-tag { font-family: var(--M); font-size: .57rem; font-weight: 700; letter-spacing: .07em; padding: .15rem .5rem; border-radius: var(--r); text-transform: uppercase; color: var(--gl); background: rgba(45,158,84,.08); border: 1px solid var(--gd); }
+
+/* CATEGORIES DEEP DIVE */
+.cats-deep { padding: 3.5rem 0; border-top: 1px solid var(--bd); }
+.cats-deep-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 1rem; }
+.cdd { background: var(--bg2); border: 1px solid var(--bd); border-radius: var(--r); padding: 1.5rem; transition: border-color .2s; }
+.cdd:hover { border-color: var(--bd2); }
+.cdd-head { display: flex; align-items: center; gap: .75rem; margin-bottom: .75rem; }
+.cdd-icon { font-size: 1.4rem; }
+.cdd-name { font-size: .95rem; font-weight: 700; color: var(--wht); }
+.cdd-body { font-size: .8rem; color: var(--dim); line-height: 1.75; }
+.cdd-rules { margin-top: .85rem; display: flex; flex-direction: column; gap: .3rem; }
+.cdd-rule { font-family: var(--M); font-size: .65rem; letter-spacing: .04em; color: var(--muted); padding-left: .75rem; position: relative; }
+.cdd-rule::before { content: '—'; position: absolute; left: 0; color: var(--gd); }
+
+/* LIMITATIONS */
+.limits { padding: 3rem 0 4rem; border-top: 1px solid var(--bd); }
+.lim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.lim-card { border: 1px solid var(--bd); border-radius: var(--r); padding: 1.4rem; }
+.lim-card.do { background: rgba(45,158,84,.04); border-color: var(--gd); }
+.lim-card.dont { background: rgba(217,64,64,.03); border-color: rgba(217,64,64,.25); }
+.lim-title { font-family: var(--M); font-size: .65rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-bottom: .85rem; display: block; }
+.lim-card.do .lim-title { color: var(--gl); }
+.lim-card.dont .lim-title { color: var(--red); }
+.lim-list { display: flex; flex-direction: column; gap: .5rem; list-style: none; }
+.lim-list li { font-size: .8rem; color: var(--dim); line-height: 1.6; padding-left: 1.1rem; position: relative; }
+.lim-card.do .lim-list li::before  { content: '✓'; position: absolute; left: 0; color: var(--gl); font-size: .72rem; }
+.lim-card.dont .lim-list li::before { content: '✗'; position: absolute; left: 0; color: var(--red); font-size: .72rem; }
+
+/* STANDARDS */
+.stds { background: var(--bg2); border-top: 1px solid var(--bd); padding: 1.4rem 0; }
+.stds-i { display: flex; align-items: center; gap: 2rem; flex-wrap: wrap; }
+.stds-lbl { font-family: var(--M); font-size: .58rem; letter-spacing: .13em; color: var(--muted); text-transform: uppercase; white-space: nowrap; }
+.badges { display: flex; gap: .5rem; flex-wrap: wrap; }
+.badge { font-family: var(--M); font-size: .6rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--bd); border-radius: var(--r); padding: .25rem .65rem; transition: all .15s; }
+.badge:hover { border-color: var(--gd); color: var(--gl); }
+
+@media (max-width: 900px) {
+  .hero-row { flex-direction: column; align-items: flex-start; }
+  .cats-deep-grid, .lim-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) { .step-item { grid-template-columns: 40px 1fr; gap: 1rem; } }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-i">
+    <a href="../index.html" class="logo">A<em>-</em>DAP<em>-</em>T</a>
+    <ul class="nav-links">
+      <li><a href="../index.html">HOME</a></li>
+      <li><a href="scanner.html">SCANNER</a></li>
+      <li><a href="dashboard.html">DASHBOARD</a></li>
+      <li><a href="report.html">REPORT</a></li>
+      <li><a href="methodology.html" class="on">METHODOLOGY</a></li>
+    </ul>
+    <a href="scanner.html" class="btn btn-p">RUN A SCAN</a>
+  </div>
+</nav>
+
+<section class="pg-hero">
+  <div class="c hero-row">
+    <div>
+      <h1 class="meth-h1">RIGOR</h1>
+      <p class="meth-tag">How A-DAP-T analyses your AI agent for pre-deployment safety risks — without executing a single line of your code.</p>
+    </div>
+    <div class="hero-right">
+      <div class="stat-block">
+        <span class="stat-num">6</span>
+        <span class="stat-lbl">Risk Categories</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="steps">
+  <div class="c">
+    <span class="sec-label">ANALYSIS PIPELINE</span>
+    <div class="steps-list">
+
+      <div class="step-item">
+        <span class="step-n">01</span>
+        <div class="step-content">
+          <h3 class="step-h">Static File Analysis</h3>
+          <p class="step-p">A-DAP-T parses your uploaded project without executing it. Python source files, prompt text files, JSON/YAML config files, and tool definitions are all read as text and tokenised for pattern matching. No subprocess calls, no sandbox, no runtime.</p>
+          <div class="step-tags"><span class="step-tag">AST PARSING</span><span class="step-tag">PROMPT TEXT</span><span class="step-tag">YAML/JSON CONFIG</span><span class="step-tag">NO EXECUTION</span></div>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <span class="step-n">02</span>
+        <div class="step-content">
+          <h3 class="step-h">Rule-Based Risk Scanner</h3>
+          <p class="step-p">A curated ruleset of ~80 patterns is applied across all parsed files. Rules detect hardcoded secrets (regex + entropy), unguarded input concatenation, overly permissive tool schemas, missing human-in-the-loop checks, PII-leaking context builders, and absent logging calls. Each rule maps directly to one of six risk categories and produces a structured finding.</p>
+          <div class="step-tags"><span class="step-tag">~80 RULES</span><span class="step-tag">ENTROPY ANALYSIS</span><span class="step-tag">PATTERN MATCHING</span><span class="step-tag">STRUCTURED FINDINGS</span></div>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <span class="step-n">03</span>
+        <div class="step-content">
+          <h3 class="step-h">Gemini-Assisted Explanations</h3>
+          <p class="step-p">For each raw finding, A-DAP-T calls the Gemini API to generate a plain-language explanation of why the issue matters in the context of your specific agent, and a concrete suggested fix. Gemini sees only the relevant code snippet and the rule description — not your full codebase or any secrets.</p>
+          <div class="step-tags"><span class="step-tag">GEMINI API</span><span class="step-tag">SNIPPET-SCOPED</span><span class="step-tag">WHY IT MATTERS</span><span class="step-tag">SUGGESTED FIX</span></div>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <span class="step-n">04</span>
+        <div class="step-content">
+          <h3 class="step-h">Controlled Attack Replay</h3>
+          <p class="step-p">A-DAP-T runs a set of known adversarial prompts against the agent's system prompt in a fully isolated, sandboxed inference call. This tests whether the system prompt is susceptible to role-override, prompt-echo, and jailbreak patterns. The agent is never connected to any real tools during replay — only the language model is invoked.</p>
+          <div class="step-tags"><span class="step-tag">SANDBOXED INFERENCE</span><span class="step-tag">NO REAL TOOLS</span><span class="step-tag">KNOWN ATTACK CORPUS</span><span class="step-tag">PASS / FAIL VERDICT</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- CATEGORIES -->
+<section class="cats-deep">
+  <div class="c">
+    <span class="sec-label">RISK CATEGORIES EXPLAINED</span>
+    <div class="cats-deep-grid">
+      <div class="cdd">
+        <div class="cdd-head"><span class="cdd-icon">💉</span><span class="cdd-name">Prompt Injection Risk</span></div>
+        <p class="cdd-body">Checks whether user-controlled input can override or extend the agent's system instructions. The most common and highest-impact risk in deployed agents.</p>
+        <div class="cdd-rules">
+          <span class="cdd-rule">Direct string concatenation of user input into prompt</span>
+          <span class="cdd-rule">No input escaping or sanitisation layer present</span>
+          <span class="cdd-rule">System prompt does not include injection-resistance instructions</span>
+          <span class="cdd-rule">Attack replay: role-override and instruction-ignore patterns</span>
+        </div>
+      </div>
+      <div class="cdd">
+        <div class="cdd-head"><span class="cdd-icon">🔑</span><span class="cdd-name">Secret Exposure Risk</span></div>
+        <p class="cdd-body">Detects API keys, tokens, passwords, and other credentials embedded in source files or prompts rather than loaded from secure environment variables.</p>
+        <div class="cdd-rules">
+          <span class="cdd-rule">High-entropy strings matching known key formats (regex)</span>
+          <span class="cdd-rule">Hardcoded OpenAI / Anthropic / AWS / GCP key patterns</span>
+          <span class="cdd-rule">System prompt readable and echoed on direct request</span>
+          <span class="cdd-rule">Credentials in YAML config files or .env committed to repo</span>
+        </div>
+      </div>
+      <div class="cdd">
+        <div class="cdd-head"><span class="cdd-icon">🛠️</span><span class="cdd-name">Tool Permission Risk</span></div>
+        <p class="cdd-body">Evaluates whether tools are scoped appropriately. Broad permissions amplify every other risk — an injected instruction can only do what the tools allow.</p>
+        <div class="cdd-rules">
+          <span class="cdd-rule">Tools accepting unrestricted file paths, URLs, or recipients</span>
+          <span class="cdd-rule">Write or delete operations without confirmation gate</span>
+          <span class="cdd-rule">No per-session tool invocation budget</span>
+          <span class="cdd-rule">Tool schemas with wildcard or missing parameter constraints</span>
+        </div>
+      </div>
+      <div class="cdd">
+        <div class="cdd-head"><span class="cdd-icon">🧑‍⚖️</span><span class="cdd-name">Human Approval Risk</span></div>
+        <p class="cdd-body">Identifies high-impact actions — sending messages, modifying data, making purchases — that execute autonomously without a human confirmation step.</p>
+        <div class="cdd-rules">
+          <span class="cdd-rule">No approval gate before email, SMS, or webhook send calls</span>
+          <span class="cdd-rule">Database write operations triggered without confirmation</span>
+          <span class="cdd-rule">No interrupt/pause mechanism for multi-step plans</span>
+          <span class="cdd-rule">Missing HITL (human-in-the-loop) annotation in agent config</span>
+        </div>
+      </div>
+      <div class="cdd">
+        <div class="cdd-head"><span class="cdd-icon">📤</span><span class="cdd-name">Data Exposure Risk</span></div>
+        <p class="cdd-body">Flags cases where sensitive or personal data is included in LLM context without redaction, or transmitted to external APIs unnecessarily.</p>
+        <div class="cdd-rules">
+          <span class="cdd-rule">PII patterns (email, phone, SSN) inserted into prompt context</span>
+          <span class="cdd-rule">Full database records passed to external model without masking</span>
+          <span class="cdd-rule">No context-length guard on retrieved documents</span>
+          <span class="cdd-rule">Conversation history sent to third-party APIs without consent</span>
+        </div>
+      </div>
+      <div class="cdd">
+        <div class="cdd-head"><span class="cdd-icon">📋</span><span class="cdd-name">Auditability Risk</span></div>
+        <p class="cdd-body">Checks whether the agent's actions are observable, traceable, and explainable after the fact — a requirement for both incident response and compliance.</p>
+        <div class="cdd-rules">
+          <span class="cdd-rule">No structured logging around tool calls</span>
+          <span class="cdd-rule">Errors swallowed silently without log emission</span>
+          <span class="cdd-rule">No session or request ID propagated through calls</span>
+          <span class="cdd-rule">LLM reasoning steps not captured or stored</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LIMITATIONS -->
+<section class="limits">
+  <div class="c">
+    <span class="sec-label">WHAT A-DAP-T IS AND ISN'T</span>
+    <div class="lim-grid">
+      <div class="lim-card do">
+        <span class="lim-title">✓ A-DAP-T does</span>
+        <ul class="lim-list">
+          <li>Static analysis of source files, prompts, and configs</li>
+          <li>Rule-based detection of known AI agent risk patterns</li>
+          <li>Gemini-assisted plain-language explanations per finding</li>
+          <li>Controlled attack replay against system prompts (no real tools)</li>
+          <li>Actionable remediation checklist with severity prioritisation</li>
+          <li>Safety score across six risk categories</li>
+        </ul>
+      </div>
+      <div class="lim-card dont">
+        <span class="lim-title">✗ A-DAP-T does not</span>
+        <ul class="lim-list">
+          <li>Execute uploaded code — analysis is purely static</li>
+          <li>Replace a full security audit or penetration test</li>
+          <li>Guarantee zero vulnerabilities in production</li>
+          <li>Test dynamic or runtime behaviour of your agent</li>
+          <li>Scan network infrastructure, APIs, or cloud environments</li>
+          <li>Store or retain uploaded project files after the scan session</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STANDARDS -->
+<section class="stds">
+  <div class="c stds-i">
+    <span class="stds-lbl">INFORMED BY</span>
+    <div class="badges">
+      <span class="badge">OWASP LLM TOP 10</span>
+      <span class="badge">NIST AI RMF</span>
+      <span class="badge">MITRE ATLAS</span>
+      <span class="badge">GOOGLE SECURE AI</span>
+      <span class="badge">EU AI ACT</span>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="c footer-i">
+    <span class="logo">A<em>-</em>DAP<em>-</em>T</span>
+    <span class="foot-copy">© 2025 A-DAP-T · Pre-Deployment AI Agent Risk Scanner</span>
+  </div>
+</footer>
+
+<script>document.body.classList.add('ready');</script>
+</body>
+</html>

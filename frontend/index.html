@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>A-DAP-T — Pre-Deployment AI Agent Risk Scanner</title>
+<link rel="stylesheet" href="shared.css"/>
+<style>
+/* ── HERO ── */
+.hero { padding: 5rem 0 4rem; border-bottom: 1px solid var(--bd); }
+.hero-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
+.hero-kicker { font-family: var(--M); font-size: .62rem; letter-spacing: .22em; color: var(--gl); text-transform: uppercase; margin-bottom: 1rem; display: block; }
+.hero-h1 { font-size: clamp(3.2rem, 7vw, 6.5rem); font-weight: 700; color: var(--wht); line-height: .92; letter-spacing: -.03em; margin-bottom: 1.5rem; }
+.hero-h1 em { color: var(--gl); font-style: normal; }
+.hero-desc { font-size: 1rem; color: var(--dim); line-height: 1.8; margin-bottom: 2rem; max-width: 480px; }
+.hero-acts { display: flex; gap: .75rem; flex-wrap: wrap; }
+.hero-card {
+  background: var(--bg2); border: 1px solid var(--bd); border-radius: var(--r);
+  padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem;
+}
+.hero-score-ring { display: flex; align-items: center; gap: 1.25rem; }
+.ring { width: 72px; height: 72px; position: relative; flex-shrink: 0; }
+.ring svg { transform: rotate(-90deg); }
+.ring-bg { fill: none; stroke: var(--bd2); stroke-width: 6; }
+.ring-fill { fill: none; stroke: var(--gl); stroke-width: 6; stroke-linecap: round; stroke-dasharray: 201; stroke-dashoffset: 50; transition: stroke-dashoffset 1.2s ease; }
+.ring-fill.red { stroke: var(--red); stroke-dashoffset: 160; }
+.ring-label { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-family: var(--M); font-size: .85rem; font-weight: 700; color: var(--wht); }
+.score-meta { display: flex; flex-direction: column; gap: .2rem; }
+.score-name { font-size: .88rem; font-weight: 600; color: var(--wht); }
+.score-sub  { font-family: var(--M); font-size: .6rem; letter-spacing: .08em; color: var(--dim); }
+.hero-findings { display: flex; flex-direction: column; gap: .5rem; }
+.hf-row { display: flex; align-items: center; justify-content: space-between; font-size: .8rem; }
+.hf-label { color: var(--dim); font-size: .78rem; }
+.hf-count { font-family: var(--M); font-size: .72rem; font-weight: 700; }
+.hf-count.red { color: var(--red); }
+.hf-count.yel { color: var(--yel); }
+.hf-count.grn { color: var(--gl); }
+
+/* ── HOW ── */
+.how-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: .9rem; }
+.how-card { background: var(--bg2); border: 1px solid var(--bd); border-radius: var(--r); padding: 1.6rem; transition: border-color .2s; }
+.how-card:hover { border-color: var(--gd); }
+.how-num { font-family: var(--M); font-size: .6rem; font-weight: 700; letter-spacing: .15em; color: var(--gl); display: block; margin-bottom: .75rem; }
+.how-h { font-size: 1rem; font-weight: 700; color: var(--wht); margin-bottom: .6rem; }
+.how-p { font-size: .82rem; color: var(--dim); line-height: 1.75; }
+
+/* ── CATEGORIES ── */
+.cats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: .75rem; }
+.cat-card {
+  background: var(--bg2); border: 1px solid var(--bd); border-radius: var(--r);
+  padding: 1.25rem 1.4rem; display: flex; align-items: center; gap: 1rem;
+  transition: border-color .2s;
+}
+.cat-card:hover { border-color: var(--bd2); }
+.cat-icon { font-size: 1.3rem; flex-shrink: 0; }
+.cat-name { font-family: var(--M); font-size: .66rem; font-weight: 700; letter-spacing: .06em; color: var(--wht); display: block; }
+.cat-desc { font-size: .75rem; color: var(--muted); margin-top: .15rem; line-height: 1.4; }
+
+/* ── CTA ── */
+.cta { background: var(--bg2); border: 1px solid var(--bd); border-radius: var(--r); padding: 3rem; text-align: center; }
+.cta h2 { font-size: 2rem; font-weight: 700; color: var(--wht); margin-bottom: .75rem; letter-spacing: -.02em; }
+.cta p { color: var(--dim); font-size: .9rem; margin-bottom: 1.75rem; max-width: 460px; margin-left: auto; margin-right: auto; line-height: 1.7; }
+.cta-acts { display: flex; gap: .75rem; justify-content: center; flex-wrap: wrap; }
+
+@media (max-width: 900px) {
+  .hero-inner { grid-template-columns: 1fr; }
+  .how-grid, .cats-grid { grid-template-columns: repeat(2,1fr); }
+}
+@media (max-width: 560px) {
+  .how-grid, .cats-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-i">
+    <a href="index.html" class="logo">A<em>-</em>DAP<em>-</em>T</a>
+    <ul class="nav-links">
+      <li><a href="index.html" class="on">HOME</a></li>
+      <li><a href="pages/scanner.html">SCANNER</a></li>
+      <li><a href="pages/dashboard.html">DASHBOARD</a></li>
+      <li><a href="pages/report.html">REPORT</a></li>
+      <li><a href="pages/methodology.html">METHODOLOGY</a></li>
+    </ul>
+    <a href="pages/scanner.html" class="btn btn-p">RUN A SCAN</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="c hero-inner">
+    <div>
+      <span class="hero-kicker">Pre-Deployment AI Agent Risk Scanner</span>
+      <h1 class="hero-h1">Scan your<br><em>AI agent</em><br>before it ships.</h1>
+      <p class="hero-desc">A-DAP-T checks GenAI and agentic projects for prompt injection risks, exposed secrets, unsafe tool permissions, missing human approvals, and auditability gaps — before they reach production.</p>
+      <div class="hero-acts">
+        <a href="pages/scanner.html" class="btn btn-p">START SCAN →</a>
+        <a href="pages/methodology.html" class="btn btn-o">HOW IT WORKS</a>
+      </div>
+    </div>
+    <div class="hero-card">
+      <span class="card-title">Example Scan Result</span>
+      <div class="hero-score-ring">
+        <div class="ring">
+          <svg viewBox="0 0 72 72" width="72" height="72">
+            <circle class="ring-bg" cx="36" cy="36" r="32"/>
+            <circle class="ring-fill red" cx="36" cy="36" r="32"/>
+          </svg>
+          <span class="ring-label">34</span>
+        </div>
+        <div class="score-meta">
+          <span class="score-name">my-support-agent</span>
+          <span class="score-sub">SAFETY SCORE · CRITICAL RISK</span>
+          <span class="tag tag-cr" style="margin-top:.4rem">UNSAFE</span>
+        </div>
+      </div>
+      <div class="hero-findings">
+        <span class="card-title" style="margin-bottom:.25rem">FINDINGS BREAKDOWN</span>
+        <div class="hf-row"><span class="hf-label">Prompt Injection Risk</span><span class="hf-count red">4 issues</span></div>
+        <div class="hf-row"><span class="hf-label">Secret Exposure Risk</span><span class="hf-count red">2 issues</span></div>
+        <div class="hf-row"><span class="hf-label">Tool Permission Risk</span><span class="hf-count yel">3 issues</span></div>
+        <div class="hf-row"><span class="hf-label">Human Approval Risk</span><span class="hf-count yel">1 issue</span></div>
+        <div class="hf-row"><span class="hf-label">Data Exposure Risk</span><span class="hf-count red">2 issues</span></div>
+        <div class="hf-row"><span class="hf-label">Auditability Risk</span><span class="hf-count grn">0 issues</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section">
+  <div class="c">
+    <span class="eye">How it works</span>
+    <div class="how-grid">
+      <div class="how-card">
+        <span class="how-num">01</span>
+        <h3 class="how-h">Upload or Select Agent</h3>
+        <p class="how-p">Point A-DAP-T at a demo agent or upload your own AI-agent project ZIP. No code is executed — analysis is fully static.</p>
+      </div>
+      <div class="how-card">
+        <span class="how-num">02</span>
+        <h3 class="how-h">Static + Rule-Based Scan</h3>
+        <p class="how-p">A-DAP-T parses prompts, tool configs, and code for known risk patterns across six categories — no runtime required.</p>
+      </div>
+      <div class="how-card">
+        <span class="how-num">03</span>
+        <h3 class="how-h">Get a Risk Report</h3>
+        <p class="how-p">Receive a safety score, per-finding explanations, file references, and a remediation checklist you can act on immediately.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RISK CATEGORIES -->
+<section class="section">
+  <div class="c">
+    <span class="eye">Risk categories</span>
+    <div class="cats-grid">
+      <div class="cat-card"><span class="cat-icon">💉</span><div><span class="cat-name">Prompt Injection Risk</span><p class="cat-desc">Unguarded inputs that let users override agent instructions</p></div></div>
+      <div class="cat-card"><span class="cat-icon">🔑</span><div><span class="cat-name">Secret Exposure Risk</span><p class="cat-desc">API keys, tokens, or credentials hardcoded in prompts or config</p></div></div>
+      <div class="cat-card"><span class="cat-icon">🛠️</span><div><span class="cat-name">Tool Permission Risk</span><p class="cat-desc">Tools with overly broad access — delete, write, or send without scope limits</p></div></div>
+      <div class="cat-card"><span class="cat-icon">🧑‍⚖️</span><div><span class="cat-name">Human Approval Risk</span><p class="cat-desc">High-stakes actions that execute without human-in-the-loop confirmation</p></div></div>
+      <div class="cat-card"><span class="cat-icon">📤</span><div><span class="cat-name">Data Exposure Risk</span><p class="cat-desc">PII, internal data, or sensitive context sent to external models or APIs</p></div></div>
+      <div class="cat-card"><span class="cat-icon">📋</span><div><span class="cat-name">Auditability Risk</span><p class="cat-desc">Agents with no logging, traceability, or audit trail for actions taken</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section">
+  <div class="c">
+    <div class="cta">
+      <h2>Ready to audit your agent?</h2>
+      <p>Run a scan on one of our demo agents in under 60 seconds, or upload your own project ZIP to get a full risk report.</p>
+      <div class="cta-acts">
+        <a href="pages/scanner.html" class="btn btn-p">SCAN A DEMO AGENT</a>
+        <a href="pages/scanner.html" class="btn btn-o">UPLOAD MY PROJECT</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="c footer-i">
+    <span class="logo">A<em>-</em>DAP<em>-</em>T</span>
+    <span class="foot-copy">© 2025 A-DAP-T · Pre-Deployment AI Agent Risk Scanner</span>
+  </div>
+</footer>
+
+<script>document.body.classList.add('ready');</script>
+</body>
+</html>
