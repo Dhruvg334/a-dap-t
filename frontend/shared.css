@@ -73,23 +73,23 @@ img { display: block; max-width: 100%; }
   border-bottom: 1px solid var(--bd);
 }
 .nav-i {
-  max-width: 1200px; margin: 0 auto;
-  padding: 0 2rem; height: 52px;
+  width: 100%; margin: 0 auto;
+  padding: 0 2rem; height: 90px;
   display: flex; align-items: center; gap: 2rem;
 }
 .logo {
   font-family: var(--M);
-  font-weight: 700;
-  font-size: .9rem;
+  font-weight: 800;
+  font-size: 1.8rem;
   letter-spacing: .08em;
   color: var(--wht);
   white-space: nowrap;
 }
 .logo em { color: var(--gl); font-style: normal; }
-.nav-links { display: flex; gap: 1.6rem; list-style: none; flex: 1; margin-left: .5rem; }
+.nav-links { display: flex; gap: 1.8rem; list-style: none; flex: 1; margin-left: .5rem; }
 .nav-links a {
   font-family: var(--M);
-  font-size: .6rem;
+  font-size: .65rem;
   letter-spacing: .13em;
   color: var(--muted);
   text-transform: uppercase;
@@ -180,6 +180,24 @@ img { display: block; max-width: 100%; }
 }
 .tbl tbody tr:hover { background: var(--bg2); }
 
+/* ── FLAT ICONS ── */
+.ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.4rem;
+  height: 1.4rem;
+  color: var(--gl);
+}
+.ico svg { width: 100%; height: 100%; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.ico-lg { width: 2rem; height: 2rem; }
+.ico-xl { width: 2.6rem; height: 2.6rem; }
+.ico-dim { color: var(--dim); }
+.ico-red { color: var(--red); }
+.ico-yel { color: var(--yel); }
+.ico-muted { color: var(--muted); }
+
 /* ── FOOTER ── */
 .footer { border-top: 1px solid var(--bd); padding: 1.5rem 0; margin-top: 2rem; }
 .footer-i {
@@ -191,3 +209,36 @@ img { display: block; max-width: 100%; }
 /* ── RESPONSIVE ── */
 @media (max-width: 700px) { .nav-links { display: none; } }
 @media (max-width: 500px) { .c { padding: 0 1rem; } }
+
+
+/* Neon Green Icons - Balanced Glow */
+
+svg {
+    stroke: #39ff14 !important;
+    color: #39ff14 !important;
+    fill: none !important;
+    stroke-width: 2.3 !important;
+
+    filter:
+      drop-shadow(0 0 4px rgba(57,255,20,0.22))
+      drop-shadow(0 0 8px rgba(57,255,20,0.08));
+}
+
+/* Panel label icons inherit their parent's colour, not global green */
+.finding-panel-label svg {
+    stroke: currentColor !important;
+    color: currentColor !important;
+    filter: none !important;
+    stroke-width: 2 !important;
+}
+
+.risk-card:hover svg,
+.card:hover svg {
+    filter:
+      drop-shadow(0 0 6px rgba(57,255,20,0.30))
+      drop-shadow(0 0 12px rgba(57,255,20,0.12));
+}
+
+html {
+  scroll-behavior: smooth;
+}

@@ -30,7 +30,7 @@
 .opt-badge-red { background: rgba(217,64,64,.12); color: #e86060; border: 1px solid rgba(217,64,64,.28); }
 .opt-badge-grn { background: rgba(45,158,84,.1); color: var(--gl); border: 1px solid var(--gd); }
 .opt-badge-blu { background: rgba(74,143,212,.1); color: var(--blue); border: 1px solid rgba(74,143,212,.3); }
-.opt-icon { font-size: 1.8rem; }
+.opt-icon { display:flex; align-items:center; justify-content:center; width:2.6rem; height:2.6rem; }
 .opt-title { font-size: 1rem; font-weight: 700; color: var(--wht); }
 .opt-desc  { font-size: .8rem; color: var(--dim); line-height: 1.65; }
 .opt-meta  { font-family: var(--M); font-size: .6rem; letter-spacing: .06em; color: var(--muted); margin-top: .25rem; }
@@ -78,6 +78,7 @@
 @media (max-width: 800px) { .scan-opts { grid-template-columns: 1fr; } }
 </style>
 </head>
+<script src="../main.js"></script>
 <body>
 <nav class="nav">
   <div class="nav-i">
@@ -110,7 +111,7 @@
     <div class="scan-opt selected" data-opt="vulnerable" onclick="selectOpt(this)">
       <span class="sel-dot"></span>
       <span class="opt-badge opt-badge-red">INTENTIONALLY VULNERABLE</span>
-      <span class="opt-icon">🤖</span>
+      <span class="opt-icon"><span class="ico ico-red ico-xl"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V7"/><circle cx="12" cy="5" r="2"/><line x1="8" y1="15" x2="8" y2="15" stroke-width="3"/><line x1="12" y1="15" x2="12" y2="15" stroke-width="3"/><line x1="16" y1="15" x2="16" y2="15" stroke-width="3"/></svg></span></span>
       <div class="opt-title">Vulnerable Demo Agent</div>
       <p class="opt-desc">A sample customer-support AI agent with multiple real-world risk patterns built in. Great for seeing what A-DAP-T catches.</p>
       <span class="opt-meta">vulnerable-support-agent · Python / LangChain</span>
@@ -120,17 +121,17 @@
     <div class="scan-opt" data-opt="secured" onclick="selectOpt(this)">
       <span class="sel-dot"></span>
       <span class="opt-badge opt-badge-grn">HARDENED DEMO</span>
-      <span class="opt-icon">🛡️</span>
+      <span class="opt-icon"><span class="ico ico-xl"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></span></span>
       <div class="opt-title">Secured Demo Agent</div>
       <p class="opt-desc">The same agent after applying A-DAP-T's remediation checklist. Shows how a safe score looks and what was fixed.</p>
-      <span class="opt-meta">support-agent-v2 · Python / LangChain</span>
+      <span class="opt-meta">secured-support-agent · Python / LangChain</span>
     </div>
 
     <!-- Option 3: Upload -->
     <div class="scan-opt" data-opt="upload" onclick="selectOpt(this)">
       <span class="sel-dot"></span>
       <span class="opt-badge opt-badge-blu">YOUR PROJECT</span>
-      <span class="opt-icon">📦</span>
+      <span class="opt-icon"><span class="ico ico-dim ico-xl"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span></span>
       <div class="opt-title">Upload AI-Agent Project ZIP</div>
       <p class="opt-desc">Upload your own agent project. Supports LangChain, AutoGen, CrewAI, custom Python. Max 20 MB.</p>
       <span class="opt-meta">ZIP · .py · .json · .yaml accepted</span>
@@ -140,7 +141,7 @@
 
   <!-- Upload drop zone (shown only when upload selected) -->
   <div class="upload-panel" id="upload-panel">
-    <span class="upload-icon">📂</span>
+    <span class="upload-icon"><span class="ico ico-dim ico-xl"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span></span>
     <span class="upload-title">Drop your project ZIP here</span>
     <span class="upload-sub">or click to browse — max 20 MB · .zip .py .json .yaml</span>
     <label class="upload-label">CHOOSE FILE <input class="upload-input" type="file" accept=".zip,.py,.json,.yaml"/></label>
@@ -197,13 +198,57 @@
 <footer class="footer">
   <div class="c footer-i">
     <span class="logo">A<em>-</em>DAP<em>-</em>T</span>
-    <span class="foot-copy">© 2025 A-DAP-T · Pre-Deployment AI Agent Risk Scanner</span>
+    <span class="foot-copy">© 2026 A-DAP-T · Pre-Deployment AI Agent Risk Scanner</span>
   </div>
 </footer>
 
 <script>
 document.body.classList.add('ready');
 
+const API_BASE = 'http://127.0.0.1:8000';
+
+// ── Step progression UI ───────────────────────────────────────────────────
+function advanceStep(idx) {
+  const ids  = ['p1','p2','p3','p4','p5','p6'];
+  const sids = ['s1','s2','s3','s4','s5','s6'];
+  if (idx < ids.length) {
+    document.getElementById(ids[idx]).style.width = '100%';
+    document.getElementById(sids[idx]).textContent = 'DONE';
+    document.getElementById(sids[idx]).style.color = 'var(--gl)';
+  }
+}
+
+function setStepRunning(idx) {
+  const sids  = ['s1','s2','s3','s4','s5','s6'];
+  const fills = ['p1','p2','p3','p4','p5','p6'];
+  if (idx < sids.length) {
+    document.getElementById(sids[idx]).textContent = 'RUNNING';
+    document.getElementById(sids[idx]).style.color = 'var(--yel)';
+    document.getElementById(fills[idx]).style.width = '60%';
+  }
+}
+
+function setStepError(idx, msg) {
+  const sids = ['s1','s2','s3','s4','s5','s6'];
+  if (idx < sids.length) {
+    document.getElementById(sids[idx]).textContent = 'ERROR';
+    document.getElementById(sids[idx]).style.color = 'var(--red)';
+  }
+  showError(msg);
+}
+
+function showError(msg) {
+  let el = document.getElementById('scan-error');
+  if (!el) {
+    el = document.createElement('p');
+    el.id = 'scan-error';
+    el.style.cssText = 'margin-top:1rem;font-family:var(--M);font-size:.65rem;color:var(--red);letter-spacing:.05em;';
+    document.getElementById('progress').appendChild(el);
+  }
+  el.textContent = '⚠ ' + msg;
+}
+
+// ── Option selection ──────────────────────────────────────────────────────
 function selectOpt(el) {
   document.querySelectorAll('.scan-opt').forEach(o => o.classList.remove('selected'));
   el.classList.add('selected');
@@ -216,32 +261,72 @@ document.querySelector('.upload-input').addEventListener('change', function() {
   if (this.files[0]) { fn.textContent = '✓ ' + this.files[0].name; fn.style.display = 'block'; }
 });
 
-function startScan() {
-  document.getElementById('scan-btn').disabled = true;
-  document.getElementById('scan-btn').textContent = 'SCANNING…';
+// ── Main scan — calls FastAPI backend only ────────────────────────────────
+async function startScan() {
+  const selected = document.querySelector('.scan-opt.selected');
+  const optType  = selected ? selected.dataset.opt : 'vulnerable';
+
+  const btn = document.getElementById('scan-btn');
+  btn.disabled = true;
+  btn.textContent = 'SCANNING…';
   document.getElementById('progress').classList.add('running');
 
-  const steps = [
-    {p:'p1',s:'s1',delay:400,dur:600},
-    {p:'p2',s:'s2',delay:1100,dur:800},
-    {p:'p3',s:'s3',delay:2100,dur:600},
-    {p:'p4',s:'s4',delay:2900,dur:700},
-    {p:'p5',s:'s5',delay:3700,dur:500},
-    {p:'p6',s:'s6',delay:4400,dur:900},
-  ];
+  setStepRunning(0);
+  await delay(300);
+  advanceStep(0);
 
-  steps.forEach(({p,s,delay,dur}) => {
-    setTimeout(() => {
-      document.getElementById(p).style.width = '100%';
-      document.getElementById(s).textContent = 'DONE';
-      document.getElementById(s).style.color = 'var(--gl)';
-    }, delay + dur);
-  });
+  setStepRunning(1); setStepRunning(2); setStepRunning(3); setStepRunning(4);
 
-  setTimeout(() => { window.location.href = 'report.html'; }, 5800);
+  let result = null;
+
+  try {
+    if (optType === 'upload') {
+      // ── POST /scan/upload ─────────────────────────────────────────────
+      const fileInput = document.querySelector('.upload-input');
+      if (!fileInput.files[0]) {
+        setStepError(1, 'No file selected. Please choose a ZIP file first.');
+        btn.disabled = false; btn.textContent = 'RUN SCAN →';
+        return;
+      }
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+
+      const res = await fetch(`${API_BASE}/scan/upload`, {
+        method: 'POST',
+        body: formData
+      });
+      if (!res.ok) throw new Error(`Backend returned ${res.status}: ${await res.text()}`);
+      result = await res.json();
+
+    } else {
+      // ── GET /scan/demo/vulnerable  or  /scan/demo/secured ─────────────
+      const demoKey = optType === 'secured' ? 'secured' : 'vulnerable';
+      const res = await fetch(`${API_BASE}/scan/demo/${demoKey}`);
+      if (!res.ok) throw new Error(`Backend returned ${res.status}: ${await res.text()}`);
+      result = await res.json();
+    }
+
+  } catch (err) {
+    advanceStep(1); advanceStep(2); advanceStep(3); advanceStep(4);
+    setStepError(5, 'Could not reach backend: ' + err.message);
+    btn.disabled = false; btn.textContent = 'RUN SCAN →';
+    return;
+  }
+
+  // ── Store full backend response for report + dashboard pages ──────────
+  sessionStorage.setItem('adpt_result', JSON.stringify(result));
+
+  advanceStep(1); advanceStep(2); advanceStep(3); advanceStep(4);
+  setStepRunning(5);
+  await delay(400);
+  advanceStep(5);
+
+  await delay(300);
+  window.location.href = 'report.html';
 }
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 </script>
 </body>
 </html>
-
 

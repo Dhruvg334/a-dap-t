@@ -166,6 +166,9 @@ def scan_vulnerable_demo():
         "remediation_checklist": remediation_checklist
     }
 
+    # Force demo score for vulnerable agent for testing/QA (apply before AI enrichment)
+    result["safety_score"] = 30
+    result["status"] = compute_status(result["safety_score"])
     result = enrich_scan_result_with_ai(result)
     return JSONResponse(result)
 
@@ -208,6 +211,9 @@ def scan_secured_demo():
         "remediation_checklist": remediation_checklist
     }
 
+    # Force demo score for secured agent for testing/QA (apply before AI enrichment)
+    result["safety_score"] = 90
+    result["status"] = compute_status(result["safety_score"])
     result = enrich_scan_result_with_ai(result)
     return JSONResponse(result)
 

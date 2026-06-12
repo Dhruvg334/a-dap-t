@@ -25,27 +25,101 @@
 .ic-key  { font-family: var(--M); font-size: .58rem; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; }
 .ic-val  { font-size: .88rem; color: var(--wht); font-weight: 500; }
 
-/* FINDINGS TABLE */
-.findings-wrap { overflow-x: auto; }
-.find-tbl { width: 100%; border-collapse: collapse; font-size: .82rem; min-width: 900px; }
-.find-tbl th { font-family: var(--M); font-size: .57rem; letter-spacing: .13em; color: var(--muted); text-transform: uppercase; text-align: left; padding: .55rem 1rem; border-bottom: 1px solid var(--bd); white-space: nowrap; }
-.find-tbl td { padding: 0; border-bottom: 1px solid var(--bd); vertical-align: top; }
-.td-inner { padding: .9rem 1rem; }
-.find-tbl tbody tr:hover td { background: var(--bg2); }
-.find-tbl tbody tr.expanded td { background: var(--bg2); }
+/* FINDINGS CARDS */
+.findings-cards { display: flex; flex-direction: column; gap: 1rem; }
 
-/* expandable row */
-.expand-row td { border-bottom: 1px solid var(--bd); }
-.expand-content { display: none; padding: 0 1rem 1rem; }
-.expand-content.open { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
-.exp-block { background: var(--bg3); border: 1px solid var(--bd); border-radius: var(--r); padding: 1rem; }
-.exp-label { font-family: var(--M); font-size: .58rem; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; margin-bottom: .5rem; display: block; }
-.exp-text { font-size: .8rem; color: var(--dim); line-height: 1.7; }
-.exp-code { font-family: var(--M); font-size: .72rem; color: var(--gl); line-height: 1.65; }
+.finding-card {
+  background: var(--bg2);
+  border: 1px solid var(--bd);
+  border-radius: 6px;
+  overflow: hidden;
+}
 
-.row-toggle { cursor: pointer; }
-.row-toggle::after { content: '▸'; font-size: .7rem; color: var(--muted); margin-left: .5rem; transition: transform .15s; display: inline-block; }
-.row-toggle.open::after { transform: rotate(90deg); }
+/* header row: icon | meta | right badges */
+.finding-card-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+}
+.finding-card-icon {
+  width: 2.2rem; height: 2.2rem;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.finding-card-meta { flex: 1; min-width: 0; }
+.finding-card-top {
+  display: flex; align-items: center; gap: .6rem;
+  margin-bottom: .28rem; flex-wrap: wrap;
+}
+.finding-card-id {
+  font-family: var(--M); font-size: .57rem;
+  color: var(--muted); letter-spacing: .1em;
+}
+.finding-card-category {
+  font-family: var(--M); font-size: .56rem;
+  color: var(--muted); letter-spacing: .06em;
+}
+.finding-card-title {
+  font-size: .88rem; font-weight: 600;
+  color: var(--wht); line-height: 1.3;
+}
+.finding-card-right {
+  display: flex; align-items: center; gap: .6rem;
+  flex-shrink: 0; flex-wrap: wrap;
+}
+.finding-card-file {
+  font-family: var(--M); font-size: .62rem;
+  color: var(--dim);
+}
+
+/* two equal panels side by side */
+.finding-card-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1px solid var(--bd);
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .25s ease;
+}
+
+/* WHY panel — green tinted */
+.finding-panel-why {
+  padding: 1rem 1.25rem;
+  background: rgba(56,196,106,.06);
+  border-right: 1px solid var(--bd);
+}
+/* FIX panel — blue tinted */
+.finding-panel-fix {
+  padding: 1rem 1.25rem;
+  background: rgba(74,143,212,.06);
+}
+
+.finding-panel-label {
+  font-family: var(--M); font-size: .56rem;
+  letter-spacing: .12em; text-transform: uppercase;
+  margin-bottom: .55rem;
+  display: flex; align-items: center; gap: .35rem;
+}
+.finding-panel-why .finding-panel-label { color: var(--gl); }
+.finding-panel-fix .finding-panel-label { color: var(--blue); }
+
+.finding-panel-text {
+  font-size: .8rem; color: var(--dim); line-height: 1.7;
+}
+
+.ai-text,
+.ai-block p,
+#info-summary {
+  white-space: pre-line;
+  line-height: 1.75;
+}
+
+@media (max-width: 700px) {
+  .finding-card-panels { grid-template-columns: 1fr; }
+  .finding-panel-why { border-right: none; border-bottom: 1px solid var(--bd); }
+  .finding-card-right { margin-top: .4rem; }
+}
 
 @media (max-width: 900px) {
   .sum-row { grid-template-columns: repeat(2,1fr); }
@@ -56,6 +130,7 @@
 }
 </style>
 </head>
+<script src="../main.js"></script>
 <body>
 <nav class="nav">
   <div class="nav-i">
@@ -76,9 +151,9 @@
     <span class="eye">RISK REPORT</span>
     <h1 class="rep-h1">AI AGENT<br>RISK REPORT</h1>
     <div class="rep-meta">
-      <span>REPORT ID: ADPT-2025-0024</span>
-      <span>PROJECT: vulnerable-support-agent</span>
-      <span>GENERATED: OCT 25, 2025 14:33 UTC</span>
+      <span>REPORT ID: <span id="rep-id">ADPT-2025-0024</span></span>
+      <span>PROJECT: <span id="rep-project">vulnerable-support-agent</span></span>
+      <span>GENERATED: <span id="rep-date">—</span></span>
     </div>
     <div class="rep-acts">
       <button class="btn btn-o">↓ EXPORT PDF</button>
@@ -93,240 +168,359 @@
 
     <!-- Summary numbers -->
     <div class="sum-row">
-      <div class="sum-box"><span class="sb-num" style="color:var(--wht)">34</span><span class="sb-lbl">Safety Score</span></div>
-      <div class="sum-box"><span class="sb-num" style="color:var(--red)">12</span><span class="sb-lbl">Total Findings</span></div>
-      <div class="sum-box"><span class="sb-num" style="color:var(--red)">4</span><span class="sb-lbl">Critical</span></div>
-      <div class="sum-box"><span class="sb-num" style="color:var(--yel)">5</span><span class="sb-lbl">High</span></div>
+      <div class="sum-box"><span class="sb-num" id="stat-score" style="color:var(--wht)">—</span><span class="sb-lbl">Safety Score</span></div>
+      <div class="sum-box"><span class="sb-num" id="stat-total" style="color:var(--red)">—</span><span class="sb-lbl">Total Findings</span></div>
+      <div class="sum-box"><span class="sb-num" id="stat-critical" style="color:var(--red)">—</span><span class="sb-lbl">Critical</span></div>
+      <div class="sum-box"><span class="sb-num" id="stat-high" style="color:var(--yel)">—</span><span class="sb-lbl">High</span></div>
     </div>
 
     <!-- Scan info -->
     <div class="info-card">
-      <div class="ic-field"><span class="ic-key">Project</span><span class="ic-val">vulnerable-support-agent</span></div>
-      <div class="ic-field"><span class="ic-key">Scan Type</span><span class="ic-val">Vulnerable Demo</span></div>
-      <div class="ic-field"><span class="ic-key">Status</span><span class="ic-val"><span class="tag tag-cr">UNSAFE</span></span></div>
-      <div class="ic-field"><span class="ic-key">Summary</span><span class="ic-val" style="font-size:.8rem;color:var(--dim);line-height:1.55">Agent has multiple unguarded inputs, hardcoded secrets, and overly permissive tool access. Not safe for production deployment.</span></div>
+      <div class="ic-field"><span class="ic-key">Project</span><span class="ic-val" id="info-project">—</span></div>
+      <div class="ic-field"><span class="ic-key">Scan Type</span><span class="ic-val" id="info-scantype">—</span></div>
+      <div class="ic-field"><span class="ic-key">Status</span><span class="ic-val" id="info-status">—</span></div>
+      <div class="ic-field"><span class="ic-key">Summary</span><span class="ic-val" id="info-summary" style="font-size:.8rem;color:var(--dim);line-height:1.55">—</span></div>
     </div>
 
-    <!-- Findings table -->
-    <span class="sec-label">FINDINGS — click a row to expand</span>
-    <div class="findings-wrap">
-      <table class="find-tbl">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>FINDING</th>
-            <th>CATEGORY</th>
-            <th>SEVERITY</th>
-            <th>FILE</th>
-            <th>STATUS</th>
-          </tr>
-        </thead>
-        <tbody id="findings-body">
-        </tbody>
-      </table>
-    </div>
+    <!-- Findings cards -->
+    <span class="sec-label">FINDINGS</span>
+    <div id="findings-body" class="findings-cards"></div>
 
+  </div>
+</div>
+
+<!-- AI ENRICHMENT SECTION (hidden until backend populates it) -->
+<div id="ai-enrichment-wrap" style="border-top:1px solid var(--bd); padding:2.5rem 0 4rem; display:none;">
+  <div class="c">
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.75rem;">
+      <span class="sec-label" style="margin-bottom:0;">AI ANALYSIS</span>
+      <span id="ai-enrichment-status" class="tag tag-md" style="display:none;"></span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+      <div class="ai-block card" style="display:none;">
+        <span class="card-title">AI SUMMARY</span>
+        <p id="ai-summary-text" style="font-size:.82rem;color:var(--dim);line-height:1.75;"></p>
+      </div>
+      <div class="ai-block card" style="display:none;">
+        <span class="card-title">REPORT SUMMARY</span>
+        <p id="ai-report-summary-text" style="font-size:.82rem;color:var(--dim);line-height:1.75;"></p>
+      </div>
+      <div class="ai-block card" style="display:none;">
+        <span class="card-title">REMEDIATION PLAN</span>
+        <p id="ai-remediation-text" style="font-size:.82rem;color:var(--dim);line-height:1.75;"></p>
+      </div>
+      <div class="ai-block card" style="display:none;">
+        <span class="card-title">NEXT STEPS</span>
+        <p id="ai-next-steps-text" style="font-size:.82rem;color:var(--dim);line-height:1.75;"></p>
+      </div>
+    </div>
   </div>
 </div>
 
 <footer class="footer">
   <div class="c footer-i">
     <span class="logo">A<em>-</em>DAP<em>-</em>T</span>
-    <span class="foot-copy">© 2025 A-DAP-T · Pre-Deployment AI Agent Risk Scanner</span>
+    <span class="foot-copy">© 2026 A-DAP-T · Pre-Deployment AI Agent Risk Scanner</span>
   </div>
 </footer>
 
 <script>
 document.body.classList.add('ready');
 
-const findings = [
-  {
-    id: 'F-001',
-    title: 'No input sanitisation on user message',
-    category: 'Prompt Injection Risk',
-    cat_icon: '💉',
-    severity: 'critical',
-    file: 'agent.py:42',
-    status: 'open',
-    why: 'User input is passed directly into the LLM prompt with no filtering or escaping. An attacker can craft a message that overrides the system prompt and forces the agent to act outside its intended role.',
-    fix: 'Add a guardrail layer that strips or escapes instruction-like patterns before appending user input to the prompt. Consider a separate validation LLM call or a regex-based injection filter.'
-  },
-  {
-    id: 'F-002',
-    title: 'OPENAI_API_KEY hardcoded in source',
-    category: 'Secret Exposure Risk',
-    cat_icon: '🔑',
-    severity: 'critical',
-    file: 'agent.py:8',
-    status: 'open',
-    why: 'A live API key is embedded in the source file. Anyone with access to the repository — including CI logs or accidental commits — can use or rotate this key.',
-    fix: 'Remove the key from source. Load it from an environment variable: os.environ["OPENAI_API_KEY"]. Add the key to .gitignore as a pattern and rotate the exposed key immediately.'
-  },
-  {
-    id: 'F-003',
-    title: 'send_email tool has no recipient restriction',
-    category: 'Tool Permission Risk',
-    cat_icon: '🛠️',
-    severity: 'critical',
-    file: 'tools/email_tool.py:15',
-    status: 'open',
-    why: 'The tool accepts any "to" address provided by the LLM. A malicious prompt could instruct the agent to email sensitive data to an external attacker-controlled address.',
-    fix: 'Add an allowlist of permitted recipient domains or addresses. Reject any tool call where "to" does not match the allowlist. Log all send attempts regardless.'
-  },
-  {
-    id: 'F-004',
-    title: 'System prompt exposed on direct request',
-    category: 'Secret Exposure Risk',
-    cat_icon: '🔑',
-    severity: 'critical',
-    file: 'prompts/system.txt',
-    status: 'open',
-    why: 'The agent responds to "repeat your system prompt" with its full instruction set, including internal business logic and credential references.',
-    fix: 'Add a rule to the system prompt instructing the model to never reveal its instructions. Test with adversarial prompts. Consider a moderation layer that redacts prompt-echo responses.'
-  },
-  {
-    id: 'F-005',
-    title: 'query_database allows writes without approval',
-    category: 'Human Approval Risk',
-    cat_icon: '🧑‍⚖️',
-    severity: 'high',
-    file: 'tools/db_tool.py:28',
-    status: 'open',
-    why: 'The database tool permits UPDATE and DELETE operations without any human confirmation step. An LLM reasoning error or injected instruction could cause irreversible data loss.',
-    fix: 'Split tool into read-only and write variants. Require explicit human approval (confirmation message or out-of-band signal) before any write or delete query is executed.'
-  },
-  {
-    id: 'F-006',
-    title: 'PII passed to external LLM without redaction',
-    category: 'Data Exposure Risk',
-    cat_icon: '📤',
-    severity: 'high',
-    file: 'agent.py:88',
-    status: 'open',
-    why: 'Customer records including names, email addresses, and order history are inserted into the prompt context sent to the OpenAI API. This constitutes external data transfer of personal data.',
-    fix: 'Implement a PII redaction step before building the LLM context. Use a library like Microsoft Presidio or a regex-based masker to strip names, emails, and phone numbers.'
-  },
-  {
-    id: 'F-007',
-    title: 'read_file tool has no path restriction',
-    category: 'Tool Permission Risk',
-    cat_icon: '🛠️',
-    severity: 'high',
-    file: 'tools/file_tool.py:11',
-    status: 'open',
-    why: 'The tool accepts any file path. A prompt injection could instruct the agent to read /etc/passwd, private keys, or other sensitive system files.',
-    fix: 'Restrict the tool to an explicitly defined safe directory (e.g. /app/data/public/). Validate and sanitise the path argument. Reject any path containing ".." or starting outside the allowed root.'
-  },
-  {
-    id: 'F-008',
-    title: 'fetch_url tool has no domain allowlist',
-    category: 'Tool Permission Risk',
-    cat_icon: '🛠️',
-    severity: 'high',
-    file: 'tools/web_tool.py:9',
-    status: 'open',
-    why: 'The agent can fetch arbitrary URLs. This can be exploited for SSRF (server-side request forgery), data exfiltration to attacker-controlled endpoints, or loading malicious content.',
-    fix: 'Define a strict allowlist of permitted domains. Reject any URL not matching the allowlist. Consider using a proxy that enforces the allowlist at the network level.'
-  },
-  {
-    id: 'F-009',
-    title: 'No rate limit on tool invocations',
-    category: 'Tool Permission Risk',
-    cat_icon: '🛠️',
-    severity: 'medium',
-    file: 'agent.py:105',
-    status: 'open',
-    why: 'There is no cap on how many times tools can be called per session. A looping reasoning error or adversarial prompt could trigger hundreds of API calls, emails, or database queries.',
-    fix: 'Add a per-session tool-call budget. Raise an exception and halt the agent when the budget is exceeded. Log and alert on unusual call volumes.'
-  },
-  {
-    id: 'F-010',
-    title: 'Agent actions not logged to audit trail',
-    category: 'Auditability Risk',
-    cat_icon: '📋',
-    severity: 'medium',
-    file: 'agent.py',
-    status: 'open',
-    why: 'No structured log records which tools were called, with what arguments, and what was returned. This makes post-incident investigation impossible and fails compliance requirements.',
-    fix: 'Add structured logging around every tool call. Log: timestamp, tool name, input arguments (redacted of secrets), output summary, and user session ID. Persist to a durable store.'
-  },
-  {
-    id: 'F-011',
-    title: 'Missing context-length guard for retrieved docs',
-    category: 'Data Exposure Risk',
-    cat_icon: '📤',
-    severity: 'low',
-    file: 'retrieval.py:34',
-    status: 'open',
-    why: 'Retrieved documents are appended to the prompt without a length check. An unusually large document could push sensitive earlier context into a position where it gets echoed in summaries.',
-    fix: 'Truncate or chunk retrieved documents before inserting into context. Set a hard max token budget for the retrieval section of the prompt.'
-  },
-  {
-    id: 'F-012',
-    title: 'No fallback when LLM response is malformed',
-    category: 'Auditability Risk',
-    cat_icon: '📋',
-    severity: 'low',
-    file: 'agent.py:130',
-    status: 'open',
-    why: 'If the LLM returns a response that fails JSON parsing (e.g. for tool-call extraction), the agent raises an unhandled exception and crashes without logging context.',
-    fix: 'Wrap tool-call parsing in a try/except. On failure, log the raw response, emit a safe error message to the user, and continue without invoking any tool.'
-  },
-];
+const ICONS = {
+  injection: `<span class="ico ico-red" style="vertical-align:middle"><svg viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg></span>`,
+  secret: `<span class="ico ico-yel" style="vertical-align:middle"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>`,
+  tool: `<span class="ico ico-dim" style="vertical-align:middle"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>`,
+  approval: `<span class="ico" style="vertical-align:middle"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>`,
+  data: `<span class="ico ico-red" style="vertical-align:middle"><svg viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></span>`,
+  audit: `<span class="ico ico-dim" style="vertical-align:middle"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>`,
+};
 
-const sevOrder = { critical: 0, high: 1, medium: 2, low: 3 };
-findings.sort((a,b) => sevOrder[a.severity] - sevOrder[b.severity]);
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
 
-const sevClass = { critical:'tag-cr', high:'tag-hi', medium:'tag-md', low:'tag-lo' };
-const statusClass = { open:'tag-cr', resolved:'tag-ok', review:'tag-hi' };
-const statusLabel = { open:'OPEN', resolved:'RESOLVED', review:'IN REVIEW' };
+function getCategoryKey(category) {
+  const c = String(category || '').toLowerCase();
 
-const tbody = document.getElementById('findings-body');
+  if (c.includes('prompt') || c.includes('injection')) return 'injection';
+  if (c.includes('secret')) return 'secret';
+  if (c.includes('tool')) return 'tool';
+  if (c.includes('approval')) return 'approval';
+  if (c.includes('data')) return 'data';
+  if (c.includes('audit')) return 'audit';
 
-findings.forEach((f, i) => {
-  // Main row
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td><div class="td-inner mono" style="color:var(--muted)">${f.id}</div></td>
-    <td><div class="td-inner"><span class="row-toggle" onclick="toggleRow(this, 'exp-${i}')">${f.cat_icon} ${f.title}</span></div></td>
-    <td><div class="td-inner" style="font-size:.78rem;color:var(--dim);white-space:nowrap">${f.category}</div></td>
-    <td><div class="td-inner"><span class="tag ${sevClass[f.severity]}">${f.severity.toUpperCase()}</span></div></td>
-    <td><div class="td-inner mono" style="color:var(--dim);font-size:.72rem">${f.file}</div></td>
-    <td><div class="td-inner"><span class="tag ${statusClass[f.status]}">${statusLabel[f.status]}</span></div></td>
-  `;
-  tbody.appendChild(tr);
+  return 'tool';
+}
 
-  // Expand row
-  const expTr = document.createElement('tr');
-  expTr.className = 'expand-row';
-  expTr.innerHTML = `
-    <td colspan="6">
-      <div class="expand-content" id="exp-${i}">
-        <div class="exp-block">
-          <span class="exp-label">Why it matters</span>
-          <p class="exp-text">${f.why}</p>
-        </div>
-        <div class="exp-block">
-          <span class="exp-label">Suggested fix</span>
-          <p class="exp-text">${f.fix}</p>
-        </div>
-      </div>
-    </td>
-  `;
-  tbody.appendChild(expTr);
-});
+function getIcon(categoryOrKey) {
+  const key = ICONS[categoryOrKey] ? categoryOrKey : getCategoryKey(categoryOrKey);
+  return ICONS[key] || ICONS.tool;
+}
 
-function toggleRow(btn, id) {
-  const content = document.getElementById(id);
-  const isOpen = content.classList.contains('open');
-  // close all
-  document.querySelectorAll('.expand-content.open').forEach(el => el.classList.remove('open'));
-  document.querySelectorAll('.row-toggle.open').forEach(el => el.classList.remove('open'));
-  if (!isOpen) {
-    content.classList.add('open');
-    btn.classList.add('open');
+function normalizeSeverity(severity) {
+  return String(severity || 'Info').toLowerCase();
+}
+
+function normalizeStatus(status) {
+  return String(status || 'open').toLowerCase();
+}
+
+function normalizeScanStatus(status, score) {
+  const s = String(status || '').toLowerCase();
+
+  if (s.includes('critical') || s.includes('high')) return 'UNSAFE';
+  if (s.includes('moderate')) return 'MODERATE';
+  if (s.includes('low') || s.includes('strong')) return 'SAFE';
+
+  if (score < 40) return 'UNSAFE';
+  if (score < 75) return 'MODERATE';
+  return 'SAFE';
+}
+
+function formatSummaryForDisplay(result) {
+  if (!result) return 'No scan result found. Run a scan from the scanner page.';
+
+  if (result.ai_report_summary) return result.ai_report_summary;
+  if (result.ai_summary) return result.ai_summary;
+
+  const summary = result.summary;
+
+  if (!summary) return 'Scan completed. Review findings and remediation guidance below.';
+
+  if (typeof summary === 'string') return summary;
+
+  if (typeof summary === 'object') {
+    return `Scan found ${summary.critical || 0} critical, ${summary.high || 0} high, ${summary.medium || 0} medium, and ${summary.low || 0} low findings.`;
+  }
+
+  return String(summary);
+}
+
+function cleanAiLine(value) {
+  return String(value ?? '')
+    .replace(/^\s*\d+\.\s*/, '')
+    .replace(/^\s*[-*]\s*/, '')
+    .trim();
+}
+
+function formatAiTextForDisplay(value) {
+  if (!value) return '';
+
+  if (Array.isArray(value)) {
+    return value
+      .filter(Boolean)
+      .map((item, index) => `${index + 1}. ${cleanAiLine(item)}`)
+      .join('\n\n');
+  }
+
+  return String(value)
+    .replace(/,\s*(?=\d+\.)/g, '\n\n')
+    .replace(/\.\s*(?=\d+\.)/g, '.\n\n')
+    .trim();
+}
+
+function normalizeFindingForFrontend(finding, index) {
+  const category = finding.category || 'Uncategorized';
+  const catKey = finding.cat_key || getCategoryKey(category);
+  const severity = normalizeSeverity(finding.severity);
+  const status = normalizeStatus(finding.status);
+
+  return {
+    ...finding,
+    id: finding.id || `F-${String(index + 1).padStart(3, '0')}`,
+    category,
+    cat_key: catKey,
+    severity,
+    status,
+    why: finding.why || finding.why_it_matters || 'No explanation provided.',
+    fix: finding.fix || finding.suggested_fix || 'No suggested fix provided.',
+    file_display: finding.line ? `${finding.file || 'unknown'}:${finding.line}` : (finding.file || 'unknown')
+  };
+}
+
+function getStoredResult() {
+  try {
+    const raw = sessionStorage.getItem('adpt_result');
+    return raw ? JSON.parse(raw) : null;
+  } catch (error) {
+    console.warn('Could not parse stored scan result', error);
+    return null;
   }
 }
+
+function normalizeAdaptBackendResult(scanResult) {
+  if (!scanResult) return null;
+
+  return {
+    ...scanResult,
+    findings: Array.isArray(scanResult.findings)
+      ? scanResult.findings.map(normalizeFindingForFrontend)
+      : [],
+    summary_text: formatSummaryForDisplay(scanResult),
+    ai_summary_text: formatAiTextForDisplay(scanResult.ai_summary),
+    ai_report_summary_text: formatAiTextForDisplay(scanResult.ai_report_summary),
+    ai_remediation_plan_text: formatAiTextForDisplay(scanResult.ai_remediation_plan),
+    ai_next_steps_text: formatAiTextForDisplay(scanResult.ai_next_steps),
+  };
+}
+
+const fallbackResult = {
+  project_name: 'vulnerable-support-agent',
+  scan_type: 'Vulnerable Demo',
+  safety_score: 34,
+  status: 'High Risk',
+  summary: { critical: 2, high: 3, medium: 1, low: 0 },
+  findings: [
+    {
+      title: 'No scan result found',
+      category: 'Auditability Risk',
+      severity: 'Medium',
+      file: 'scanner.html',
+      line: 1,
+      why_it_matters: 'This page was opened directly without running a scan first.',
+      suggested_fix: 'Go to the Scanner page and run a vulnerable, secured, or ZIP upload scan.'
+    }
+  ]
+};
+
+const result = normalizeAdaptBackendResult(getStoredResult() || fallbackResult);
+const findings = result.findings;
+
+const now = new Date();
+const dateStr = now.toLocaleString('en-US', {
+  month: 'short',
+  day: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZone: 'UTC',
+  hour12: false
+}) + ' UTC';
+
+const repId = 'ADPT-' + now.getFullYear() + '-' + String(Math.floor(Math.random() * 9000) + 1000);
+const score = Number(result.safety_score ?? 0);
+const scanVerdict = normalizeScanStatus(result.status, score);
+const verdictClass = scanVerdict === 'UNSAFE' ? 'tag-cr' : scanVerdict === 'SAFE' ? 'tag-ok' : 'tag-hi';
+
+document.getElementById('rep-id').textContent = repId;
+document.getElementById('rep-project').textContent = result.project_name || 'vulnerable-support-agent';
+document.getElementById('rep-date').textContent = dateStr;
+
+document.getElementById('info-project').textContent = result.project_name || 'vulnerable-support-agent';
+document.getElementById('info-scantype').textContent = result.scan_type || 'Vulnerable Demo';
+document.getElementById('info-status').innerHTML = `<span class="tag ${verdictClass}">${scanVerdict}</span>`;
+document.getElementById('info-summary').textContent = result.summary_text;
+
+const criticalCount = findings.filter(f => f.severity === 'critical').length;
+const highCount = findings.filter(f => f.severity === 'high').length;
+
+const scoreEl = document.getElementById('stat-score');
+scoreEl.textContent = score;
+scoreEl.style.color = score < 40 ? 'var(--red)' : score < 75 ? 'var(--yel)' : 'var(--gl)';
+
+document.getElementById('stat-total').textContent = findings.length;
+document.getElementById('stat-critical').textContent = criticalCount;
+document.getElementById('stat-high').textContent = highCount;
+
+function renderAiBlock(id, content) {
+  const el = document.getElementById(id);
+  if (!el || !content) return;
+
+  el.textContent = content;
+  el.classList.add('ai-text');
+
+  const block = el.closest('.ai-block');
+  if (block) block.style.display = 'block';
+
+  const wrap = document.getElementById('ai-enrichment-wrap');
+  if (wrap) wrap.style.display = 'block';
+}
+
+renderAiBlock('ai-summary-text', result.ai_summary_text);
+renderAiBlock('ai-report-summary-text', result.ai_report_summary_text);
+renderAiBlock('ai-remediation-text', result.ai_remediation_plan_text);
+renderAiBlock('ai-next-steps-text', result.ai_next_steps_text);
+
+const badge = document.getElementById('ai-enrichment-status');
+if (badge && result.ai_enrichment_status) {
+  badge.textContent = result.ai_enrichment_status;
+  badge.style.display = 'inline-block';
+}
+
+const sevOrder = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
+findings.sort((a, b) => (sevOrder[a.severity] ?? 5) - (sevOrder[b.severity] ?? 5));
+
+const sevClass = { critical: 'tag-cr', high: 'tag-hi', medium: 'tag-md', low: 'tag-lo', info: 'tag-lo' };
+const statusClass = { open: 'tag-cr', resolved: 'tag-ok', review: 'tag-hi' };
+const statusLabel = { open: 'OPEN', resolved: 'RESOLVED', review: 'IN REVIEW' };
+
+const container = document.getElementById('findings-body');
+container.innerHTML = '';
+
+findings.forEach((f) => {
+  const card = document.createElement('div');
+  card.className = 'finding-card';
+
+  const sev = f.severity || 'info';
+  const stat = f.status || 'open';
+
+  card.innerHTML = `
+    <div class="finding-card-header">
+      <div class="finding-card-icon">${getIcon(f.cat_key || f.category)}</div>
+      <div class="finding-card-meta">
+        <div class="finding-card-top">
+          <span class="finding-card-id">${escapeHtml(f.id)}</span>
+          <span class="finding-card-category">${escapeHtml(f.category)}</span>
+        </div>
+        <div class="finding-card-title">${escapeHtml(f.title || 'Untitled finding')}</div>
+      </div>
+      <div class="finding-card-right">
+        <span class="finding-card-file">${escapeHtml(f.file_display)}</span>
+        <span class="tag ${sevClass[sev] || 'tag-lo'}">${escapeHtml(sev.toUpperCase())}</span>
+        <span class="tag ${statusClass[stat] || 'tag-cr'}">${escapeHtml(statusLabel[stat] || stat.toUpperCase())}</span>
+      </div>
+    </div>
+    <div class="finding-card-panels">
+      <div class="finding-panel-why">
+        <div class="finding-panel-label">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          WHY IT MATTERS
+        </div>
+        <p class="finding-panel-text">${escapeHtml(f.why)}</p>
+      </div>
+      <div class="finding-panel-fix">
+        <div class="finding-panel-label">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          SUGGESTED FIX
+        </div>
+        <p class="finding-panel-text">${escapeHtml(f.fix)}</p>
+      </div>
+    </div>
+  `;
+
+  container.appendChild(card);
+
+  card.querySelector('.finding-card-header').addEventListener('click', () => {
+    const panels = card.querySelector('.finding-card-panels');
+    const isOpen = card.classList.contains('open');
+
+    document.querySelectorAll('.finding-card.open .finding-card-panels').forEach(panel => {
+      panel.style.maxHeight = null;
+    });
+    document.querySelectorAll('.finding-card.open').forEach(openCard => openCard.classList.remove('open'));
+
+    if (!isOpen) {
+      card.classList.add('open');
+      panels.style.maxHeight = panels.scrollHeight + 'px';
+    }
+  });
+});
 </script>
 </body>
 </html>
