@@ -36,6 +36,7 @@ A-DAP-T scans AI-agent projects and generates a safety-focused dashboard showing
 * simulated attack replay
 * agent-to-tool permission graph
 * remediation checklist
+* AI-generated scan explanation
 * scan report
 
 The goal is to help developers catch common high-risk patterns before deployment.
@@ -64,11 +65,16 @@ The secured version improves the same workflow with:
 * safer tool design
 * basic suspicious prompt handling
 
+Expected demo contrast:
+
+* vulnerable-support-agent: high-risk score range
+* secured-support-agent: low-risk / strong score range
+
 ---
 
 ## Current Features
 
-* Static frontend prototype
+* Static frontend
 * FastAPI backend
 * Built-in vulnerable AI support agent
 * Built-in secured AI support agent
@@ -82,13 +88,18 @@ The secured version improves the same workflow with:
 * Permission graph data
 * Attack replay data
 * Remediation checklist
+* Gemini AI enrichment layer
+* AI-generated scan summary
+* AI-generated remediation plan
+* AI-generated report summary
+* AI-generated developer next steps
 * Methodology and evaluation documentation
 
 ---
 
 ## Risk Categories
 
-A-DAP-T currently evaluates six AI-agent risk categories:
+A-DAP-T evaluates six AI-agent risk categories:
 
 * Prompt Injection Risk
 * Secret Exposure Risk
@@ -105,7 +116,8 @@ A-DAP-T currently evaluates six AI-agent risk categories:
 
 * Static HTML
 * CSS
-* JavaScript planned for API integration
+* JavaScript
+* Backend API integration through FastAPI endpoints
 
 ### Backend
 
@@ -118,7 +130,8 @@ A-DAP-T currently evaluates six AI-agent risk categories:
 
 ### AI Layer
 
-* Gemini-assisted explanation/reporting planned
+* Gemini AI enrichment
+* Static fallback when Gemini is unavailable
 * Core detection remains rule-based and explainable
 
 ---
@@ -129,6 +142,7 @@ A-DAP-T currently evaluates six AI-agent risk categories:
 a-dap-t/
   frontend/
     index.html
+    main.js
     shared.css
     pages/
       scanner.html
@@ -139,7 +153,9 @@ a-dap-t/
   backend/
     main.py
     requirements.txt
+    .env.example
     app/
+      ai/
       scanners/
       risk/
       schemas/
@@ -160,6 +176,7 @@ a-dap-t/
     LIMITATIONS.md
     DEMO_SCRIPT.md
     BACKEND_AI_INTEGRATION_NOTES.md
+    GEMINI_INTEGRATION_PLAN.md
 ```
 
 ---
@@ -219,6 +236,23 @@ http://localhost:5173/pages/methodology.html
 
 ---
 
+## Environment Variables
+
+Create a local backend `.env` file only for local development if needed.
+
+Do not commit real secrets.
+
+Expected variables:
+
+```
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+If `GEMINI_API_KEY` is missing, A-DAP-T still works using static fallback AI text.
+
+---
+
 ## Backend Endpoints
 
 ### GET /health
@@ -262,7 +296,7 @@ Current upload rules:
 
 ## Expected Scan Response Shape
 
-A-DAP-T scan endpoints are designed around this response structure:
+A-DAP-T scan endpoints return a structured response containing:
 
 * project_name
 * scan_type
@@ -274,6 +308,11 @@ A-DAP-T scan endpoints are designed around this response structure:
 * graph
 * attack_replay
 * remediation_checklist
+* ai_summary
+* ai_remediation_plan
+* ai_report_summary
+* ai_next_steps
+* ai_enrichment_status
 
 Mock examples are available in:
 
@@ -283,25 +322,51 @@ docs/mock_responses/
 
 ---
 
+## AI Enrichment
+
+A-DAP-T uses Gemini after scanner output is generated.
+
+Gemini does not decide:
+
+* findings
+* severity
+* category scores
+* safety score
+* deployment status
+
+Gemini is used only for:
+
+* scan summary
+* remediation plan
+* report summary
+* developer next steps
+
+If Gemini is unavailable, the backend returns fallback AI text so the app still works.
+
+---
+
 ## Current Status
 
-The current build includes:
+The current V1 build includes:
 
-* static frontend
+* frontend connected to backend scan flow
 * FastAPI backend
 * demo scan endpoints
 * ZIP upload endpoint
 * rule-based scanner modules
 * vulnerable and secured sample agents
-* mock scan responses
+* scanner score separation for demo agents
+* Gemini AI enrichment
+* report rendering from backend response
+* dashboard rendering from backend response
 * methodology and evaluation docs
 
 Still pending:
 
-* frontend-to-backend API integration
-* improved secured-agent scoring calibration
-* Gemini-assisted explanation/reporting layer
 * deployment
+* production backend URL configuration
+* final hosted end-to-end testing
+* optional V2 features after V1 deployment
 
 The current scope is focused on a polished MVP, not a full enterprise security platform.
 
@@ -323,10 +388,26 @@ It is designed to provide early risk visibility for developers building AI-agent
 
 ---
 
+## Planned V2 Features
+
+After V1 deployment, planned upgrades include:
+
+* public GitHub repository link scanning
+* user accounts and authentication
+* user profile page
+* saved report history
+* report-aware AI assistant
+* optional local LLM / Ollama provider support
+* larger UI/UX upgrade
+
+These are not part of the V1 deployment scope.
+
+---
+
 ## Team
 
 Built by:
 
-* Dhruv Gupta — Backend (Attack & Remediation)
+* Dhruv Gupta — Backend, AI enrichment, attack/remediation logic, integration
 * Akshhaya Isa — Frontend
-* Pavit Aggarwal — Backend (Scanner)
+* Pavit Aggarwal — Backend scanner
