@@ -2,6 +2,7 @@ import os
 import tempfile
 import zipfile
 from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.schemas.scan_schema import ScanResultSchema
@@ -20,6 +21,7 @@ from app.risk.scoring import (
     compute_summary
 )
 from app.graph import build_demo_graph, build_upload_graph
+from app.ai.ai_enrichment import enrich_scan_result_with_ai
 
 app = FastAPI(title="A-DAP-T Backend")
 
@@ -96,6 +98,34 @@ def _run_scan_pipeline(agent_dir: str) -> dict:
     }
 
 
+def _serialize_graph(graph: dict) -> dict:
+    """Ensure graph nodes and edges are plain JSON-serializable dicts.
+
+    The graph builders return Pydantic models (GraphNode/GraphEdge). When
+    returning a raw JSONResponse those objects are not automatically encoded
+    by FastAPI, so convert them here to simple dicts.
+    """
+    if not graph or not isinstance(graph, dict):
+        return graph
+
+    nodes = graph.get("nodes") or []
+    edges = graph.get("edges") or []
+
+    def _to_dict(obj):
+        try:
+            # Pydantic models have .dict(); otherwise if already a dict, return as-is
+            if hasattr(obj, "dict"):
+                return obj.dict()
+            if isinstance(obj, dict):
+                return obj
+            # Fallback to simple attribute access
+            return {k: getattr(obj, k) for k in ("id", "label") if hasattr(obj, k)}
+        except Exception:
+            return obj
+
+    return {"nodes": [_to_dict(n) for n in nodes], "edges": [_to_dict(e) for e in edges]}
+
+
 @app.get("/scan/demo/vulnerable", response_model=ScanResultSchema)
 def scan_vulnerable_demo():
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -123,7 +153,7 @@ def scan_vulnerable_demo():
         "Keep system prompts server-side"
     ]
 
-    return {
+    result = {
         "project_name": "vulnerable-support-agent",
         "scan_type": "demo_vulnerable",
         "safety_score": res["safety_score"],
@@ -131,10 +161,13 @@ def scan_vulnerable_demo():
         "summary": res["summary"],
         "category_scores": res["category_scores"],
         "findings": res["findings"],
-        "graph": graph,
+        "graph": _serialize_graph(graph),
         "attack_replay": attack_replay,
         "remediation_checklist": remediation_checklist
     }
+
+    result = enrich_scan_result_with_ai(result)
+    return JSONResponse(result)
 
 
 @app.get("/scan/demo/secured", response_model=ScanResultSchema)
@@ -162,7 +195,7 @@ def scan_secured_demo():
         "Review approval logs periodically"
     ]
 
-    return {
+    result = {
         "project_name": "secured-support-agent",
         "scan_type": "demo_secured",
         "safety_score": res["safety_score"],
@@ -170,10 +203,13 @@ def scan_secured_demo():
         "summary": res["summary"],
         "category_scores": res["category_scores"],
         "findings": res["findings"],
-        "graph": graph,
+        "graph": _serialize_graph(graph),
         "attack_replay": attack_replay,
         "remediation_checklist": remediation_checklist
     }
+
+    result = enrich_scan_result_with_ai(result)
+    return JSONResponse(result)
 
 
 @app.post("/scan/upload", response_model=ScanResultSchema)
@@ -291,7 +327,7 @@ async def scan_upload(file: UploadFile = File(...)):
                     "suggested_fix": f.suggested_fix
                 })
 
-            return {
+            result = {
                 "project_name": file.filename or "uploaded_project",
                 "scan_type": "upload",
                 "safety_score": safety_score,
@@ -299,10 +335,13 @@ async def scan_upload(file: UploadFile = File(...)):
                 "summary": summary,
                 "category_scores": category_scores,
                 "findings": findings_schema_list,
-                "graph": graph,
+                "graph": _serialize_graph(graph),
                 "attack_replay": attack_replay,
                 "remediation_checklist": remediation_checklist
             }
+
+            result = enrich_scan_result_with_ai(result)
+            return JSONResponse(result)
 
         finally:
             cleanup_temp_dir(target_dir)

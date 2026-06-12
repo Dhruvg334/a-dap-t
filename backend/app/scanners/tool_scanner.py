@@ -174,8 +174,10 @@ def _has_mitigation_in_window(lines: list[str], line_number: int, window: int = 
     end = min(len(lines), line_number + window)
     window_text = "\n".join(lines[start:end]).lower()
 
-    approval = any(kw.lower() in window_text for kw in APPROVAL_KEYWORDS_MITIGATIONS)
-    audit = any(kw.lower() in window_text for kw in AUDIT_KEYWORDS_MITIGATIONS)
+    # Use word-boundary regex for approval/audit to avoid matching inside identifiers
+    approval = any(re.search(r"\b" + re.escape(kw.lower()) + r"\b", window_text) for kw in APPROVAL_KEYWORDS_MITIGATIONS)
+    audit = any(re.search(r"\b" + re.escape(kw.lower()) + r"\b", window_text) for kw in AUDIT_KEYWORDS_MITIGATIONS)
+    # Wrapper keywords are often prefixes (e.g. safe_refund) so substring match is appropriate
     wrapper = any(kw.lower() in window_text for kw in WRAPPER_KEYWORDS_MITIGATIONS)
 
     return {"approval": approval, "audit": audit, "wrapper": wrapper}

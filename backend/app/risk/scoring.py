@@ -4,9 +4,9 @@ from app.scanners.secret_scanner import Finding
 
 # Severity Weights (Task Group 5)
 SEVERITY_WEIGHTS = {
-    "Critical": 70,
-    "High": 45,
-    "Medium": 25,
+    "Critical": 40,
+    "High": 25,
+    "Medium": 15,
     "Low": 5,
     "Info": 0
 }
