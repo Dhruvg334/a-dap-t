@@ -183,12 +183,12 @@ class TestFunctionDefinitionPatterns:
         tool = findings_by_category(findings, "Tool Permission Risk")
         assert len(tool) == 0
 
-    def test_js_function_keyword_required(self):
-        # Arrow function — should NOT match `function <name>(`
+    def test_js_arrow_function_matches(self):
+        # V2 scans arrow functions because JS/TS agent tools are often exported this way.
         files = {"script.js": "const deleteItem = (id) => {};\n"}
         findings = run(files)
         tool = findings_by_category(findings, "Tool Permission Risk")
-        assert len(tool) == 0
+        assert len(tool) == 1
 
     def test_py_def_matches(self):
         files = {"tools.py": "def delete_item(id):\n    pass\n"}
@@ -208,12 +208,12 @@ class TestFunctionDefinitionPatterns:
         tool = findings_by_category(findings, "Tool Permission Risk")
         assert len(tool) == 1
 
-    def test_non_scannable_extension_ignored(self):
-        # .jsx is not in the scanned extensions for tool scanner
+    def test_jsx_extension_is_scanned(self):
+        # V2 supports JS/TS frontend-heavy agent repos, including JSX/TSX files.
         files = {"tools.jsx": "function deleteItem(id) {}\n"}
         findings = run(files)
         tool = findings_by_category(findings, "Tool Permission Risk")
-        assert len(tool) == 0
+        assert len(tool) == 1
 
 
 # ---------------------------------------------------------------------------

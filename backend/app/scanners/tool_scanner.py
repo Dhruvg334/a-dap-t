@@ -22,22 +22,35 @@ from app.scanners.secret_scanner import Finding
 
 CRITICAL_TOOL_KEYWORDS: list[str] = [
     "refund",
+    "send_refund",
+    "issue_refund",
     "payment",
     "delete",
+    "delete_user",
     "admin",
     "execute",
+    "execute_code",
     "shell",
+    "run_shell",
     "run_command",
     "write_file",
+    "write_database",
+    "write_db",
     "drop_table",
 ]
 
 HIGH_TOOL_KEYWORDS: list[str] = [
     "send_email",
+    "send_message",
+    "send_slack",
     "customer",
     "database",
+    "query_database",
     "read_file",
+    "fetch_url",
+    "http_request",
     "update_user",
+    "update_database",
     "crm",
 ]
 
@@ -74,10 +87,17 @@ DATA_EXPOSURE_WINDOW = 10
 # Mitigation keywords — presence reduces or suppresses tool findings
 APPROVAL_KEYWORDS_MITIGATIONS = [
     "request_human_review",
+    "require_approval",
     "requires_approval",
     "approval_required",
     "approval_gate",
+    "human_approval",
     "human_review",
+    "manual_review",
+    "confirm_action",
+    "confirm_before_execute",
+    "needs_review",
+    "supervisor_approval",
 ]
 
 AUDIT_KEYWORDS_MITIGATIONS = [
@@ -107,11 +127,17 @@ _MITIGATION_RE = re.compile(
 # Function definition patterns (Requirement 7.4)
 # ---------------------------------------------------------------------------
 
-# Matches:  def function_name(
-_PY_FUNC_RE = re.compile(r"def\s+(\w+)\s*\(", re.IGNORECASE)
+# Matches:  def function_name( or async def function_name(
+_PY_FUNC_RE = re.compile(r"(?:async\s+)?def\s+(\w+)\s*\(", re.IGNORECASE)
 
-# Matches:  function function_name(
-_JS_FUNC_RE = re.compile(r"function\s+(\w+)\s*\(", re.IGNORECASE)
+# Matches:  function function_name( or async function function_name(
+_JS_FUNC_RE = re.compile(r"(?:async\s+)?function\s+(\w+)\s*\(", re.IGNORECASE)
+
+# Matches: const sendEmail = (...) => or export const sendEmail = async (...) =>
+_JS_ARROW_FUNC_RE = re.compile(
+    r"(?:export\s+)?(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s*)?(?:\([^)]*\)|\w+)\s*=>",
+    re.IGNORECASE,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -122,24 +148,29 @@ def _get_func_pattern(ext: str) -> re.Pattern | None:
     """Return the appropriate function-definition regex for the given file extension."""
     if ext == ".py":
         return _PY_FUNC_RE
-    if ext in {".js", ".ts"}:
+    if ext in {".js", ".jsx", ".ts", ".tsx"}:
         return _JS_FUNC_RE
     return None
+
+
+def _normalize_identifier(value: str) -> str:
+    """Make snake_case keywords and camelCase names comparable."""
+    return re.sub(r"[^a-z0-9]", "", value.lower())
 
 
 def _classify_tool_keyword(func_name: str) -> tuple[str, str] | None:
     """
     Check whether *func_name* contains a critical- or high-tier tool keyword.
 
-    Returns (severity, matched_keyword) if matched, else None.
-    Critical tier is checked first so it takes precedence over high tier.
+    This intentionally normalizes names, so sendEmail matches send_email and
+    issueRefund matches issue_refund. Real agent repos mix naming styles.
     """
-    lower_name = func_name.lower()
+    normalized_name = _normalize_identifier(func_name)
     for kw in CRITICAL_TOOL_KEYWORDS:
-        if kw in lower_name:
+        if _normalize_identifier(kw) in normalized_name:
             return "Critical", kw
     for kw in HIGH_TOOL_KEYWORDS:
-        if kw in lower_name:
+        if _normalize_identifier(kw) in normalized_name:
             return "High", kw
     return None
 
@@ -209,6 +240,8 @@ def _scan_code_file(filepath: str, text: str, ext: str) -> list[Finding]:
 
     for lineno, line in enumerate(lines, start=1):
         match = func_re.search(line)
+        if not match and ext in {".js", ".jsx", ".ts", ".tsx"}:
+            match = _JS_ARROW_FUNC_RE.search(line)
         if not match:
             continue
 
@@ -344,7 +377,7 @@ def run(files: dict[str, str]) -> list[Finding]:
     for filepath, text in files.items():
         _, ext = os.path.splitext(filepath.lower())
 
-        if ext in {".py", ".js", ".ts"}:
+        if ext in {".py", ".js", ".jsx", ".ts", ".tsx"}:
             findings.extend(_scan_code_file(filepath, text, ext))
         elif ext == ".json":
             findings.extend(_scan_json_file(filepath, text))

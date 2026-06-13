@@ -28,13 +28,20 @@ WINDOW_SIZE: int = 10
 
 # Approval keywords — matched case-insensitively anywhere in the line text
 APPROVAL_KEYWORDS: list[str] = [
+    "require_approval",
     "requires_approval",
     "approval_required",
+    "human_approval",
     "human_review",
+    "manual_review",
     "confirm_action",
+    "confirm_before_execute",
     "approved_by",
     "approval_status",
     "approval_gate",
+    "needs_review",
+    "approve_before_execute",
+    "supervisor_approval",
 ]
 
 # Pre-compiled regex that matches any approval keyword (case-insensitive)
