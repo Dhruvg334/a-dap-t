@@ -42,6 +42,9 @@ APPROVAL_KEYWORDS: list[str] = [
     "needs_review",
     "approve_before_execute",
     "supervisor_approval",
+    "verify_firebase_token",
+    "check_auth_status",
+    "is_admin_check",
 ]
 
 # Pre-compiled regex that matches any approval keyword (case-insensitive)

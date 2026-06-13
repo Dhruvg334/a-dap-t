@@ -40,6 +40,8 @@ CRITICAL_KEYWORDS: list[str] = [
     "ANTHROPIC_API_KEY",
     "SUPABASE_SERVICE_ROLE_KEY",
     "AWS_ACCESS_KEY_ID",
+    "FIREBASE_SERVICE_ACCOUNT",
+    "FIREBASE_PRIVATE_KEY",
 ]
 
 # Lower-criticality → High severity
@@ -48,6 +50,9 @@ HIGH_KEYWORDS: list[str] = [
     "JWT_SECRET",
     "SECRET_KEY",
     "API_KEY",
+    "FIREBASE_API_KEY",
+    "FIREBASE_PROJECT_ID",
+    "FIREBASE_AUTH_DOMAIN",
 ]
 
 # Value-prefix patterns → Critical severity
@@ -289,6 +294,30 @@ def run(files: dict[str, str]) -> list[Finding]:
                 ),
             ))
             continue  # contents are irrelevant; one finding covers the whole file
+
+        # --- Firebase Service Account JSON check ---
+        if ext == ".json" and ("firebase" in filename or "serviceaccount" in filename):
+            # Check if it looks like a Firebase service account key
+            if '"private_key"' in text and '"project_id"' in text:
+                findings.append(Finding(
+                    title="Firebase Service Account key committed",
+                    severity="Critical",
+                    category="Secret Exposure Risk",
+                    file=filepath,
+                    line=1,
+                    why_it_matters=(
+                        "A Firebase service account JSON file provides full administrative "
+                        "access to your Firebase project. Committing this to a repository "
+                        "is a critical security risk."
+                    ),
+                    suggested_fix=(
+                        "Remove the JSON file from the repository and add it to .gitignore. "
+                        "Use environment variables or a secure secret manager to load "
+                        "service account credentials at runtime. Rotate the key immediately "
+                        "via the Google Cloud Console."
+                    ),
+                ))
+                continue
 
         # --- Requirement 16.2: system_prompt*.txt → Medium, Prompt Injection Risk ---
         if ext == ".txt" and "system_prompt" in filename:
