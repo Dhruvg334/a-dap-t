@@ -37,6 +37,10 @@ CRITICAL_TOOL_KEYWORDS: list[str] = [
     "write_database",
     "write_db",
     "drop_table",
+    "firestore_delete",
+    "firebase_admin",
+    "delete_collection",
+    "delete_document",
 ]
 
 HIGH_TOOL_KEYWORDS: list[str] = [
@@ -52,6 +56,10 @@ HIGH_TOOL_KEYWORDS: list[str] = [
     "update_user",
     "update_database",
     "crm",
+    "firestore_update",
+    "firestore_set",
+    "firebase_write",
+    "update_document",
 ]
 
 # ---------------------------------------------------------------------------
@@ -64,6 +72,10 @@ DATA_ACCESS_KEYWORDS: list[str] = [
     "get_user_data",
     "fetch_record",
     "get_record",
+    "firestore_get",
+    "firebase_read",
+    "get_document",
+    "list_documents",
 ]
 
 MASKING_KEYWORDS: list[str] = [

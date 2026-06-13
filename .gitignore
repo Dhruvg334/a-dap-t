@@ -19,6 +19,7 @@ build/
 .env
 .env.local
 .env.*.local
+serviceaccountkey.json
 
 # Logs
 *.log

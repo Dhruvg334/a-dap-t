@@ -37,6 +37,11 @@ AUDIT_KEYWORDS: list[str] = [
     "tool_call_id",
     "logger",
     "event_log",
+    "firebase_audit",
+    "firestore_audit",
+    "log_to_firestore",
+    "log_to_db",
+    "cloud_logging",
 ]
 
 # Pre-compiled regex that matches any audit keyword (case-insensitive)
