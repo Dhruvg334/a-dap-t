@@ -93,6 +93,7 @@ Expected demo contrast:
 * AI-generated report summary
 * AI-generated developer next steps
 * Methodology and evaluation documentation
+* Live Frontend and Backend Deployment
 
 ---
 
@@ -117,6 +118,7 @@ A-DAP-T evaluates six AI-agent risk categories:
 * CSS
 * JavaScript
 * Backend API integration through FastAPI endpoints
+* Deployed on Vercel
 
 ### Backend
 
@@ -126,6 +128,7 @@ A-DAP-T evaluates six AI-agent risk categories:
 * Uvicorn
 * Rule-based scanner modules
 * Temporary ZIP extraction and safe file scanning
+* Deployed on Render
 
 ### AI Layer
 
@@ -359,13 +362,7 @@ The current V1 build includes:
 * report rendering from backend response
 * dashboard rendering from backend response
 * methodology and evaluation docs
-
-Still pending:
-
-* deployment
-* production backend URL configuration
-* final hosted end-to-end testing
-* optional V2 features after V1 deployment
+* live deployment on Vercel and Render
 
 The current scope is focused on a polished MVP, not a full enterprise security platform.
 
@@ -389,7 +386,7 @@ It is designed to provide early risk visibility for developers building AI-agent
 
 ## Planned V2 Features
 
-After V1 deployment, planned upgrades include:
+After V1, planned upgrades include:
 
 * public GitHub repository link scanning
 * user accounts and authentication
@@ -399,7 +396,7 @@ After V1 deployment, planned upgrades include:
 * optional local LLM / Ollama provider support
 * larger UI/UX upgrade
 
-These are not part of the V1 deployment scope.
+These were not part of the V1 deployment scope.
 
 ---
 
