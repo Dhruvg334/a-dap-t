@@ -72,7 +72,6 @@
 }
 </style>
 </head>
-<script src="main.js"></script>
 <body>
 <nav class="nav">
   <div class="nav-i">
@@ -84,6 +83,13 @@
       <li><a href="pages/report.html">REPORT</a></li>
       <li><a href="pages/methodology.html">METHODOLOGY</a></li>
     </ul>
+    <div class="nav-auth">
+      <a href="signin.html" class="btn btn-o" data-auth="guest">SIGN IN</a>
+      <a href="signup.html" class="btn btn-p" data-auth="guest">SIGN UP</a>
+      <span class="nav-user-email auth-hidden" data-auth="user" data-user-email></span>
+      <a href="profile.html" class="profile-btn auth-hidden" data-auth="user" title="Profile"><img src="person.jpeg" alt="Profile"></a>
+      <a href="#" class="btn btn-g auth-hidden" data-auth="user" data-logout data-logout-redirect="index.html">LOG OUT</a>
+    </div>
     <a href="pages/scanner.html" class="btn btn-p">RUN A SCAN</a>
   </div>
 </nav>
@@ -190,6 +196,7 @@
 </footer>
 
 <script>document.body.classList.add('ready');</script>
+<script src="main.js"></script>
 </body>
 </html>
 
