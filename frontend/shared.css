@@ -253,37 +253,35 @@ html {
 }
 .auth-hidden { display: none !important; }
 .profile-btn {
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  overflow: hidden;
-  border: 1px solid rgba(56,196,106,.55);
-  box-shadow: 0 0 12px rgba(56,196,106,.20);
+  border: 1px solid rgba(56,196,106,.70);
+  background: radial-gradient(circle at 50% 40%, rgba(56,196,106,.22), rgba(10,15,12,.96) 64%);
+  box-shadow: 0 0 18px rgba(56,196,106,.24);
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  color: var(--gl);
   transition: transform .15s, box-shadow .15s, border-color .15s;
   flex-shrink: 0;
 }
 .profile-btn:hover {
   transform: scale(1.06);
   border-color: var(--gl);
-  box-shadow: 0 0 18px rgba(56,196,106,.36);
+  box-shadow: 0 0 24px rgba(56,196,106,.42);
 }
-.profile-btn img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.profile-btn svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
-.nav-user-email {
-  font-family: var(--M);
-  font-size: .58rem;
-  color: var(--muted);
-  max-width: 160px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+.profile-btn img { display: none; }
+.nav-user-email { display: none !important; }
 .form-msg {
   margin-top: .8rem;
   font-family: var(--M);
@@ -314,14 +312,22 @@ html {
   height: 58px;
   border-radius: 50%;
   border: 1px solid var(--gd);
-  background: var(--green);
-  color: #fff;
-  font-family: var(--M);
-  font-size: .72rem;
-  font-weight: 800;
-  letter-spacing: .08em;
+  background: radial-gradient(circle at 50% 35%, rgba(56,196,106,.95), var(--green));
+  color: #06110a;
   box-shadow: 0 0 24px rgba(56,196,106,.35);
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.dap-chat-toggle svg {
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .dap-chat-container {
   display: none;

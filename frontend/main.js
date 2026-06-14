@@ -154,7 +154,15 @@ function setupChatbotShell() {
     const shell = document.createElement('div');
     shell.className = 'dap-chat-shell';
     shell.innerHTML = `
-      <button id="chatbotToggle" class="dap-chat-toggle" type="button" aria-label="Open DAP assistant">DAP</button>
+      <button id="chatbotToggle" class="dap-chat-toggle" type="button" aria-label="Open DAP assistant">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <rect x="6" y="8" width="12" height="9" rx="3"></rect>
+          <path d="M12 8V5"></path>
+          <circle cx="9.5" cy="12.5" r="1"></circle>
+          <circle cx="14.5" cy="12.5" r="1"></circle>
+          <path d="M9 17v2h6v-2"></path>
+        </svg>
+      </button>
       <section id="chatbotContainer" class="dap-chat-container" aria-label="DAP assistant">
         <div class="dap-chat-head">
           <div>

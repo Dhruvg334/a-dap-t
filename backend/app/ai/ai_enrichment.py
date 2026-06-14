@@ -3,8 +3,8 @@ from collections import Counter
 from typing import Any, Dict, List
 
 MAX_BULLETS = 5
-MAX_BULLET_WORDS = 16
-MAX_SUMMARY_WORDS = 34
+MAX_BULLET_WORDS = 18
+MAX_SUMMARY_WORDS = 38
 MAX_REPORT_LINES = 4
 
 
@@ -20,10 +20,32 @@ def _clean_text(value: Any) -> str:
 
 
 def _word_limit(text: str, max_words: int) -> str:
-    words = _clean_text(text).split()
+    clean = _clean_text(text)
+    words = clean.split()
     if len(words) <= max_words:
         return " ".join(words)
-    return " ".join(words[:max_words]).rstrip(".,;:") + "..."
+
+    # Report cards should never show half-cut remediation text. Prefer a full
+    # sentence that fits; otherwise end the shortened text cleanly with a period.
+    sentences = re.split(r"(?<=[.!?])\s+", clean)
+    kept = []
+    total = 0
+    for sentence in sentences:
+        count = len(sentence.split())
+        if kept and total + count > max_words:
+            break
+        if count <= max_words:
+            kept.append(sentence.strip())
+            total += count
+        else:
+            break
+
+    if kept:
+        result = " ".join(kept).strip()
+    else:
+        result = " ".join(words[:max_words]).rstrip(".,;:")
+
+    return result if result.endswith(('.', '!', '?')) else result + "."
 
 
 def _normalise_severity(value: Any) -> str:
@@ -89,14 +111,39 @@ def _dedupe(items: List[str]) -> List[str]:
     return result
 
 
+def _complete_bullet(text: Any) -> str:
+    clean = _LIST_MARKER_RE.sub("", str(text or "")).strip()
+    clean = _word_limit(clean, MAX_BULLET_WORDS)
+    return clean if clean.endswith((".", "!", "?")) else clean + "."
+
+
 def _compact_bullets(items: List[Any], max_items: int = MAX_BULLETS) -> List[str]:
     bullets = []
     for item in items:
-        text = _LIST_MARKER_RE.sub("", str(item or "")).strip()
-        text = _word_limit(text, MAX_BULLET_WORDS)
+        text = _complete_bullet(item)
         if text:
             bullets.append(text)
     return _dedupe(bullets)[:max_items]
+
+
+def _fix_from_finding(finding: Dict[str, Any]) -> str:
+    category = str(finding.get("category", "")).lower()
+    title = str(finding.get("title", "")).lower()
+
+    if "secret" in category or "api key" in title or "token" in title or "jwt" in title:
+        return "Move hardcoded secrets to environment variables."
+    if "approval" in category or "approval" in title:
+        return "Add an approval gate before sensitive actions."
+    if "tool" in category or "function" in title or "tool" in title:
+        return "Restrict risky tool calls to approved scopes."
+    if "data" in category or "pii" in title or "customer" in title:
+        return "Mask sensitive customer data before agent use."
+    if "audit" in category or "log" in title:
+        return "Log every critical tool invocation."
+    if "prompt" in category or "prompt" in title or "injection" in title:
+        return "Harden prompts against injection and leakage."
+
+    return "Fix this finding before deployment."
 
 
 def _summary(scan_result: Dict[str, Any]) -> str:
@@ -141,9 +188,7 @@ def _remediation_plan(scan_result: Dict[str, Any]) -> List[str]:
         for finding in findings:
             if _normalise_severity(finding.get("severity")) != severity:
                 continue
-            fix = finding.get("suggested_fix") or finding.get("fix")
-            if fix:
-                priority.append(fix)
+            priority.append(_fix_from_finding(finding))
 
     if not priority:
         priority = scan_result.get("remediation_checklist") or []
@@ -151,7 +196,7 @@ def _remediation_plan(scan_result: Dict[str, Any]) -> List[str]:
     fallback = [
         "Move hardcoded secrets to environment variables.",
         "Add approval gates before sensitive tool calls.",
-        "Mask customer data before LLM or tool use.",
+        "Mask customer data before agent use.",
         "Store prompts outside committed source files.",
         "Log every critical tool invocation.",
     ]
