@@ -41,3 +41,8 @@ scan_outputs/
 
 # Generated reports
 reports/generated/
+
+serviceAccountKey.json
+service-account*.json
+firebase-service-account*.json
+*.firebase.json
