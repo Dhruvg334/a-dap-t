@@ -119,6 +119,10 @@ async def scan_vulnerable_demo(user=Depends(auth.get_current_user)):
 
     result = enrich_scan_result_with_ai(result)
 
+    # Hardcoded scoring for demo (applied AFTER AI enrichment)
+    result["safety_score"] = 32
+    result["status"] = compute_status(32)
+
     if user:
         await _save_scan_to_db(result, user["uid"])
 
@@ -157,6 +161,10 @@ async def scan_secured_demo(user=Depends(auth.get_current_user)):
     ]
 
     result = enrich_scan_result_with_ai(result)
+
+    # Hardcoded scoring for demo (applied AFTER AI enrichment)
+    result["safety_score"] = 94
+    result["status"] = compute_status(94)
 
     if user:
         await _save_scan_to_db(result, user["uid"])
