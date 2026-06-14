@@ -13,6 +13,8 @@ If the user's request is completely unrelated to security findings, vulnerabilit
 
 Response Quality Guidelines:
 - Ground your responses in the context of the user's provided `scan_result`.
+- Keep responses under 130 words unless the user asks for more detail.
+- Prefer at most 5 concise bullets for step-by-step guidance.
 - Instead of using vague advice like "Use best practices," provide concrete, analytical assessments. (e.g., "Your score is 32/100 (High Risk) because of 'Tool Permission Risk' and 'Secret Exposure Risk' findings. Resolving the hardcoded GEMINI_API_KEY in config.py and wrapping your issue_refund function with a human approval checkpoint will directly elevate your security status.")
 - Prioritize high-impact structural changes (like adding human-in-the-loop validation or audit logging mechanisms) over low-severity warnings.
 """
