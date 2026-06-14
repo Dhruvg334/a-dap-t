@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Profile | A-DAP-T</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+.profile-wrap { max-width: 1050px; margin: 0 auto; padding: 3rem 2rem 4rem; }
+.profile-hero { padding: 3.2rem 0 2rem; border-bottom: 1px solid var(--bd); }
+.profile-h1 { font-size: clamp(2.4rem,6vw,5rem); line-height: .95; color: var(--wht); letter-spacing: -.03em; }
+.profile-h1 em { color: var(--gl); font-style: normal; }
+.profile-card { background: var(--bg2); border: 1px solid var(--bd); border-radius: var(--r); padding: 1.5rem; margin-bottom: 1rem; }
+.profile-top { display: flex; gap: 1.5rem; align-items: center; }
+.profile-top img { width: 76px; height: 76px; border-radius: 50%; object-fit: cover; border: 1px solid var(--gd); }
+.profile-name { color: var(--wht); font-size: 1.4rem; font-weight: 700; }
+.profile-email { font-family: var(--M); color: var(--muted); font-size: .72rem; }
+.history-list { display: flex; flex-direction: column; gap: .75rem; }
+.history-item { background: var(--bg2); border: 1px solid var(--bd); border-radius: var(--r); padding: 1rem 1.15rem; display: grid; grid-template-columns: 1fr auto; gap: .75rem; align-items: center; }
+.history-title { color: var(--wht); font-weight: 700; }
+.history-meta { font-family: var(--M); font-size: .62rem; color: var(--muted); margin-top: .25rem; }
+.history-actions { display: flex; gap: .5rem; flex-wrap: wrap; justify-content: flex-end; }
+.empty { color: var(--dim); line-height: 1.7; }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-i">
+    <a href="index.html" class="logo">A<em>-</em>DAP<em>-</em>T</a>
+    <ul class="nav-links">
+      <li><a href="index.html">HOME</a></li>
+      <li><a href="pages/scanner.html">SCANNER</a></li>
+      <li><a href="pages/dashboard.html">DASHBOARD</a></li>
+      <li><a href="pages/report.html">REPORT</a></li>
+      <li><a href="pages/methodology.html">METHODOLOGY</a></li>
+    </ul>
+    <div class="nav-auth">
+      <a href="signin.html" class="btn btn-o" data-auth="guest">SIGN IN</a>
+      <a href="signup.html" class="btn btn-p" data-auth="guest">SIGN UP</a>
+      <span class="nav-user-email auth-hidden" data-auth="user" data-user-email></span>
+      <a href="profile.html" class="profile-btn auth-hidden" data-auth="user" title="Profile"><img src="person.jpeg" alt="Profile"></a>
+      <a href="#" class="btn btn-g auth-hidden" data-auth="user" data-logout data-logout-redirect="index.html">LOG OUT</a>
+    </div>
+  </div>
+</nav>
+
+<section class="profile-hero">
+  <div class="c">
+    <span class="eye">PROFILE</span>
+    <h1 class="profile-h1">SAVED<br><em>SCAN REPORTS</em></h1>
+  </div>
+</section>
+
+<main class="profile-wrap">
+  <section class="profile-card">
+    <div class="profile-top">
+      <img src="person.jpeg" alt="Profile">
+      <div>
+        <div class="profile-name" id="profile-name">A-DAP-T User</div>
+        <div class="profile-email" id="profile-email">Not signed in</div>
+      </div>
+    </div>
+  </section>
+
+  <span class="sec-label">Report history</span>
+  <div id="history-status" class="empty">Loading reports...</div>
+  <div id="history-list" class="history-list"></div>
+</main>
+
+<script src="main.js"></script>
+<script>
+async function loadHistory() {
+  const auth = getAuthState();
+  const status = document.getElementById('history-status');
+  const list = document.getElementById('history-list');
+
+  if (!auth) {
+    document.getElementById('profile-name').textContent = 'Guest user';
+    document.getElementById('profile-email').textContent = 'Sign in to view saved scan reports.';
+    status.innerHTML = 'You are not signed in. <a href="signin.html" style="color:var(--gl)">Sign in</a> to view saved reports.';
+    return;
+  }
+
+  document.getElementById('profile-name').textContent = auth.displayName || 'A-DAP-T User';
+  document.getElementById('profile-email').textContent = auth.email || '';
+
+  try {
+    let reports;
+    try {
+      reports = await apiFetch('/reports');
+    } catch (err) {
+      reports = await apiFetch('/history');
+    }
+
+    if (!Array.isArray(reports) || reports.length === 0) {
+      status.textContent = 'No saved reports yet. Run a scan with “Save report” enabled.';
+      return;
+    }
+
+    status.textContent = '';
+    list.innerHTML = '';
+
+    reports.forEach(report => {
+      const item = document.createElement('div');
+      item.className = 'history-item';
+      const created = report.created_at || report.timestamp || report.generated_at || 'Unknown date';
+      const id = report.id || report.report_id || '';
+      item.innerHTML = `
+        <div>
+          <div class="history-title">${escapeHtml(report.project_name || report.repo_name || 'A-DAP-T Scan')}</div>
+          <div class="history-meta">Score: ${escapeHtml(String(report.safety_score ?? '—'))} · ${escapeHtml(report.status || '—')} · ${escapeHtml(created)}</div>
+        </div>
+        <div class="history-actions">
+          <button class="btn btn-p btn-sm" data-open>OPEN</button>
+          ${id ? '<button class="btn btn-g btn-sm" data-delete>DELETE</button>' : ''}
+        </div>
+      `;
+
+      item.querySelector('[data-open]').addEventListener('click', () => {
+        sessionStorage.setItem('adpt_result', JSON.stringify(report));
+        window.location.href = 'pages/report.html';
+      });
+
+      const deleteBtn = item.querySelector('[data-delete]');
+      if (deleteBtn && id) {
+        deleteBtn.addEventListener('click', async () => {
+          if (!confirm('Delete this saved report?')) return;
+          try {
+            await apiFetch(`/reports/${encodeURIComponent(id)}`, { method: 'DELETE' });
+            item.remove();
+          } catch (err) {
+            alert(err.message || 'Could not delete report.');
+          }
+        });
+      }
+
+      list.appendChild(item);
+    });
+  } catch (err) {
+    status.textContent = err.message || 'Could not load report history.';
+  }
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+document.addEventListener('DOMContentLoaded', loadHistory);
+</script>
+</body>
+</html>

@@ -10,7 +10,7 @@
 .pg-h1 { font-size: clamp(2.8rem,7vw,6rem); font-weight: 700; color: var(--wht); line-height: .92; letter-spacing: -.03em; margin: .5rem 0 1rem; }
 
 /* SCAN OPTIONS */
-.scan-opts { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin-bottom: 2rem; }
+.scan-opts { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; margin-bottom: 2rem; }
 .scan-opt {
   background: var(--bg2); border: 2px solid var(--bd); border-radius: var(--r);
   padding: 1.75rem 1.5rem; cursor: pointer; transition: all .2s;
@@ -55,6 +55,21 @@
 }
 .upload-label:hover { border-color: var(--dim); }
 
+
+.github-panel {
+  background: var(--bg2); border: 2px dashed var(--bd2); border-radius: var(--r);
+  padding: 1.5rem; display: none; flex-direction: column; gap: .8rem; margin-top: -1rem; margin-bottom: 1rem;
+}
+.github-panel.visible { display: flex; }
+.github-panel label { font-family: var(--M); font-size: .58rem; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; }
+.github-panel input {
+  width: 100%; background: var(--bg3); border: 1px solid var(--bd2); color: var(--txt);
+  border-radius: var(--r); padding: .85rem .9rem; outline: none;
+}
+.github-panel input:focus { border-color: var(--gl); }
+.scan-save-row { display:flex; align-items:center; gap:.55rem; font-family:var(--M); font-size:.62rem; color:var(--muted); margin-top:.25rem; }
+.scan-save-row input { accent-color: var(--green); }
+
 /* SCAN BUTTON ROW */
 .scan-action { margin-top: 1.75rem; display: flex; align-items: center; gap: 1.5rem; }
 .scan-notice { font-family: var(--M); font-size: .6rem; letter-spacing: .06em; color: var(--muted); line-height: 1.6; }
@@ -78,7 +93,6 @@
 @media (max-width: 800px) { .scan-opts { grid-template-columns: 1fr; } }
 </style>
 </head>
-<script src="../main.js"></script>
 <body>
 <nav class="nav">
   <div class="nav-i">
@@ -90,6 +104,13 @@
       <li><a href="report.html">REPORT</a></li>
       <li><a href="methodology.html">METHODOLOGY</a></li>
     </ul>
+    <div class="nav-auth">
+      <a href="../signin.html" class="btn btn-o" data-auth="guest">SIGN IN</a>
+      <a href="../signup.html" class="btn btn-p" data-auth="guest">SIGN UP</a>
+      <span class="nav-user-email auth-hidden" data-auth="user" data-user-email></span>
+      <a href="../profile.html" class="profile-btn auth-hidden" data-auth="user" title="Profile"><img src="../person.jpeg" alt="Profile"></a>
+      <a href="#" class="btn btn-g auth-hidden" data-auth="user" data-logout data-logout-redirect="../index.html">LOG OUT</a>
+    </div>
     <a href="scanner.html" class="btn btn-p">RUN A SCAN</a>
   </div>
 </nav>
@@ -127,7 +148,19 @@
       <span class="opt-meta">secured-support-agent · Python / LangChain</span>
     </div>
 
-    <!-- Option 3: Upload -->
+
+
+    <!-- Option 3: GitHub repo -->
+    <div class="scan-opt" data-opt="github" onclick="selectOpt(this)">
+      <span class="sel-dot"></span>
+      <span class="opt-badge opt-badge-blu">PUBLIC REPO</span>
+      <span class="opt-icon"><span class="ico ico-dim ico-xl"><svg viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg></span></span>
+      <div class="opt-title">Scan Public GitHub Repo</div>
+      <p class="opt-desc">Paste a public GitHub repository URL. A-DAP-T downloads the ZIP safely and scans it without executing code.</p>
+      <span class="opt-meta">GitHub · Python / JS / TS agents</span>
+    </div>
+
+    <!-- Option 4: Upload -->
     <div class="scan-opt" data-opt="upload" onclick="selectOpt(this)">
       <span class="sel-dot"></span>
       <span class="opt-badge opt-badge-blu">YOUR PROJECT</span>
@@ -147,6 +180,18 @@
     <label class="upload-label">CHOOSE FILE <input class="upload-input" type="file" accept=".zip,.py,.json,.yaml"/></label>
     <span id="file-name" style="font-family:var(--M);font-size:.62rem;color:var(--gl);display:none"></span>
   </div>
+
+  <div class="github-panel" id="github-panel">
+    <label for="github-url">GitHub repository URL</label>
+    <input id="github-url" type="url" placeholder="https://github.com/user/repo">
+    <label for="github-branch">Branch (optional)</label>
+    <input id="github-branch" type="text" placeholder="main">
+  </div>
+
+  <label class="scan-save-row">
+    <input type="checkbox" id="save-report">
+    Save this scan to my account history
+  </label>
 
   <div class="scan-action">
     <button class="btn btn-p" id="scan-btn" onclick="startScan()">RUN SCAN →</button>
@@ -205,7 +250,7 @@
 <script>
 document.body.classList.add('ready');
 
-const API_BASE = 'https://adapt-3s27.onrender.com';
+const API_BASE = window.ADAPT_API_BASE || 'https://adapt-3s27.onrender.com';
 
 // ── Step progression UI ───────────────────────────────────────────────────
 function advanceStep(idx) {
@@ -252,8 +297,11 @@ function showError(msg) {
 function selectOpt(el) {
   document.querySelectorAll('.scan-opt').forEach(o => o.classList.remove('selected'));
   el.classList.add('selected');
-  const panel = document.getElementById('upload-panel');
-  panel.classList.toggle('visible', el.dataset.opt === 'upload');
+
+  const uploadPanel = document.getElementById('upload-panel');
+  const githubPanel = document.getElementById('github-panel');
+  if (uploadPanel) uploadPanel.classList.toggle('visible', el.dataset.opt === 'upload');
+  if (githubPanel) githubPanel.classList.toggle('visible', el.dataset.opt === 'github');
 }
 
 document.querySelector('.upload-input').addEventListener('change', function() {
@@ -278,30 +326,65 @@ async function startScan() {
   setStepRunning(1); setStepRunning(2); setStepRunning(3); setStepRunning(4);
 
   let result = null;
+  const saveReport = document.getElementById('save-report')?.checked || false;
+  const headers = {};
+  const token = typeof getAuthToken === 'function' ? getAuthToken() : null;
+
+  if (saveReport && !token) {
+    setStepError(1, 'Please sign in before saving a scan to history.');
+    btn.disabled = false; btn.textContent = 'RUN SCAN →';
+    return;
+  }
+
+  if (saveReport && token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
 
   try {
     if (optType === 'upload') {
-      // ── POST /scan/upload ─────────────────────────────────────────────
       const fileInput = document.querySelector('.upload-input');
       if (!fileInput.files[0]) {
         setStepError(1, 'No file selected. Please choose a ZIP file first.');
         btn.disabled = false; btn.textContent = 'RUN SCAN →';
         return;
       }
+
       const formData = new FormData();
       formData.append('file', fileInput.files[0]);
 
       const res = await fetch(`${API_BASE}/scan/upload`, {
         method: 'POST',
+        headers,
         body: formData
       });
       if (!res.ok) throw new Error(`Backend returned ${res.status}: ${await res.text()}`);
       result = await res.json();
 
+    } else if (optType === 'github') {
+      const repoUrl = document.getElementById('github-url').value.trim();
+      const branch = document.getElementById('github-branch').value.trim();
+
+      if (!repoUrl) {
+        setStepError(1, 'Please enter a public GitHub repository URL.');
+        btn.disabled = false; btn.textContent = 'RUN SCAN →';
+        return;
+      }
+
+      const res = await fetch(`${API_BASE}/scan/github`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...headers },
+        body: JSON.stringify({
+          repo_url: repoUrl,
+          branch: branch || null,
+          save_report: saveReport
+        })
+      });
+      if (!res.ok) throw new Error(`Backend returned ${res.status}: ${await res.text()}`);
+      result = await res.json();
+
     } else {
-      // ── GET /scan/demo/vulnerable  or  /scan/demo/secured ─────────────
       const demoKey = optType === 'secured' ? 'secured' : 'vulnerable';
-      const res = await fetch(`${API_BASE}/scan/demo/${demoKey}`);
+      const res = await fetch(`${API_BASE}/scan/demo/${demoKey}`, { headers });
       if (!res.ok) throw new Error(`Backend returned ${res.status}: ${await res.text()}`);
       result = await res.json();
     }
@@ -327,6 +410,7 @@ async function startScan() {
 
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 </script>
+<script src="../main.js"></script>
 </body>
 </html>
 
