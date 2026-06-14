@@ -1,29 +1,20 @@
 import re
+from collections import Counter
 from typing import Any, Dict, List
 
-from app.ai.gemini_service import GeminiService
-from app.content.gemini_prompt_templates import (
-    GEMINI_SYSTEM_INSTRUCTION,
-    build_scan_summary_prompt,
-    build_remediation_plan_prompt,
-    build_report_summary_prompt,
-    build_developer_next_steps_prompt,
-)
-
-MAX_SUMMARY_SENTENCES = 2
-MAX_SUMMARY_WORDS = 46
 MAX_BULLETS = 5
-MAX_BULLET_WORDS = 18
+MAX_BULLET_WORDS = 16
+MAX_SUMMARY_WORDS = 34
+MAX_REPORT_LINES = 4
 
 
 _LIST_MARKER_RE = re.compile(r"^\s*(?:[-*•]|\d+[.)])\s+")
-_HEADING_RE = re.compile(r"^\s*(?:critical fixes|high-priority fixes|hardening improvements|next steps|remediation plan|summary)\s*:?", re.I)
+_MD_RE = re.compile(r"[*_`#>]+")
 
 
 def _clean_text(value: Any) -> str:
     text = str(value or "")
-    text = text.replace("**", "")
-    text = text.replace("`", "")
+    text = _MD_RE.sub("", text)
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
@@ -35,205 +26,170 @@ def _word_limit(text: str, max_words: int) -> str:
     return " ".join(words[:max_words]).rstrip(".,;:") + "..."
 
 
-def _split_sentences(text: str) -> List[str]:
-    text = _clean_text(text)
-    if not text:
-        return []
-
-    parts = re.split(r"(?<=[.!?])\s+", text)
-    return [part.strip() for part in parts if part.strip()]
+def _normalise_severity(value: Any) -> str:
+    return str(value or "").strip().lower()
 
 
-def _compact_sentences(text: str, max_sentences: int = MAX_SUMMARY_SENTENCES, max_words: int = MAX_SUMMARY_WORDS) -> str:
-    sentences = _split_sentences(text)
-    if not sentences:
-        return ""
+def _risk_status(score: Any, status: Any) -> str:
+    if status:
+        return str(status)
+    try:
+        val = int(score)
+    except Exception:
+        return "Unknown Risk"
 
-    compact = " ".join(sentences[:max_sentences])
-    return _word_limit(compact, max_words)
+    if val < 40:
+        return "High Risk"
+    if val < 75:
+        return "Moderate Risk"
+    return "Low Risk"
 
 
-def _normalise_bullet(text: str) -> str:
-    text = _LIST_MARKER_RE.sub("", str(text or "")).strip()
-    text = _HEADING_RE.sub("", text).strip(" -–—:\t")
-    return _word_limit(text, MAX_BULLET_WORDS)
+def _finding_counts(findings: List[dict]) -> tuple[int, int]:
+    critical = sum(1 for item in findings if _normalise_severity(item.get("severity")) == "critical")
+    high = sum(1 for item in findings if _normalise_severity(item.get("severity")) == "high")
+    return critical, high
 
 
-def _text_to_bullets(value: Any, max_items: int = MAX_BULLETS) -> List[str]:
-    if not value:
-        return []
+def _top_categories(scan_result: Dict[str, Any], limit: int = 2) -> List[str]:
+    scores = scan_result.get("category_scores") or {}
+    if isinstance(scores, dict) and scores:
+        ordered = sorted(scores.items(), key=lambda item: item[1] if isinstance(item[1], (int, float)) else 0, reverse=True)
+        return [_category_label(key) for key, _ in ordered[:limit]]
 
-    if isinstance(value, list):
-        raw_items = value
-    else:
-        text = str(value).replace("\r", "\n")
-        lines = [line.strip() for line in text.splitlines() if line.strip()]
+    findings = scan_result.get("findings") or []
+    counts = Counter(item.get("category", "Unknown Risk") for item in findings)
+    return [name for name, _ in counts.most_common(limit)]
 
-        marked_lines = [line for line in lines if _LIST_MARKER_RE.match(line)]
-        if marked_lines:
-            raw_items = marked_lines
-        else:
-            # Gemini sometimes returns one paragraph. Split it into actionable chunks instead
-            # of dumping the paragraph into one layout-breaking bullet.
-            raw_items = re.split(r"(?<=[.!?])\s+", _clean_text(text))
 
-    bullets: List[str] = []
+def _category_label(key: str) -> str:
+    labels = {
+        "prompt_injection": "prompt injection",
+        "secret_exposure": "secret exposure",
+        "tool_permission": "tool permission",
+        "human_approval": "human approval",
+        "data_exposure": "data exposure",
+        "auditability": "auditability",
+    }
+    return labels.get(str(key), str(key).replace("_", " "))
+
+
+def _dedupe(items: List[str]) -> List[str]:
     seen = set()
-
-    for item in raw_items:
-        bullet = _normalise_bullet(item)
-        if not bullet or len(bullet) < 3:
+    result = []
+    for item in items:
+        clean = _clean_text(item)
+        if not clean:
             continue
-        key = bullet.lower()
+        key = clean.lower()
         if key in seen:
             continue
-        bullets.append(bullet)
         seen.add(key)
-        if len(bullets) >= max_items:
-            break
-
-    return bullets
+        result.append(clean)
+    return result
 
 
-def _score_aware_summary(text: str, scan_result: Dict[str, Any]) -> str:
-    score = scan_result.get("safety_score")
-    status = scan_result.get("status")
-    compact = _compact_sentences(text)
-
-    if score is None or not status:
-        return compact
-
-    score_text = f"Safety score: {score}/100 ({status})."
-    if compact and str(score) in compact:
-        return compact
-    if compact:
-        return _compact_sentences(f"{score_text} {compact}")
-    return score_text
+def _compact_bullets(items: List[Any], max_items: int = MAX_BULLETS) -> List[str]:
+    bullets = []
+    for item in items:
+        text = _LIST_MARKER_RE.sub("", str(item or "")).strip()
+        text = _word_limit(text, MAX_BULLET_WORDS)
+        if text:
+            bullets.append(text)
+    return _dedupe(bullets)[:max_items]
 
 
-def _fallback_ai_summary(scan_result: Dict[str, Any]) -> str:
-    project_name = scan_result.get("project_name", "this project")
+def _summary(scan_result: Dict[str, Any]) -> str:
+    project = scan_result.get("project_name", "this project")
     score = scan_result.get("safety_score", "unknown")
-    status = scan_result.get("status", "Unknown")
+    status = _risk_status(score, scan_result.get("status"))
+    findings = scan_result.get("findings") or []
+    critical, high = _finding_counts(findings)
+    categories = _top_categories(scan_result, 2)
+    category_text = " and ".join(categories) if categories else "agent deployment"
 
-    findings = scan_result.get("findings", [])
-    critical_count = sum(1 for item in findings if item.get("severity") == "Critical")
-    high_count = sum(1 for item in findings if item.get("severity") == "High")
-
-    return _score_aware_summary(
-        f"A-DAP-T scanned {project_name} and found {critical_count} critical and {high_count} high-severity findings. "
-        "Fix unsafe tools, exposed secrets, approval gaps, and auditability issues first.",
-        {"safety_score": score, "status": status},
+    text = (
+        f"{project} scored {score}/100 ({status}). "
+        f"A-DAP-T found {critical} critical and {high} high-severity issues, mainly around {category_text}."
     )
+    return _word_limit(text, MAX_SUMMARY_WORDS)
 
 
-def _fallback_remediation_plan(scan_result: Dict[str, Any]) -> List[str]:
-    findings = scan_result.get("findings", [])
-
-    priority_fixes = []
-    for finding in findings:
-        severity = finding.get("severity")
-        fix = finding.get("suggested_fix")
-
-        if severity in {"Critical", "High"} and fix and fix not in priority_fixes:
-            priority_fixes.append(fix)
-
-    if priority_fixes:
-        return _text_to_bullets(priority_fixes)
-
-    return _text_to_bullets(scan_result.get("remediation_checklist", []))
-
-
-def _fallback_report_summary(scan_result: Dict[str, Any]) -> str:
-    project_name = scan_result.get("project_name", "this project")
-    status = scan_result.get("status", "Unknown")
+def _report_summary(scan_result: Dict[str, Any]) -> str:
+    project = scan_result.get("project_name", "this project")
     score = scan_result.get("safety_score", "unknown")
+    status = _risk_status(score, scan_result.get("status"))
+    findings = scan_result.get("findings") or []
+    critical, high = _finding_counts(findings)
+    categories = _top_categories(scan_result, 3)
+    category_text = ", ".join(categories) if categories else "agent deployment controls"
 
-    return _score_aware_summary(
-        f"{project_name} was scanned using A-DAP-T's rule-based AI-agent checks. "
-        "This highlights common deployment risks and is not a full security audit.",
-        {"safety_score": score, "status": status},
-    )
-
-
-def _fallback_next_steps(scan_result: Dict[str, Any]) -> List[str]:
-    findings = scan_result.get("findings", [])
-
-    next_steps = []
-    category_seen = set()
-
-    for finding in findings:
-        category = finding.get("category")
-        fix = finding.get("suggested_fix")
-
-        if category and fix and category not in category_seen:
-            next_steps.append(fix)
-            category_seen.add(category)
-
-    if next_steps:
-        return _text_to_bullets(next_steps)
-
-    return [
-        "Review high-risk tool access paths.",
-        "Confirm approval gates for high-impact actions.",
-        "Load secrets from environment variables.",
-        "Verify audit logging for tool calls.",
-        "Retest the project after fixes.",
+    lines = [
+        f"A-DAP-T scanned {project} and assigned a safety score of {score}/100 ({status}).",
+        f"The scan found {critical} critical and {high} high-severity issues across {category_text}.",
+        "Prioritize exposed secrets, unsafe tool access, approval gaps, and sensitive data handling before deployment.",
+        "Use the findings below for exact files, reasons, and fixes.",
     ]
+    return "\n".join(lines[:MAX_REPORT_LINES])
+
+
+def _remediation_plan(scan_result: Dict[str, Any]) -> List[str]:
+    findings = scan_result.get("findings") or []
+    priority = []
+
+    for severity in ("critical", "high", "medium"):
+        for finding in findings:
+            if _normalise_severity(finding.get("severity")) != severity:
+                continue
+            fix = finding.get("suggested_fix") or finding.get("fix")
+            if fix:
+                priority.append(fix)
+
+    if not priority:
+        priority = scan_result.get("remediation_checklist") or []
+
+    fallback = [
+        "Move hardcoded secrets to environment variables.",
+        "Add approval gates before sensitive tool calls.",
+        "Mask customer data before LLM or tool use.",
+        "Store prompts outside committed source files.",
+        "Log every critical tool invocation.",
+    ]
+    return _compact_bullets(priority or fallback)
+
+
+def _next_steps(scan_result: Dict[str, Any]) -> List[str]:
+    findings = scan_result.get("findings") or []
+    categories = {str(item.get("category", "")).lower() for item in findings}
+
+    steps = []
+    if any("secret" in cat for cat in categories):
+        steps.append("Fix critical secret exposure findings first.")
+    if any("tool" in cat for cat in categories):
+        steps.append("Review high-risk tool permissions.")
+    if any("approval" in cat for cat in categories):
+        steps.append("Add approval checks for sensitive actions.")
+    if any("data" in cat for cat in categories):
+        steps.append("Mask or remove sensitive customer data.")
+    if any("audit" in cat for cat in categories):
+        steps.append("Add logs for critical tool invocations.")
+
+    steps.append("Retest the project after fixes.")
+    return _compact_bullets(steps)
 
 
 def enrich_scan_result_with_ai(scan_result: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Add compact AI-generated explanation fields to a scan result.
+    Add compact report-safe explanation fields.
 
-    Scanner findings, scores, statuses, and category scores stay rule-based. Gemini only
-    explains the final result, and this layer clamps the output so the frontend layout
-    does not get wrecked by long paragraphs.
+    Detailed conversation belongs in DAP. Report cards need predictable, short text,
+    so this layer generates bounded summaries from the rule-based scan result.
     """
 
     enriched_result = dict(scan_result)
-    service = GeminiService()
-
-    if not service.is_available():
-        enriched_result["ai_summary"] = _fallback_ai_summary(scan_result)
-        enriched_result["ai_remediation_plan"] = _fallback_remediation_plan(scan_result)
-        enriched_result["ai_report_summary"] = _fallback_report_summary(scan_result)
-        enriched_result["ai_next_steps"] = _fallback_next_steps(scan_result)
-        enriched_result["ai_enrichment_status"] = "fallback_no_api_key"
-        return enriched_result
-
-    try:
-        raw_summary = service.generate_text(
-            build_scan_summary_prompt(scan_result),
-            GEMINI_SYSTEM_INSTRUCTION,
-        )
-        enriched_result["ai_summary"] = _score_aware_summary(raw_summary, scan_result)
-
-        remediation_text = service.generate_text(
-            build_remediation_plan_prompt(scan_result),
-            GEMINI_SYSTEM_INSTRUCTION,
-        )
-        enriched_result["ai_remediation_plan"] = _text_to_bullets(remediation_text)
-
-        raw_report_summary = service.generate_text(
-            build_report_summary_prompt(scan_result),
-            GEMINI_SYSTEM_INSTRUCTION,
-        )
-        enriched_result["ai_report_summary"] = _score_aware_summary(raw_report_summary, scan_result)
-
-        next_steps_text = service.generate_text(
-            build_developer_next_steps_prompt(scan_result),
-            GEMINI_SYSTEM_INSTRUCTION,
-        )
-        enriched_result["ai_next_steps"] = _text_to_bullets(next_steps_text)
-
-        enriched_result["ai_enrichment_status"] = "gemini_success"
-        return enriched_result
-
-    except Exception as exc:
-        enriched_result["ai_summary"] = _fallback_ai_summary(scan_result)
-        enriched_result["ai_remediation_plan"] = _fallback_remediation_plan(scan_result)
-        enriched_result["ai_report_summary"] = _fallback_report_summary(scan_result)
-        enriched_result["ai_next_steps"] = _fallback_next_steps(scan_result)
-        enriched_result["ai_enrichment_status"] = f"fallback_gemini_error: {str(exc)}"
-        return enriched_result
+    enriched_result["ai_summary"] = _summary(scan_result)
+    enriched_result["ai_report_summary"] = _report_summary(scan_result)
+    enriched_result["ai_remediation_plan"] = _remediation_plan(scan_result)
+    enriched_result["ai_next_steps"] = _next_steps(scan_result)
+    enriched_result["ai_enrichment_status"] = "compact_report_ready"
+    return enriched_result

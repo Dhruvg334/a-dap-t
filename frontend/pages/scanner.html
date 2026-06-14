@@ -4,6 +4,43 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Scanner | A-DAP-T</title>
+<script>
+(function () {
+  const auth = localStorage.getItem('adpt_auth');
+  let hasToken = false;
+  try {
+    const parsed = auth ? JSON.parse(auth) : null;
+    hasToken = !!(parsed && parsed.idToken);
+  } catch (_) {
+    hasToken = false;
+  }
+
+  if (!hasToken) {
+    const next = window.location.pathname + window.location.search + window.location.hash;
+    window.location.replace('../signup.html?next=' + encodeURIComponent(next));
+  }
+})();
+</script>
+<style id="auth-preload-guard">body{visibility:hidden}</style>
+<script>
+(function () {
+  const auth = localStorage.getItem('adpt_auth');
+  let hasToken = false;
+  try {
+    const parsed = auth ? JSON.parse(auth) : null;
+    hasToken = !!(parsed && parsed.idToken);
+  } catch (_) {
+    hasToken = false;
+  }
+
+  if (hasToken) {
+    document.addEventListener('DOMContentLoaded', function () {
+      document.body.style.visibility = 'visible';
+    });
+  }
+})();
+</script>
+
 <link rel="stylesheet" href="../shared.css"/>
 <style>
 .pg-hero { padding: 3.5rem 0 2.5rem; border-bottom: 1px solid var(--bd); }
@@ -327,18 +364,14 @@ async function startScan() {
 
   let result = null;
   const saveReport = document.getElementById('save-report')?.checked || false;
-  const headers = {};
   const token = typeof getAuthToken === 'function' ? getAuthToken() : null;
 
-  if (saveReport && !token) {
-    setStepError(1, 'Please sign in before saving a scan to history.');
-    btn.disabled = false; btn.textContent = 'RUN SCAN →';
+  if (!token) {
+    window.location.href = '../signin.html?next=' + encodeURIComponent('/pages/scanner.html');
     return;
   }
 
-  if (saveReport && token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
+  const headers = { Authorization: `Bearer ${token}` };
 
   try {
     if (optType === 'upload') {

@@ -10,6 +10,22 @@ function setAuthState(auth) {
     localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
 }
 
+
+function getRedirectTarget() {
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get("next");
+    if (!next) return "profile.html";
+
+    try {
+        const decoded = decodeURIComponent(next);
+        if (decoded.startsWith("/") && !decoded.startsWith("//")) {
+            return decoded;
+        }
+    } catch (_) {}
+
+    return "profile.html";
+}
+
 async function postJson(path, body) {
     const response = await fetch(`${API_BASE}${path}`, {
         method: "POST",
@@ -66,7 +82,7 @@ signinForm.addEventListener("submit", async (e) => {
             displayName: data.displayName || "A-DAP-T User"
         });
 
-        window.location.href = "profile.html";
+        window.location.href = getRedirectTarget();
     } catch (error) {
         alert(error.message);
         submitButton.disabled = false;
