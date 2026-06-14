@@ -4,6 +4,43 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Scanner | A-DAP-T</title>
+<script>
+(function () {
+  const auth = localStorage.getItem('adpt_auth');
+  let hasToken = false;
+  try {
+    const parsed = auth ? JSON.parse(auth) : null;
+    hasToken = !!(parsed && parsed.idToken);
+  } catch (_) {
+    hasToken = false;
+  }
+
+  if (!hasToken) {
+    const next = window.location.pathname + window.location.search + window.location.hash;
+    window.location.replace('../signup.html?next=' + encodeURIComponent(next));
+  }
+})();
+</script>
+<style id="auth-preload-guard">body{visibility:hidden}</style>
+<script>
+(function () {
+  const auth = localStorage.getItem('adpt_auth');
+  let hasToken = false;
+  try {
+    const parsed = auth ? JSON.parse(auth) : null;
+    hasToken = !!(parsed && parsed.idToken);
+  } catch (_) {
+    hasToken = false;
+  }
+
+  if (hasToken) {
+    document.addEventListener('DOMContentLoaded', function () {
+      document.body.style.visibility = 'visible';
+    });
+  }
+})();
+</script>
+
 <link rel="stylesheet" href="../shared.css"/>
 <style>
 .pg-hero { padding: 3.5rem 0 2.5rem; border-bottom: 1px solid var(--bd); }
