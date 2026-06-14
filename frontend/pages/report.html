@@ -128,6 +128,74 @@
 @media (max-width: 560px) {
   .sum-row { grid-template-columns: 1fr 1fr; }
 }
+
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #111111 !important;
+  }
+
+  .nav,
+  .rep-acts,
+  .footer,
+  #ai-enrichment-status {
+    display: none !important;
+  }
+
+  .pg-hero,
+  .report-body,
+  #ai-enrichment-wrap {
+    padding: 1.25rem 0 !important;
+    border: none !important;
+  }
+
+  .c {
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 1rem !important;
+  }
+
+  .rep-h1,
+  .sb-num,
+  .finding-card-title,
+  .ic-val,
+  .card-title,
+  .sec-label {
+    color: #111111 !important;
+  }
+
+  .sum-box,
+  .info-card,
+  .finding-card,
+  .ai-block,
+  .card {
+    background: #ffffff !important;
+    border: 1px solid #cccccc !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .finding-card-panels {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .finding-panel-why,
+  .finding-panel-fix {
+    background: #ffffff !important;
+    border-color: #cccccc !important;
+  }
+
+  .finding-panel-text,
+  .ic-val,
+  #info-summary,
+  .ai-text,
+  .ai-block p {
+    color: #333333 !important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -162,8 +230,8 @@
       <span>GENERATED: <span id="rep-date">—</span></span>
     </div>
     <div class="rep-acts">
-      <button class="btn btn-o">↓ EXPORT PDF</button>
-      <button class="btn btn-g">RAW JSON</button>
+      <button class="btn btn-o" id="export-pdf-btn" type="button">↓ EXPORT PDF</button>
+      <button class="btn btn-g" id="raw-json-btn" type="button">RAW JSON</button>
       <a href="dashboard.html" class="btn btn-p">VIEW DASHBOARD</a>
     </div>
   </div>
@@ -395,7 +463,8 @@ const fallbackResult = {
   ]
 };
 
-const result = normalizeAdaptBackendResult(getStoredResult() || fallbackResult);
+const originalStoredResult = getStoredResult();
+const result = normalizeAdaptBackendResult(originalStoredResult || fallbackResult);
 const findings = result.findings;
 
 const now = new Date();
@@ -527,6 +596,69 @@ findings.forEach((f) => {
     }
   });
 });
+
+function buildReportFileName(extension) {
+  const project = String(result.project_name || 'a-dap-t-report')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'a-dap-t-report';
+
+  const reportId = String(document.getElementById('rep-id')?.textContent || 'report')
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, '-');
+
+  return `${project}-${reportId}.${extension}`;
+}
+
+function getExportPayload() {
+  const payload = originalStoredResult || result;
+
+  return {
+    exported_at: new Date().toISOString(),
+    report_id: document.getElementById('rep-id')?.textContent || null,
+    source: originalStoredResult ? 'session_scan_result' : 'fallback_report',
+    report: payload
+  };
+}
+
+function downloadRawJson() {
+  const payload = getExportPayload();
+  const json = JSON.stringify(payload, null, 2);
+  const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = buildReportFileName('json');
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  URL.revokeObjectURL(url);
+}
+
+function exportReportPdf() {
+  const openCards = document.querySelectorAll('.finding-card:not(.open)');
+
+  openCards.forEach(card => {
+    card.classList.add('open');
+    const panels = card.querySelector('.finding-card-panels');
+    if (panels) panels.style.maxHeight = panels.scrollHeight + 'px';
+  });
+
+  window.print();
+}
+
+const rawJsonBtn = document.getElementById('raw-json-btn');
+if (rawJsonBtn) {
+  rawJsonBtn.addEventListener('click', downloadRawJson);
+}
+
+const exportPdfBtn = document.getElementById('export-pdf-btn');
+if (exportPdfBtn) {
+  exportPdfBtn.addEventListener('click', exportReportPdf);
+}
+
 </script>
 <script src="../main.js"></script>
 </body>
