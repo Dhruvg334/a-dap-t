@@ -1,61 +1,161 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Sign In | A-DAP-T</title>
-<link rel="stylesheet" href="shared.css">
-<link rel="stylesheet" href="signin.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In</title>
+
+    <link rel="stylesheet" href="signin.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
-<nav class="nav">
-  <div class="nav-i">
-    <a href="index.html" class="logo">A<em>-</em>DAP<em>-</em>T</a>
-    <ul class="nav-links">
-      <li><a href="index.html">HOME</a></li>
-      <li><a href="pages/scanner.html">SCANNER</a></li>
-      <li><a href="pages/dashboard.html">DASHBOARD</a></li>
-      <li><a href="pages/report.html">REPORT</a></li>
-      <li><a href="pages/methodology.html">METHODOLOGY</a></li>
-    </ul>
-    <div class="nav-auth">
-      <a href="signin.html" class="btn btn-o on" data-auth="guest">SIGN IN</a>
-      <a href="signup.html" class="btn btn-p" data-auth="guest">SIGN UP</a>
-      <span class="nav-user-email auth-hidden" data-auth="user" data-user-email></span>
-      <a href="profile.html" class="profile-btn auth-hidden" data-auth="user" title="Profile"><img src="person.jpeg" alt="Profile"></a>
-      <a href="#" class="btn btn-g auth-hidden" data-auth="user" data-logout data-logout-redirect="index.html">LOG OUT</a>
+    <nav class="navbar">
+
+        <div class="logo">
+            <a href="index.html">
+                A<span>-</span>DAP<span>-</span>T
+            </a>
+        </div>
+
+        <button id="aboutBtn" class="about-btn">
+            About Us
+        </button>
+
+
+        <div class="modal" id="aboutModal">
+
+            <div class="modal-content">
+
+                <span class="close-btn">&times;</span>
+
+                <h2>
+                    <center>About A-DAP-T</center>
+                </h2>
+
+                <p>
+                    <center>
+                        A-DAP-T is a pre-deployment AI-agent risk scanner <br>
+                        that scans uploaded projects or the public GitHub <br>
+                        repositories, identifies common agent deployment <br>
+                        risks, saves reports for logged-in users, and <br>
+                        provides a report-aware AI assistant to explain <br>
+                        findings and remediation steps.<br><br>
+                    </center>
+                </p>
+
+            </div>
+
+        </div>
+
+
+
+    </nav>
+
+    <img src="gradient.png" alt="gradient">
+    <div class="layer-blur"></div>
+
+
+    <div class="container">
+
+        <!-- LEFT SIDE FOR ANIMATION -->
+
+
+
+        <div class="left-panel">
+
+            <!-- Animation Yahan Daal Dena -->
+
+        </div>
+
+        <!-- RIGHT SIDE -->
+        <div class="signin-card">
+
+            <center>
+                <h2>Welcome Back</h2>
+            </center><br>
+
+
+
+            <form id="signinForm">
+
+                <div class="input-group">
+                    <label>Email</label>
+                    <input type="email" id="signinEmail" placeholder="Enter your email" required>
+                </div>
+
+                <div class="input-group">
+
+                    <label>Password</label>
+
+                    <div class="password-box">
+
+                        <input type="password" id="password" placeholder="Enter your password" required>
+
+                        <button type="button" id="togglePassword">
+                            👁
+                        </button>
+
+                    </div>
+
+                </div>
+
+                <div class="options">
+
+                    <h5><label>
+                            <input type="checkbox">
+                            Remember Me
+                        </label>
+
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+                        <a href="#">
+                            Forgot Password?
+                        </a>
+                    </h5>
+
+                </div>
+
+                <button type="submit" class="signin-btn">
+                    Sign In
+                </button>
+
+            </form>
+
+            <div class="divider">
+                <span>OR</span>
+            </div>
+
+
+
+            <h5>
+                <p class="signup-link">
+                    Don't have an account?
+                    <a href="signup.html">
+                        Create Account
+                    </a>
+                </p>
+            </h5>
+
+        </div>
+
+        <spline-viewer class="robot-3d"
+            url="https://prod.spline.design/MAcLGpVfZ1QDJrB3/scene.splinecode"></spline-viewer>
+
     </div>
-  </div>
-</nav>
 
-<main class="auth-page signin-page">
-  <section class="auth-copy">
-    <span class="eye">ACCOUNT ACCESS</span>
-    <h1>Welcome back to<br><em>A-DAP-T</em></h1>
-    <p>Sign in to save scan reports, view scan history, and continue working on previous AI-agent risk assessments.</p>
-  </section>
+    <script src="signin.js"></script>
 
-  <section class="signin-card">
-    <h2>Sign In</h2>
-    <p class="auth-sub">Use your A-DAP-T account credentials.</p>
-    <form id="signinForm">
-      <label>Email</label>
-      <input id="email" type="email" autocomplete="email" required placeholder="you@example.com">
 
-      <label>Password</label>
-      <div class="password-row">
-        <input id="password" type="password" autocomplete="current-password" required placeholder="Your password">
-        <button type="button" id="togglePassword" aria-label="Show password">👁</button>
-      </div>
+    <script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.97/build/spline-viewer.js"></script>
 
-      <button type="submit" class="signin-btn">SIGN IN</button>
-      <p id="signin-message" class="form-msg"></p>
-    </form>
-    <p class="signup-link">New here? <a href="signup.html">Create an account</a></p>
-  </section>
-</main>
-
-<script src="main.js"></script>
-<script src="signin.js"></script>
 </body>
+
 </html>

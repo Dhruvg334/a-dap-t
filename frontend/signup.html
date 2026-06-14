@@ -1,69 +1,122 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Sign Up | A-DAP-T</title>
-<link rel="stylesheet" href="shared.css">
-<link rel="stylesheet" href="signup.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account</title>
+
+    <link rel="stylesheet" href="signup.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
-<nav class="nav">
-  <div class="nav-i">
-    <a href="index.html" class="logo">A<em>-</em>DAP<em>-</em>T</a>
-    <ul class="nav-links">
-      <li><a href="index.html">HOME</a></li>
-      <li><a href="pages/scanner.html">SCANNER</a></li>
-      <li><a href="pages/dashboard.html">DASHBOARD</a></li>
-      <li><a href="pages/report.html">REPORT</a></li>
-      <li><a href="pages/methodology.html">METHODOLOGY</a></li>
-    </ul>
-    <div class="nav-auth">
-      <a href="signin.html" class="btn btn-o" data-auth="guest">SIGN IN</a>
-      <a href="signup.html" class="btn btn-p" data-auth="guest">SIGN UP</a>
-      <span class="nav-user-email auth-hidden" data-auth="user" data-user-email></span>
-      <a href="profile.html" class="profile-btn auth-hidden" data-auth="user" title="Profile"><img src="person.jpeg" alt="Profile"></a>
-      <a href="#" class="btn btn-g auth-hidden" data-auth="user" data-logout data-logout-redirect="index.html">LOG OUT</a>
+
+    <div class="container">
+
+        <!-- LEFT SIDE -->
+
+        <div class="left-panel">
+
+            <div class="logo">
+                <span class="green-dot"></span>
+                A-DAP-T
+            </div>
+
+            <h1>Deploy with CONFIDENCE</h1>
+
+            <h3>
+                From prototype to production without the surprises.
+            </h3>
+
+            <div class="glow-circle"></div>
+
+        </div>
+
+        <!-- RIGHT SIDE -->
+
+        <div class="signup-card">
+
+            <h2>Create Account</h2>
+
+            <form id="signupForm">
+
+                <div class="input-group">
+                    <label>Full Name</label>
+
+                    <input type="text" id="signupName" placeholder="John Doe" required>
+                </div>
+
+                <div class="input-group">
+                    <label>Email</label>
+
+                    <input type="email" id="signupEmail" placeholder="john@example.com" required>
+                </div>
+
+                <!-- PASSWORD -->
+
+                <div class="input-group">
+
+                    <label>Password</label>
+
+                    <div class="password-box">
+
+                        <input type="password" id="password" placeholder="Enter password" required>
+
+                        <button type="button" id="togglePassword">
+                            👁
+                        </button>
+
+                    </div>
+
+                </div>
+
+                <!-- CONFIRM PASSWORD -->
+
+                <div class="input-group">
+
+                    <label>Confirm Password</label>
+
+                    <div class="password-box">
+
+                        <input type="password" id="confirmPassword" placeholder="Confirm password" required>
+
+                        <button type="button" id="toggleConfirmPassword">
+                            👁
+                        </button>
+
+                    </div>
+
+                </div>
+
+                <button class="signup-btn" type="submit">
+                    Create Account
+                </button>
+
+            </form>
+
+            <div class="divider">
+                <span>OR</span>
+            </div>
+
+            <button class="google-btn">
+                Continue with Google
+            </button>
+
+            <p class="login-link">
+                Already have an account?
+                <a href="signin.html">
+                    Login
+                </a>
+            </p>
+
+        </div>
+
     </div>
-  </div>
-</nav>
 
-<main class="auth-page signup-page">
-  <section class="auth-copy">
-    <span class="eye">CREATE ACCOUNT</span>
-    <h1>Save your<br><em>agent risk reports</em></h1>
-    <p>Create an account to keep scan history and revisit past A-DAP-T reports.</p>
-  </section>
+    <script src="signup.js"></script>
 
-  <section class="signup-card">
-    <h2>Create Account</h2>
-    <form id="signupForm">
-      <label>Name</label>
-      <input id="displayName" type="text" autocomplete="name" required placeholder="Your name">
-
-      <label>Email</label>
-      <input id="email" type="email" autocomplete="email" required placeholder="you@example.com">
-
-      <label>Password</label>
-      <div class="password-row">
-        <input id="password" type="password" autocomplete="new-password" required minlength="6" placeholder="Minimum 6 characters">
-        <button type="button" id="togglePassword" aria-label="Show password">👁</button>
-      </div>
-
-      <label>Confirm Password</label>
-      <div class="password-row">
-        <input id="confirmPassword" type="password" autocomplete="new-password" required minlength="6" placeholder="Repeat password">
-        <button type="button" id="toggleConfirmPassword" aria-label="Show password">👁</button>
-      </div>
-
-      <button class="signup-btn" type="submit">CREATE ACCOUNT</button>
-      <p id="signup-message" class="form-msg"></p>
-    </form>
-    <p class="signup-link">Already have an account? <a href="signin.html">Sign in</a></p>
-  </section>
-</main>
-
-<script src="main.js"></script>
-<script src="signup.js"></script>
 </body>
+
 </html>

@@ -1,51 +1,93 @@
-function wirePasswordToggle(buttonId, inputId) {
-  const button = document.getElementById(buttonId);
-  const input = document.getElementById(inputId);
-  if (!button || !input) return;
+const API_BASE = "https://adapt-3s27.onrender.com";
+const AUTH_KEY = "adpt_auth";
 
-  button.addEventListener('click', () => {
-    const showing = input.type === 'text';
-    input.type = showing ? 'password' : 'text';
-    button.textContent = showing ? '👁' : '🙈';
-  });
+const togglePassword = document.getElementById("togglePassword");
+const password = document.getElementById("password");
+const signinForm = document.getElementById("signinForm");
+const emailInput = document.getElementById("signinEmail");
+
+function setAuthState(auth) {
+    localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
 }
 
-wirePasswordToggle('togglePassword', 'password');
-
-const signinForm = document.getElementById('signinForm');
-
-signinForm.addEventListener('submit', async event => {
-  event.preventDefault();
-
-  const email = document.getElementById('email').value.trim();
-  const password = document.getElementById('password').value;
-  const submitBtn = signinForm.querySelector('button[type="submit"]');
-
-  setFormMessage('signin-message', 'Signing in...', '');
-  submitBtn.disabled = true;
-
-  try {
-    const data = await apiFetch('/auth/login', {
-      method: 'POST',
-      auth: false,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+async function postJson(path, body) {
+    const response = await fetch(`${API_BASE}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
     });
 
-    saveAuthState({
-      idToken: data.idToken,
-      refreshToken: data.refreshToken,
-      email: data.email || email,
-      displayName: data.displayName || data.display_name || '',
-      localId: data.localId || data.uid || '',
-      expiresAt: Date.now() + Number(data.expiresIn || 3600) * 1000,
-    });
+    const data = await response.json().catch(() => ({}));
 
-    setFormMessage('signin-message', 'Signed in. Redirecting...', 'ok');
-    window.location.href = 'profile.html';
-  } catch (err) {
-    setFormMessage('signin-message', err.message || 'Could not sign in.', 'error');
-  } finally {
-    submitBtn.disabled = false;
-  }
+    if (!response.ok) {
+        throw new Error(data.detail || "Request failed. Please try again.");
+    }
+
+    return data;
+}
+
+togglePassword.addEventListener("click", () => {
+    if (password.type === "password") {
+        password.type = "text";
+        togglePassword.textContent = "🙈";
+    } else {
+        password.type = "password";
+        togglePassword.textContent = "👁";
+    }
+});
+
+signinForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const email = emailInput.value.trim();
+    const passwordValue = password.value;
+
+    if (!email || !passwordValue) {
+        alert("Please enter your email and password.");
+        return;
+    }
+
+    const submitButton = signinForm.querySelector("button[type='submit']");
+    const originalText = submitButton.textContent;
+    submitButton.disabled = true;
+    submitButton.textContent = "Signing in...";
+
+    try {
+        const data = await postJson("/auth/login", {
+            email,
+            password: passwordValue
+        });
+
+        setAuthState({
+            idToken: data.idToken,
+            refreshToken: data.refreshToken,
+            uid: data.localId,
+            email: data.email || email,
+            displayName: data.displayName || "A-DAP-T User"
+        });
+
+        window.location.href = "profile.html";
+    } catch (error) {
+        alert(error.message);
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
+    }
+});
+
+const aboutBtn = document.getElementById("aboutBtn");
+const modal = document.getElementById("aboutModal");
+const closeBtn = document.querySelector(".close-btn");
+
+aboutBtn.addEventListener("click", () => {
+    modal.style.display = "flex";
+});
+
+closeBtn.addEventListener("click", () => {
+    modal.style.display = "none";
+});
+
+window.addEventListener("click", (e) => {
+    if (e.target === modal) {
+        modal.style.display = "none";
+    }
 });

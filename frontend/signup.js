@@ -1,66 +1,108 @@
-function wirePasswordToggle(buttonId, inputId) {
-  const button = document.getElementById(buttonId);
-  const input = document.getElementById(inputId);
-  if (!button || !input) return;
+const API_BASE = "https://adapt-3s27.onrender.com";
+const AUTH_KEY = "adpt_auth";
 
-  button.addEventListener('click', () => {
-    const showing = input.type === 'text';
-    input.type = showing ? 'password' : 'text';
-    button.textContent = showing ? '👁' : '🙈';
-  });
+const password = document.getElementById("password");
+const confirmPassword = document.getElementById("confirmPassword");
+const togglePassword = document.getElementById("togglePassword");
+const toggleConfirmPassword = document.getElementById("toggleConfirmPassword");
+const signupForm = document.getElementById("signupForm");
+const nameInput = document.getElementById("signupName");
+const emailInput = document.getElementById("signupEmail");
+
+function setAuthState(auth) {
+    localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
 }
 
-wirePasswordToggle('togglePassword', 'password');
-wirePasswordToggle('toggleConfirmPassword', 'confirmPassword');
-
-const signupForm = document.getElementById('signupForm');
-
-signupForm.addEventListener('submit', async event => {
-  event.preventDefault();
-
-  const displayName = document.getElementById('displayName').value.trim();
-  const email = document.getElementById('email').value.trim();
-  const password = document.getElementById('password').value;
-  const confirmPassword = document.getElementById('confirmPassword').value;
-  const submitBtn = signupForm.querySelector('button[type="submit"]');
-
-  if (password !== confirmPassword) {
-    setFormMessage('signup-message', 'Passwords do not match.', 'error');
-    return;
-  }
-
-  setFormMessage('signup-message', 'Creating account...', '');
-  submitBtn.disabled = true;
-
-  try {
-    await apiFetch('/auth/signup', {
-      method: 'POST',
-      auth: false,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, display_name: displayName }),
+async function postJson(path, body) {
+    const response = await fetch(`${API_BASE}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
     });
 
-    const loginData = await apiFetch('/auth/login', {
-      method: 'POST',
-      auth: false,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
+    const data = await response.json().catch(() => ({}));
 
-    saveAuthState({
-      idToken: loginData.idToken,
-      refreshToken: loginData.refreshToken,
-      email: loginData.email || email,
-      displayName: loginData.displayName || displayName,
-      localId: loginData.localId || loginData.uid || '',
-      expiresAt: Date.now() + Number(loginData.expiresIn || 3600) * 1000,
-    });
+    if (!response.ok) {
+        throw new Error(data.detail || "Request failed. Please try again.");
+    }
 
-    setFormMessage('signup-message', 'Account created. Redirecting...', 'ok');
-    window.location.href = 'profile.html';
-  } catch (err) {
-    setFormMessage('signup-message', err.message || 'Could not create account.', 'error');
-  } finally {
-    submitBtn.disabled = false;
-  }
+    return data;
+}
+
+togglePassword.addEventListener("click", () => {
+    if (password.type === "password") {
+        password.type = "text";
+        togglePassword.textContent = "🙈";
+    } else {
+        password.type = "password";
+        togglePassword.textContent = "👁";
+    }
 });
+
+toggleConfirmPassword.addEventListener("click", () => {
+    if (confirmPassword.type === "password") {
+        confirmPassword.type = "text";
+        toggleConfirmPassword.textContent = "🙈";
+    } else {
+        confirmPassword.type = "password";
+        toggleConfirmPassword.textContent = "👁";
+    }
+});
+
+signupForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const displayName = nameInput.value.trim();
+    const email = emailInput.value.trim();
+    const passwordValue = password.value;
+    const confirmPasswordValue = confirmPassword.value;
+
+    if (!displayName || !email || !passwordValue || !confirmPasswordValue) {
+        alert("Please fill all fields.");
+        return;
+    }
+
+    if (passwordValue !== confirmPasswordValue) {
+        alert("Passwords do not match!");
+        return;
+    }
+
+    const submitButton = signupForm.querySelector("button[type='submit']");
+    const originalText = submitButton.textContent;
+    submitButton.disabled = true;
+    submitButton.textContent = "Creating...";
+
+    try {
+        await postJson("/auth/signup", {
+            display_name: displayName,
+            email,
+            password: passwordValue
+        });
+
+        const loginData = await postJson("/auth/login", {
+            email,
+            password: passwordValue
+        });
+
+        setAuthState({
+            idToken: loginData.idToken,
+            refreshToken: loginData.refreshToken,
+            uid: loginData.localId,
+            email: loginData.email || email,
+            displayName: loginData.displayName || displayName
+        });
+
+        window.location.href = "profile.html";
+    } catch (error) {
+        alert(error.message);
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
+    }
+});
+
+const googleButton = document.querySelector(".google-btn");
+if (googleButton) {
+    googleButton.addEventListener("click", () => {
+        alert("Google sign-in is not enabled in this demo yet.");
+    });
+}
