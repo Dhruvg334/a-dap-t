@@ -117,11 +117,19 @@ async def _save_if_requested(result: dict, user: dict | None, save_report: bool)
     return _with_save_metadata(result, report_id)
 
 
+def _require_authenticated_user(user: dict | None) -> dict:
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    return user
+
+
+
 @app.get("/scan/demo/vulnerable", response_model=ScanResultSchema)
 async def scan_vulnerable_demo(
     save_report: bool = Query(False),
     user=Depends(auth.get_current_user),
 ):
+    user = _require_authenticated_user(user)
     base_dir = os.path.dirname(os.path.abspath(__file__))
     vulnerable_dir = os.path.abspath(os.path.join(base_dir, "..", "sample_agents", "vulnerable-support-agent"))
 
@@ -164,6 +172,7 @@ async def scan_secured_demo(
     save_report: bool = Query(False),
     user=Depends(auth.get_current_user),
 ):
+    user = _require_authenticated_user(user)
     base_dir = os.path.dirname(os.path.abspath(__file__))
     secured_dir = os.path.abspath(os.path.join(base_dir, "..", "sample_agents", "secured-support-agent"))
 
@@ -227,6 +236,7 @@ async def scan_upload(
     save_report: bool = Query(False),
     user=Depends(auth.get_current_user),
 ):
+    user = _require_authenticated_user(user)
     with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as tmp_zip:
         tmp_zip.write(await file.read())
         tmp_zip_path = tmp_zip.name
@@ -249,6 +259,7 @@ async def scan_upload(
 
 @app.post("/scan/github", response_model=ScanResultSchema)
 async def scan_github_repo(payload: GitHubScanRequest, user=Depends(auth.get_current_user)):
+    user = _require_authenticated_user(user)
     repo = parse_github_repo_url(payload.repo_url, payload.branch)
     tmp_zip_path = download_public_repo_zip(repo)
 

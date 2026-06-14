@@ -1,38 +1,33 @@
 """
 Gemini prompt templates for A-DAP-T.
 
-The scanner remains rule-based. Gemini only turns the final scan result into
-short developer-facing explanations.
+The scanner remains rule-based. Gemini should only explain the final scan result
+or help DAP answer questions from a provided report context.
 """
 
 
 GEMINI_SYSTEM_INSTRUCTION = """
 You are assisting A-DAP-T, a pre-deployment AI-agent risk scanner.
 
-Your job is to explain scan results clearly for developers.
-
 Rules:
 - Do not invent findings that are not present in the scan result.
 - Do not claim this is a full security audit.
 - Do not claim the project is safe for production.
-- Keep explanations specific to AI-agent risks.
-- Prefer practical fixes over generic security advice.
-- Keep all outputs compact enough for dashboard/report cards.
-- Avoid heavy Markdown formatting unless specifically requested.
-- Do not use tables.
+- Keep explanations specific to AI-agent deployment risks.
+- No markdown headings, no tables, no long paragraphs.
+- Keep answers short unless the user explicitly asks for more detail.
 """
 
 
 def build_scan_summary_prompt(scan_result):
     return f"""
-Create a compact executive scan summary for this A-DAP-T scan result.
+Write a compact scan summary.
 
-Hard output limits:
-- Maximum 2 short sentences.
-- Must mention the safety score and risk status.
+Hard limits:
+- 2 short sentences maximum.
+- Mention safety score and risk status.
 - Mention only the top 1-2 risk themes.
-- Do not include a long explanation.
-- Do not invent extra findings.
+- No headings, bullets, tables, or markdown.
 
 Scan result:
 {scan_result}
@@ -41,12 +36,12 @@ Scan result:
 
 def build_finding_explanation_prompt(finding):
     return f"""
-Explain this A-DAP-T scanner finding in developer-friendly language.
+Explain this finding in developer-friendly language.
 
-Hard output limits:
-- Maximum 3 short sentences.
-- Explain what it means, why it matters, and the practical fix.
-- Do not invent missing context.
+Hard limits:
+- 3 short sentences maximum.
+- Explain meaning, impact, and fix.
+- No extra assumptions.
 
 Finding:
 {finding}
@@ -55,14 +50,13 @@ Finding:
 
 def build_remediation_plan_prompt(scan_result):
     return f"""
-Create a prioritized remediation plan for this A-DAP-T scan result.
+Create a remediation plan.
 
-Hard output limits:
-- Return only 5 bullets.
-- Each bullet must be under 18 words.
-- No headings, intro, outro, tables, or paragraphs.
-- Prioritize Critical and High findings first.
-- Do not add findings that are not present in the scan result.
+Hard limits:
+- Return exactly 5 concise bullets.
+- Each bullet under 16 words.
+- No headings, intro, outro, tables, or markdown.
+- Prioritize Critical and High findings.
 
 Scan result:
 {scan_result}
@@ -71,13 +65,12 @@ Scan result:
 
 def build_report_summary_prompt(scan_result):
     return f"""
-Create a short report summary for this A-DAP-T scan result.
+Create a short report summary.
 
-Hard output limits:
-- Maximum 2 short sentences.
-- Must mention what was scanned, safety score/status, and the main remediation theme.
-- Do not call this a certification or full security audit.
-- Do not include bullet lists.
+Hard limits:
+- 3 to 4 short lines maximum.
+- Mention scanned project, score/status, main risks, and what to fix first.
+- No headings, bullets, tables, markdown, or limitation notes.
 
 Scan result:
 {scan_result}
@@ -86,12 +79,12 @@ Scan result:
 
 def build_developer_next_steps_prompt(scan_result):
     return f"""
-Based on this A-DAP-T scan result, write developer next steps.
+Write developer next steps.
 
-Hard output limits:
-- Return only 5 bullets.
-- Each bullet must be under 18 words.
-- No headings, intro, outro, tables, or paragraphs.
+Hard limits:
+- Return exactly 5 concise bullets.
+- Each bullet under 16 words.
+- No headings, intro, outro, tables, or markdown.
 - Focus on what to fix and retest.
 
 Scan result:

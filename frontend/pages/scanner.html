@@ -327,18 +327,14 @@ async function startScan() {
 
   let result = null;
   const saveReport = document.getElementById('save-report')?.checked || false;
-  const headers = {};
   const token = typeof getAuthToken === 'function' ? getAuthToken() : null;
 
-  if (saveReport && !token) {
-    setStepError(1, 'Please sign in before saving a scan to history.');
-    btn.disabled = false; btn.textContent = 'RUN SCAN →';
+  if (!token) {
+    window.location.href = '../signin.html?next=' + encodeURIComponent('/pages/scanner.html');
     return;
   }
 
-  if (saveReport && token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
+  const headers = { Authorization: `Bearer ${token}` };
 
   try {
     if (optType === 'upload') {

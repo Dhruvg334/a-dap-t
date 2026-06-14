@@ -116,9 +116,17 @@ async function loadHistory() {
         </div>
       `;
 
-      item.querySelector('[data-open]').addEventListener('click', () => {
-        sessionStorage.setItem('adpt_result', JSON.stringify(report));
-        window.location.href = 'pages/report.html';
+      item.querySelector('[data-open]').addEventListener('click', async () => {
+        try {
+          let fullReport = report;
+          if (id) {
+            fullReport = await apiFetch(`/reports/${encodeURIComponent(id)}`);
+          }
+          sessionStorage.setItem('adpt_result', JSON.stringify(fullReport));
+          window.location.href = 'pages/report.html';
+        } catch (err) {
+          alert(err.message || 'Could not open saved report.');
+        }
       });
 
       const deleteBtn = item.querySelector('[data-delete]');
