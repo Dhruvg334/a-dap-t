@@ -23,6 +23,9 @@ from app.utils.zip_utils import validate_zip_meta, extract_zip, cleanup_temp_dir
 from app.routes import auth
 from app.utils.firebase_utils import get_db
 
+# Security Assistant Import
+from app.security_assistant.assistant_router import router as assistant_router
+
 app = FastAPI(title="A-DAP-T Backend")
 
 # Keep this permissive for now because frontend deployment URLs can change during V2.
@@ -35,7 +38,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Include Auth Routes
 app.include_router(auth.router)
+
+# Include Security Assistant Routes (Backend Only Integration)
+app.include_router(assistant_router)
 
 
 @app.get("/health")
