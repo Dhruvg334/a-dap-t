@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
 <title>A-DAP-T — Pre-Deployment AI Agent Risk Scanner</title>
 <link rel="stylesheet" href="shared.css"/>
 <style>
@@ -15,26 +16,40 @@
 .hero-desc { font-size: 1rem; color: var(--dim); line-height: 1.8; margin-bottom: 2rem; max-width: 480px; }
 .hero-acts { display: flex; gap: .75rem; flex-wrap: wrap; }
 .hero-card {
-  background: var(--bg2); border: 1px solid var(--bd); border-radius: var(--r);
-  padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(56,196,106,.12), transparent 32%),
+    linear-gradient(145deg, rgba(18,18,18,.96), rgba(10,10,10,.98));
+  border: 1px solid var(--bd);
+  border-radius: var(--r);
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+  box-shadow: 0 0 50px rgba(56,196,106,.05);
 }
-.hero-score-ring { display: flex; align-items: center; gap: 1.25rem; }
-.ring { width: 72px; height: 72px; position: relative; flex-shrink: 0; }
-.ring svg { transform: rotate(-90deg); }
-.ring-bg { fill: none; stroke: var(--bd2); stroke-width: 6; }
-.ring-fill { fill: none; stroke: var(--gl); stroke-width: 6; stroke-linecap: round; stroke-dasharray: 201; stroke-dashoffset: 50; transition: stroke-dashoffset 1.2s ease; }
-.ring-fill.red { stroke: var(--red); stroke-dashoffset: 160; }
-.ring-label { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-family: var(--M); font-size: .85rem; font-weight: 700; color: var(--wht); }
-.score-meta { display: flex; flex-direction: column; gap: .2rem; }
-.score-name { font-size: .88rem; font-weight: 600; color: var(--wht); }
-.score-sub  { font-family: var(--M); font-size: .6rem; letter-spacing: .08em; color: var(--dim); }
-.hero-findings { display: flex; flex-direction: column; gap: .5rem; }
-.hf-row { display: flex; align-items: center; justify-content: space-between; font-size: .8rem; }
-.hf-label { color: var(--dim); font-size: .78rem; }
-.hf-count { font-family: var(--M); font-size: .72rem; font-weight: 700; }
-.hf-count.red { color: var(--red); }
-.hf-count.yel { color: var(--yel); }
-.hf-count.grn { color: var(--gl); }
+.hero-flow-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.hero-flow-title { display: flex; flex-direction: column; gap: .35rem; }
+.hero-flow-name { font-size: 1.05rem; font-weight: 700; color: var(--wht); }
+.hero-flow-sub { font-family: var(--M); font-size: .58rem; letter-spacing: .11em; color: var(--muted); text-transform: uppercase; }
+.hero-flow-pill { font-family: var(--M); font-size: .54rem; font-weight: 700; letter-spacing: .08em; color: var(--gl); border: 1px solid var(--gd); background: rgba(45,158,84,.08); border-radius: 999px; padding: .35rem .55rem; white-space: nowrap; }
+.hero-pipeline { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6rem; }
+.hp-step { background: var(--bg3); border: 1px solid var(--bd); border-radius: 8px; padding: .85rem; min-height: 82px; }
+.hp-num { font-family: var(--M); font-size: .55rem; font-weight: 700; color: var(--gl); letter-spacing: .12em; display: block; margin-bottom: .45rem; }
+.hp-title { font-size: .78rem; font-weight: 700; color: var(--wht); display: block; margin-bottom: .3rem; }
+.hp-desc { font-size: .68rem; color: var(--muted); line-height: 1.45; }
+.hero-live-panel { border: 1px solid var(--bd); background: rgba(0,0,0,.22); border-radius: 10px; padding: 1rem; }
+.live-row { display: grid; grid-template-columns: 96px 1fr; gap: 1rem; align-items: center; }
+.live-score { width: 86px; height: 86px; border-radius: 999px; display:flex; align-items:center; justify-content:center; flex-direction:column; border: 7px solid rgba(56,196,106,.25); box-shadow: inset 0 0 0 3px rgba(0,0,0,.4), 0 0 26px rgba(56,196,106,.16); }
+.live-score strong { font-family: var(--M); font-size: 1.25rem; color: var(--wht); line-height: 1; }
+.live-score span { font-family: var(--M); font-size: .48rem; color: var(--gl); letter-spacing: .12em; margin-top: .25rem; }
+.live-meta { display:flex; flex-direction:column; gap:.45rem; }
+.live-meta-title { font-size: .92rem; font-weight: 700; color: var(--wht); }
+.live-meta-copy { font-size: .78rem; color: var(--dim); line-height: 1.55; }
+.hero-checks { display:grid; grid-template-columns: repeat(2,1fr); gap:.55rem .75rem; }
+.hc-item { display:flex; align-items:center; gap:.55rem; font-size:.76rem; color:var(--txt); }
+.hc-dot { width:7px; height:7px; border-radius:999px; background:var(--gl); box-shadow:0 0 12px rgba(56,196,106,.75); flex-shrink:0; }
+.hero-output { display:flex; flex-wrap:wrap; gap:.5rem; }
+.hero-output span { font-family:var(--M); font-size:.55rem; font-weight:700; letter-spacing:.08em; color:var(--wht); border:1px solid var(--bd2); background:var(--bg3); border-radius:999px; padding:.35rem .55rem; }
 
 /* ── HOW ── */
 .how-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: .9rem; }
@@ -106,29 +121,57 @@
       </div>
     </div>
     <div class="hero-card">
-      <span class="card-title">Example Scan Result</span>
-      <div class="hero-score-ring">
-        <div class="ring">
-          <svg viewBox="0 0 72 72" width="72" height="72">
-            <circle class="ring-bg" cx="36" cy="36" r="32"/>
-            <circle class="ring-fill red" cx="36" cy="36" r="32"/>
-          </svg>
-          <span class="ring-label">34</span>
+      <div class="hero-flow-head">
+        <div class="hero-flow-title">
+          <span class="card-title">Live scan workflow</span>
+          <span class="hero-flow-name">From repo to risk report</span>
+          <span class="hero-flow-sub">GitHub · ZIP · Demo Agents</span>
         </div>
-        <div class="score-meta">
-          <span class="score-name">my-support-agent</span>
-          <span class="score-sub">SAFETY SCORE · CRITICAL RISK</span>
-          <span class="tag tag-cr" style="margin-top:.4rem">UNSAFE</span>
+        <span class="hero-flow-pill">AUTH LOCKED</span>
+      </div>
+
+      <div class="hero-pipeline">
+        <div class="hp-step">
+          <span class="hp-num">01</span>
+          <span class="hp-title">Scan Source</span>
+          <p class="hp-desc">Paste a GitHub repo, upload ZIP, or run a demo agent.</p>
+        </div>
+        <div class="hp-step">
+          <span class="hp-num">02</span>
+          <span class="hp-title">Detect Risk</span>
+          <p class="hp-desc">Find secrets, unsafe tools, approval gaps, and exposed data.</p>
+        </div>
+        <div class="hp-step">
+          <span class="hp-num">03</span>
+          <span class="hp-title">Act Fast</span>
+          <p class="hp-desc">Get a report, dashboard, saved history, and DAP guidance.</p>
         </div>
       </div>
-      <div class="hero-findings">
-        <span class="card-title" style="margin-bottom:.25rem">FINDINGS BREAKDOWN</span>
-        <div class="hf-row"><span class="hf-label">Prompt Injection Risk</span><span class="hf-count red">4 issues</span></div>
-        <div class="hf-row"><span class="hf-label">Secret Exposure Risk</span><span class="hf-count red">2 issues</span></div>
-        <div class="hf-row"><span class="hf-label">Tool Permission Risk</span><span class="hf-count yel">3 issues</span></div>
-        <div class="hf-row"><span class="hf-label">Human Approval Risk</span><span class="hf-count yel">1 issue</span></div>
-        <div class="hf-row"><span class="hf-label">Data Exposure Risk</span><span class="hf-count red">2 issues</span></div>
-        <div class="hf-row"><span class="hf-label">Auditability Risk</span><span class="hf-count grn">0 issues</span></div>
+
+      <div class="hero-live-panel">
+        <div class="live-row">
+          <div class="live-score"><strong>90</strong><span>SAFE</span></div>
+          <div class="live-meta">
+            <span class="live-meta-title">Secured support agent</span>
+            <p class="live-meta-copy">A-DAP-T compares risky and secured agent flows so developers can see what changed before deployment.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-checks">
+        <div class="hc-item"><span class="hc-dot"></span>Secret exposure</div>
+        <div class="hc-item"><span class="hc-dot"></span>Tool permissions</div>
+        <div class="hc-item"><span class="hc-dot"></span>Approval gates</div>
+        <div class="hc-item"><span class="hc-dot"></span>Data exposure</div>
+        <div class="hc-item"><span class="hc-dot"></span>Prompt injection</div>
+        <div class="hc-item"><span class="hc-dot"></span>Auditability</div>
+      </div>
+
+      <div class="hero-output">
+        <span>REPORT</span>
+        <span>DASHBOARD</span>
+        <span>RAW JSON</span>
+        <span>DAP ASSISTANT</span>
       </div>
     </div>
   </div>
