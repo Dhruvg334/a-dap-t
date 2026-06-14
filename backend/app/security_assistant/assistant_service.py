@@ -29,7 +29,9 @@ def _clean_answer(text: str, max_words: int = 110) -> str:
     words = text.split()
     if len(words) <= max_words:
         return text
-    return " ".join(words[:max_words]).rstrip(".,;:") + "..."
+
+    short = " ".join(words[:max_words]).rstrip(".,;:")
+    return short if short.endswith((".", "!", "?")) else short + "."
 
 
 class SecurityAssistantService:
