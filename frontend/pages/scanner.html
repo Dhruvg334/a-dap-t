@@ -385,12 +385,20 @@ async function startScan() {
       const formData = new FormData();
       formData.append('file', fileInput.files[0]);
 
-      const res = await fetch(`${API_BASE}/scan/upload`, {
+      const res = await fetch(`${API_BASE}/scan/upload?save_report=${saveReport}`, {
         method: 'POST',
         headers,
         body: formData
       });
-      if (!res.ok) throw new Error(`Backend returned ${res.status}: ${await res.text()}`);
+      if (!res.ok) {
+        const errorText = await res.text();
+        if (res.status === 401 || res.status === 403) {
+          if (typeof clearAuthState === 'function') clearAuthState();
+          window.location.href = '../signin.html?next=' + encodeURIComponent('/pages/scanner.html') + '&message=' + encodeURIComponent('Your session expired. Please sign in again.');
+          return;
+        }
+        throw new Error(`Backend returned ${res.status}: ${errorText}`);
+      }
       result = await res.json();
 
     } else if (optType === 'github') {
@@ -412,13 +420,29 @@ async function startScan() {
           save_report: saveReport
         })
       });
-      if (!res.ok) throw new Error(`Backend returned ${res.status}: ${await res.text()}`);
+      if (!res.ok) {
+        const errorText = await res.text();
+        if (res.status === 401 || res.status === 403) {
+          if (typeof clearAuthState === 'function') clearAuthState();
+          window.location.href = '../signin.html?next=' + encodeURIComponent('/pages/scanner.html') + '&message=' + encodeURIComponent('Your session expired. Please sign in again.');
+          return;
+        }
+        throw new Error(`Backend returned ${res.status}: ${errorText}`);
+      }
       result = await res.json();
 
     } else {
       const demoKey = optType === 'secured' ? 'secured' : 'vulnerable';
-      const res = await fetch(`${API_BASE}/scan/demo/${demoKey}`, { headers });
-      if (!res.ok) throw new Error(`Backend returned ${res.status}: ${await res.text()}`);
+      const res = await fetch(`${API_BASE}/scan/demo/${demoKey}?save_report=${saveReport}`, { headers });
+      if (!res.ok) {
+        const errorText = await res.text();
+        if (res.status === 401 || res.status === 403) {
+          if (typeof clearAuthState === 'function') clearAuthState();
+          window.location.href = '../signin.html?next=' + encodeURIComponent('/pages/scanner.html') + '&message=' + encodeURIComponent('Your session expired. Please sign in again.');
+          return;
+        }
+        throw new Error(`Backend returned ${res.status}: ${errorText}`);
+      }
       result = await res.json();
     }
 
