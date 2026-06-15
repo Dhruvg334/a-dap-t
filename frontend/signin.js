@@ -42,6 +42,31 @@ async function postJson(path, body) {
     return data;
 }
 
+
+function showIncomingMessage() {
+    const params = new URLSearchParams(window.location.search);
+    const message = params.get("message");
+    if (!message) return;
+
+    const existing = document.querySelector(".auth-message");
+    if (existing) {
+        existing.textContent = message;
+        return;
+    }
+
+    const form = document.getElementById("signinForm");
+    if (!form) return;
+
+    const note = document.createElement("div");
+    note.className = "auth-message";
+    note.textContent = message;
+    note.style.cssText = "margin-bottom:14px;color:#00ff88;font-size:0.9rem;line-height:1.5;";
+    form.prepend(note);
+}
+
+showIncomingMessage();
+
+
 togglePassword.addEventListener("click", () => {
     if (password.type === "password") {
         password.type = "text";

@@ -6,14 +6,28 @@ window.ADAPT_API_BASE = window.ADAPT_API_BASE || 'https://adapt-3s27.onrender.co
 const ADPT_AUTH_KEY = 'adpt_auth';
 
 function getAuthState() {
+  const raw = localStorage.getItem(ADPT_AUTH_KEY);
+  if (!raw) return null;
+
   try {
-    return JSON.parse(localStorage.getItem(ADPT_AUTH_KEY) || 'null');
+    const parsed = JSON.parse(raw);
+    if (typeof parsed === 'string') {
+      return { idToken: parsed };
+    }
+    return parsed && typeof parsed === 'object' ? parsed : null;
   } catch (_) {
-    return null;
+    // Older builds occasionally stored the token directly. Keep supporting that
+    // so users are not randomly treated as logged out after a deployment.
+    return { idToken: raw };
   }
 }
 
 function saveAuthState(auth) {
+  if (!auth) return;
+  if (typeof auth === 'string') {
+    localStorage.setItem(ADPT_AUTH_KEY, JSON.stringify({ idToken: auth }));
+    return;
+  }
   localStorage.setItem(ADPT_AUTH_KEY, JSON.stringify(auth));
 }
 
@@ -23,7 +37,9 @@ function clearAuthState() {
 
 function getAuthToken() {
   const auth = getAuthState();
-  return auth && auth.idToken ? auth.idToken : null;
+  if (!auth) return null;
+  if (typeof auth === 'string') return auth;
+  return auth.idToken || auth.token || auth.accessToken || null;
 }
 
 function authHeaders() {
@@ -43,6 +59,10 @@ function signInPathForCurrentPage() {
   return window.location.pathname.includes('/pages/') ? '../signin.html' : 'signin.html';
 }
 
+function signUpPathForCurrentPage() {
+  return window.location.pathname.includes('/pages/') ? '../signup.html' : 'signup.html';
+}
+
 function isProtectedPage() {
   const path = window.location.pathname.toLowerCase();
   return (
@@ -53,12 +73,22 @@ function isProtectedPage() {
   );
 }
 
+function currentRelativePath() {
+  return window.location.pathname + window.location.search + window.location.hash;
+}
+
+function redirectToSignIn(message = '') {
+  const next = encodeURIComponent(currentRelativePath());
+  const msg = message ? `&message=${encodeURIComponent(message)}` : '';
+  window.location.href = `${signInPathForCurrentPage()}?next=${next}${msg}`;
+}
+
 function requireAuthForProtectedPage() {
   if (!isProtectedPage()) return;
   if (isLoggedIn()) return;
 
-  const next = window.location.pathname + window.location.search + window.location.hash;
-  window.location.href = `${signInPathForCurrentPage()}?next=${encodeURIComponent(next)}`;
+  const next = encodeURIComponent(currentRelativePath());
+  window.location.href = `${signUpPathForCurrentPage()}?next=${next}`;
 }
 
 function safeJsonParse(text) {
@@ -67,6 +97,12 @@ function safeJsonParse(text) {
   } catch (_) {
     return null;
   }
+}
+
+function isAuthFailure(response, detail) {
+  if (response.status === 401 || response.status === 403) return true;
+  const text = typeof detail === 'string' ? detail : JSON.stringify(detail || {});
+  return /invalid|expired|authentication|required|unauthorized/i.test(text);
 }
 
 async function apiFetch(path, options = {}) {
@@ -83,6 +119,15 @@ async function apiFetch(path, options = {}) {
 
   if (!response.ok) {
     const detail = data && typeof data === 'object' && data.detail ? data.detail : text;
+
+    if (isAuthFailure(response, detail)) {
+      clearAuthState();
+      if (isProtectedPage()) {
+        redirectToSignIn('Your session expired. Please sign in again.');
+        return;
+      }
+    }
+
     throw new Error(detail || `Request failed with status ${response.status}`);
   }
 
