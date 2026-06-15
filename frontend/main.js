@@ -4,31 +4,50 @@
 window.ADAPT_API_BASE = window.ADAPT_API_BASE || 'https://adapt-3s27.onrender.com';
 
 const ADPT_AUTH_KEY = 'adpt_auth';
+const TOKEN_REFRESH_MARGIN_MS = 5 * 60 * 1000;
+
+function normalizeAuthState(auth) {
+  if (!auth) return null;
+
+  if (typeof auth === 'string') {
+    return { idToken: auth };
+  }
+
+  if (typeof auth !== 'object') return null;
+
+  const normalized = { ...auth };
+
+  // Firebase REST uses both camelCase and snake_case across endpoints.
+  normalized.idToken = normalized.idToken || normalized.id_token || normalized.token || normalized.accessToken || null;
+  normalized.refreshToken = normalized.refreshToken || normalized.refresh_token || null;
+  normalized.uid = normalized.uid || normalized.localId || normalized.user_id || null;
+
+  if (!normalized.expiresAt && normalized.expiresIn) {
+    const seconds = Number(normalized.expiresIn);
+    if (Number.isFinite(seconds)) {
+      normalized.expiresAt = Date.now() + (seconds * 1000);
+    }
+  }
+
+  return normalized.idToken ? normalized : null;
+}
 
 function getAuthState() {
   const raw = localStorage.getItem(ADPT_AUTH_KEY);
   if (!raw) return null;
 
   try {
-    const parsed = JSON.parse(raw);
-    if (typeof parsed === 'string') {
-      return { idToken: parsed };
-    }
-    return parsed && typeof parsed === 'object' ? parsed : null;
+    return normalizeAuthState(JSON.parse(raw));
   } catch (_) {
-    // Older builds occasionally stored the token directly. Keep supporting that
-    // so users are not randomly treated as logged out after a deployment.
-    return { idToken: raw };
+    // Older builds sometimes stored only the token string.
+    return normalizeAuthState(raw);
   }
 }
 
 function saveAuthState(auth) {
-  if (!auth) return;
-  if (typeof auth === 'string') {
-    localStorage.setItem(ADPT_AUTH_KEY, JSON.stringify({ idToken: auth }));
-    return;
-  }
-  localStorage.setItem(ADPT_AUTH_KEY, JSON.stringify(auth));
+  const normalized = normalizeAuthState(auth);
+  if (!normalized) return;
+  localStorage.setItem(ADPT_AUTH_KEY, JSON.stringify(normalized));
 }
 
 function clearAuthState() {
@@ -37,13 +56,67 @@ function clearAuthState() {
 
 function getAuthToken() {
   const auth = getAuthState();
-  if (!auth) return null;
-  if (typeof auth === 'string') return auth;
-  return auth.idToken || auth.token || auth.accessToken || null;
+  return auth && auth.idToken ? auth.idToken : null;
+}
+
+function tokenNeedsRefresh(auth) {
+  if (!auth || !auth.idToken) return true;
+  if (!auth.expiresAt) return false;
+  return Date.now() >= (Number(auth.expiresAt) - TOKEN_REFRESH_MARGIN_MS);
+}
+
+async function refreshAuthToken(auth = getAuthState()) {
+  if (!auth || !auth.refreshToken) return null;
+
+  const response = await fetch(`${window.ADAPT_API_BASE}/auth/refresh`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refreshToken: auth.refreshToken })
+  });
+
+  const text = await response.text();
+  const data = safeJsonParse(text) ?? {};
+
+  if (!response.ok) {
+    clearAuthState();
+    throw new Error((data && data.detail) || 'Session refresh failed. Please sign in again.');
+  }
+
+  const nextAuth = normalizeAuthState({
+    ...auth,
+    ...data,
+    email: auth.email || data.email,
+    displayName: auth.displayName || data.displayName,
+    uid: auth.uid || data.localId || data.user_id
+  });
+
+  if (!nextAuth) {
+    clearAuthState();
+    throw new Error('Session refresh failed. Please sign in again.');
+  }
+
+  saveAuthState(nextAuth);
+  return nextAuth.idToken;
+}
+
+async function getValidAuthToken() {
+  const auth = getAuthState();
+  if (!auth || !auth.idToken) return null;
+
+  if (!tokenNeedsRefresh(auth)) {
+    return auth.idToken;
+  }
+
+  return refreshAuthToken(auth);
 }
 
 function authHeaders() {
   const token = getAuthToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+async function authHeadersAsync() {
+  const token = await getValidAuthToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -107,10 +180,18 @@ function isAuthFailure(response, detail) {
 
 async function apiFetch(path, options = {}) {
   const headers = { ...(options.headers || {}) };
-  const token = getAuthToken();
 
-  if (token && options.auth !== false) {
-    headers.Authorization = `Bearer ${token}`;
+  if (options.auth !== false) {
+    try {
+      const token = await getValidAuthToken();
+      if (token) headers.Authorization = `Bearer ${token}`;
+    } catch (error) {
+      if (isProtectedPage()) {
+        redirectToSignIn('Your session expired. Please sign in again.');
+        return;
+      }
+      throw error;
+    }
   }
 
   const response = await fetch(apiUrl(path), { ...options, headers });
