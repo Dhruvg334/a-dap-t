@@ -7,7 +7,16 @@ const signinForm = document.getElementById("signinForm");
 const emailInput = document.getElementById("signinEmail");
 
 function setAuthState(auth) {
-    localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
+    const seconds = Number(auth.expiresIn || auth.expires_in || 3600);
+    const normalized = {
+        ...auth,
+        idToken: auth.idToken || auth.id_token,
+        refreshToken: auth.refreshToken || auth.refresh_token,
+        uid: auth.uid || auth.localId || auth.user_id,
+        expiresAt: Date.now() + ((Number.isFinite(seconds) ? seconds : 3600) * 1000)
+    };
+
+    localStorage.setItem(AUTH_KEY, JSON.stringify(normalized));
 }
 
 

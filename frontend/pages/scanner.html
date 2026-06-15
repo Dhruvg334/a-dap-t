@@ -364,7 +364,7 @@ async function startScan() {
 
   let result = null;
   const saveReport = document.getElementById('save-report')?.checked || false;
-  const token = typeof getAuthToken === 'function' ? getAuthToken() : null;
+  const token = typeof getValidAuthToken === 'function' ? await getValidAuthToken() : (typeof getAuthToken === 'function' ? getAuthToken() : null);
 
   if (!token) {
     window.location.href = '../signin.html?next=' + encodeURIComponent('/pages/scanner.html');
