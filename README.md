@@ -21,6 +21,8 @@ A-DAP-T scans AI-agent repositories and uploaded projects for deployment risks s
 <a href="https://a-dap-t.vercel.app/"><b>Open Live App</b></a>
 &nbsp;&nbsp;•&nbsp;&nbsp;
 <a href="https://adapt-3s27.onrender.com/docs"><b>API Docs</b></a>
+&nbsp;&nbsp;•&nbsp;&nbsp;
+<b>Demo Video:</b> Coming soon
 
 </div>
 
@@ -30,9 +32,9 @@ A-DAP-T scans AI-agent repositories and uploaded projects for deployment risks s
 
 Modern AI agents are no longer simple chat interfaces. They can call tools, read files, query databases, access customer records, send emails, trigger refunds, and perform workflow actions.
 
-That creates a deployment problem: many teams can build an agent, but they do not always know whether the agent is safe enough to ship.
+That creates a deployment problem: many teams can build an agent that works, but they do not always know whether the agent is safe enough to ship.
 
-**A-DAP-T helps developers assess AI-agent deployment risk before release.** It combines rule-based static scanning, agent-specific risk checks, safety scoring, Gemini-powered report summarization, saved report history, and a report-aware assistant called **DAP**.
+**A-DAP-T helps developers assess AI-agent deployment risk before release.** It combines rule-based static scanning, agent-specific risk checks, safety scoring, Gemini-powered report summarization, authenticated report history, and a report-aware assistant called **DAP**.
 
 ---
 
@@ -88,6 +90,21 @@ A-DAP-T focuses on risks that matter specifically for AI-agent and GenAI applica
 
 - **PDF export**
   - Use browser print/save-as-PDF flow for report export.
+
+---
+
+## Demo Video
+
+A short walkthrough video will be added here after final submission recording.
+
+Recommended demo flow:
+
+1. Show the problem and product positioning.
+2. Run the vulnerable demo scan.
+3. Walk through the report, dashboard, and DAP assistant.
+4. Run a public GitHub repository scan.
+5. Open a saved report from profile history.
+6. Export the report as JSON or PDF.
 
 ---
 
@@ -194,6 +211,7 @@ sequenceDiagram
 | Method | Endpoint | Purpose |
 |---|---|---|
 | `GET` | `/health` | Backend health check |
+| `POST` | `/auth/refresh` | Refresh Firebase ID tokens for active sessions |
 | `GET` | `/scan/demo/vulnerable` | Scan the vulnerable demo support agent |
 | `GET` | `/scan/demo/secured` | Scan the secured demo support agent |
 | `POST` | `/scan/upload` | Scan an uploaded ZIP project |
@@ -328,6 +346,8 @@ Authenticated users can:
 - view report history
 - reopen previous reports
 - ask DAP questions using report context
+
+The frontend stores authenticated session metadata locally and refreshes Firebase ID tokens before protected API calls when needed. If refresh fails, the user is redirected back to sign in.
 
 Firestore stores report history for each authenticated user.
 
