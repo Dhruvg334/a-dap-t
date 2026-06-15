@@ -438,3 +438,10 @@ html {
     height: 430px;
   }
 }
+
+/* Final icon polish */
+.dap-chat-toggle { color: #06110a !important; }
+.dap-chat-toggle svg,
+.dap-chat-toggle svg * { stroke: #06110a !important; filter: none !important; }
+.dap-chat-toggle svg circle { fill: #06110a !important; stroke: #06110a !important; }
+

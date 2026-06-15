@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -122,6 +122,7 @@
   .profile-stats { grid-template-columns: 1fr; }
 }
 </style>
+<style id='profile-nav-cleanup'>.nav-auth .profile-btn{display:none!important;}</style>
 </head>
 <body>
 <nav class="nav">
@@ -171,15 +172,15 @@
 
     <div class="profile-stats">
       <div class="profile-stat">
-        <span class="stat-num" id="stat-total-reports">—</span>
+        <span class="stat-num" id="stat-total-reports">â€”</span>
         <span class="stat-label">Reports</span>
       </div>
       <div class="profile-stat">
-        <span class="stat-num" id="stat-latest-score">—</span>
+        <span class="stat-num" id="stat-latest-score">â€”</span>
         <span class="stat-label">Latest Score</span>
       </div>
       <div class="profile-stat">
-        <span class="stat-num" id="stat-high-risk">—</span>
+        <span class="stat-num" id="stat-high-risk">â€”</span>
         <span class="stat-label">High Risk</span>
       </div>
     </div>
@@ -233,7 +234,7 @@ function scanTypeLabel(value) {
 function updateStats(reports) {
   setText('stat-total-reports', reports.length);
   const latest = reports[0];
-  setText('stat-latest-score', latest && latest.safety_score !== undefined ? latest.safety_score : '—');
+  setText('stat-latest-score', latest && latest.safety_score !== undefined ? latest.safety_score : 'â€”');
   const highRiskCount = reports.filter(r => /high|critical/i.test(String(r.status || ''))).length;
   setText('stat-high-risk', highRiskCount);
 }
@@ -267,7 +268,7 @@ async function loadHistory() {
     if (reports.length === 0) {
       list.innerHTML = '';
       status.className = 'empty';
-      status.textContent = 'No saved reports yet. Run a scan and enable “Save this scan to my account history”.';
+      status.textContent = 'No saved reports yet. Run a scan and enable â€œSave this scan to my account historyâ€.';
       return;
     }
 
@@ -278,13 +279,13 @@ async function loadHistory() {
     reports.forEach(report => {
       const id = reportId(report);
       const created = formatDate(report.created_at || report.timestamp || report.generated_at);
-      const score = report.safety_score ?? '—';
+      const score = report.safety_score ?? 'â€”';
       const title = report.project_name || report.repo_name || 'A-DAP-T Scan';
       const meta = [
         scanTypeLabel(report.scan_type),
         report.repo_url ? 'GitHub repo' : report.upload_name ? 'Uploaded ZIP' : 'Demo scan',
         created
-      ].filter(Boolean).join(' · ');
+      ].filter(Boolean).join(' Â· ');
 
       const item = document.createElement('article');
       item.className = 'history-item';
@@ -372,3 +373,4 @@ document.addEventListener('DOMContentLoaded', loadHistory);
 </script>
 </body>
 </html>
+
