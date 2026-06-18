@@ -18,7 +18,7 @@ from app.ai.ai_enrichment import enrich_scan_result_with_ai
 from app.graph import build_demo_graph
 from app.risk.scoring import compute_status
 from app.schemas.scan_schema import ScanResultSchema
-from app.services.scan_pipeline import build_scan_result
+from app.services.scan_pipeline import attach_v2_report_artifacts, build_scan_result
 from app.utils.zip_utils import validate_zip_meta, extract_zip, cleanup_temp_dir
 from app.routes import auth
 from app.utils.firebase_utils import get_db
@@ -161,6 +161,7 @@ async def scan_vulnerable_demo(
     # Demo scores are fixed before AI enrichment so Gemini summaries match the displayed report.
     result["safety_score"] = 32
     result["status"] = compute_status(32)
+    result = attach_v2_report_artifacts(result)
     result = enrich_scan_result_with_ai(result)
     result = await _save_if_requested(result, user, save_report)
 
@@ -202,6 +203,7 @@ async def scan_secured_demo(
     # Demo scores are fixed before AI enrichment so Gemini summaries match the displayed report.
     result["safety_score"] = 94
     result["status"] = compute_status(94)
+    result = attach_v2_report_artifacts(result)
     result = enrich_scan_result_with_ai(result)
     result = await _save_if_requested(result, user, save_report)
 
