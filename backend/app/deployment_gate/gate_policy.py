@@ -21,6 +21,31 @@ def _has_category(findings: list[dict], text: str) -> bool:
     return any(needle in _lower(finding.get("category")) for finding in findings)
 
 
+def _severity_rank(value: Any) -> int:
+    return {"critical": 4, "high": 3, "medium": 2, "low": 1}.get(_lower(value), 0)
+
+
+def _has_category_at_or_above(findings: list[dict], text: str, minimum_severity: str = "high") -> bool:
+    needle = text.lower()
+    threshold = _severity_rank(minimum_severity)
+    return any(
+        needle in _lower(finding.get("category"))
+        and _severity_rank(finding.get("severity")) >= threshold
+        for finding in findings
+    )
+
+
+def _count_category_at_or_above(findings: list[dict], text: str, minimum_severity: str = "high") -> int:
+    needle = text.lower()
+    threshold = _severity_rank(minimum_severity)
+    return sum(
+        1
+        for finding in findings
+        if needle in _lower(finding.get("category"))
+        and _severity_rank(finding.get("severity")) >= threshold
+    )
+
+
 def _has_severity(findings: list[dict], severity: str) -> bool:
     target = severity.lower()
     return any(_lower(finding.get("severity")) == target for finding in findings)
@@ -104,8 +129,8 @@ def _ci_secret_requirements() -> list[dict]:
 def _category_blockers(findings: list[dict]) -> dict[str, int]:
     return {
         "secret_exposure": sum(1 for finding in findings if "secret exposure" in _lower(finding.get("category"))),
-        "human_approval": sum(1 for finding in findings if "human approval" in _lower(finding.get("category"))),
-        "tool_permission": sum(1 for finding in findings if "tool permission" in _lower(finding.get("category"))),
+        "human_approval": _count_category_at_or_above(findings, "human approval", "high"),
+        "tool_permission": _count_category_at_or_above(findings, "tool permission", "high"),
     }
 
 
@@ -182,17 +207,26 @@ jobs:
           def has_severity(level):
               return any(str(f.get('severity', '')).lower() == level for f in findings)
 
-          def has_category(text):
-              return any(text in str(f.get('category', '')).lower() for f in findings)
+          def severity_rank(value):
+              return {{'critical': 4, 'high': 3, 'medium': 2, 'low': 1}}.get(str(value or '').lower(), 0)
+
+          def has_category(text, minimum_severity=None):
+              for f in findings:
+                  if text not in str(f.get('category', '')).lower():
+                      continue
+                  if minimum_severity and severity_rank(f.get('severity')) < severity_rank(minimum_severity):
+                      continue
+                  return True
+              return False
 
           if enabled('BLOCK_ON_CRITICAL') and has_severity('critical'):
               blockers.append('Critical findings are present')
           if enabled('BLOCK_ON_SECRETS') and has_category('secret exposure'):
               blockers.append('Secret exposure risk detected')
-          if enabled('BLOCK_ON_MISSING_APPROVAL') and has_category('human approval'):
-              blockers.append('Missing approval gate detected')
-          if enabled('BLOCK_ON_UNSAFE_TOOLS') and has_category('tool permission'):
-              blockers.append('Unsafe tool permission detected')
+          if enabled('BLOCK_ON_MISSING_APPROVAL') and has_category('human approval', 'high'):
+              blockers.append('High-risk missing approval gate detected')
+          if enabled('BLOCK_ON_UNSAFE_TOOLS') and has_category('tool permission', 'high'):
+              blockers.append('High-risk unsafe tool permission detected')
 
           if blockers:
               print('A-DAP-T deployment gate: BLOCK')
@@ -233,10 +267,10 @@ def build_deployment_gate(scan_result: dict, policy: dict | None = None) -> dict
         blockers.append(f"Critical findings are present ({_severity_count(findings, 'critical')}).")
     if active_policy.get("block_on_secrets") and _has_category(findings, "secret exposure"):
         blockers.append("Secret exposure risk detected.")
-    if active_policy.get("block_on_missing_approval") and _has_category(findings, "human approval"):
-        blockers.append("Missing human approval gate detected.")
-    if active_policy.get("block_on_unsafe_tools") and _has_category(findings, "tool permission"):
-        blockers.append("Unsafe or overly broad tool permission detected.")
+    if active_policy.get("block_on_missing_approval") and _has_category_at_or_above(findings, "human approval", "high"):
+        blockers.append("High-risk missing human approval gate detected.")
+    if active_policy.get("block_on_unsafe_tools") and _has_category_at_or_above(findings, "tool permission", "high"):
+        blockers.append("High-risk unsafe or overly broad tool permission detected.")
 
     has_high_or_medium = any(_lower(f.get("severity")) in {"high", "medium"} for f in findings)
     if blockers:

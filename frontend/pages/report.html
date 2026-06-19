@@ -159,6 +159,41 @@
   overflow: visible;
 }
 
+
+/* V2 REPORT ARTIFACTS */
+.v2-section { border-top: 1px solid var(--bd); padding: 2.25rem 0; }
+.v2-section[hidden] { display: none !important; }
+.v2-head { display:flex; align-items:flex-end; justify-content:space-between; gap:1rem; margin-bottom:1rem; flex-wrap:wrap; }
+.v2-title-wrap { display:flex; flex-direction:column; gap:.35rem; }
+.v2-title { font-size:1.15rem; font-weight:700; color:var(--wht); letter-spacing:-.01em; }
+.v2-sub { font-size:.82rem; color:var(--dim); line-height:1.6; max-width:720px; }
+.v2-grid { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:1rem; }
+.v2-grid-single { display:grid; grid-template-columns: 1fr; gap:1rem; }
+.v2-card { background:linear-gradient(145deg, rgba(18,18,18,.98), rgba(10,10,10,.98)); border:1px solid var(--bd); border-radius:8px; padding:1.15rem; }
+.v2-card:hover { border-color:var(--bd2); }
+.v2-card-top { display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; margin-bottom:.8rem; }
+.v2-card-title { font-size:.92rem; color:var(--wht); font-weight:700; line-height:1.35; }
+.v2-card-meta { display:flex; flex-wrap:wrap; gap:.45rem; margin-top:.45rem; }
+.v2-pill { font-family:var(--M); font-size:.54rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); border:1px solid var(--bd2); border-radius:999px; padding:.22rem .45rem; }
+.v2-pill-green { color:var(--gl); border-color:var(--gd); background:rgba(45,158,84,.08); }
+.v2-pill-red { color:#e86060; border-color:rgba(217,64,64,.35); background:rgba(217,64,64,.10); }
+.v2-pill-yellow { color:#e8c350; border-color:rgba(201,162,39,.3); background:rgba(201,162,39,.10); }
+.v2-field { margin-top:.75rem; }
+.v2-label { font-family:var(--M); font-size:.54rem; color:var(--muted); letter-spacing:.12em; text-transform:uppercase; display:block; margin-bottom:.25rem; }
+.v2-text { color:var(--dim); font-size:.79rem; line-height:1.65; white-space:pre-line; }
+.v2-list { margin:.25rem 0 0 1rem; color:var(--dim); font-size:.79rem; line-height:1.65; }
+.v2-list li { margin:.25rem 0; }
+.v2-code { background:#070807; border:1px solid var(--bd); border-radius:7px; padding:.85rem; color:var(--txt); font-family:var(--M); font-size:.68rem; line-height:1.6; overflow:auto; max-height:260px; white-space:pre; }
+.v2-code-diff { border-color:rgba(56,196,106,.22); background:rgba(6,16,8,.72); }
+.v2-actions { display:flex; flex-wrap:wrap; gap:.55rem; margin-top:.9rem; }
+.v2-gate { display:grid; grid-template-columns: 230px 1fr; gap:1rem; align-items:stretch; }
+.v2-gate-score { background:rgba(56,196,106,.06); border:1px solid var(--bd); border-radius:8px; padding:1rem; display:flex; flex-direction:column; justify-content:center; text-align:center; }
+.v2-gate-score strong { font-family:var(--M); font-size:2.4rem; color:var(--wht); line-height:1; }
+.v2-gate-score span { font-family:var(--M); font-size:.56rem; letter-spacing:.12em; color:var(--muted); text-transform:uppercase; margin-top:.35rem; }
+.v2-empty { color:var(--muted); font-size:.82rem; border:1px dashed var(--bd2); border-radius:8px; padding:1rem; }
+@media (max-width: 900px) { .v2-grid, .v2-gate { grid-template-columns:1fr; } }
+@media print { .v2-actions { display:none!important; } .v2-section { break-inside:avoid; page-break-inside:avoid; } .v2-card, .v2-gate-score, .v2-code { background:#fff!important; color:#111!important; border-color:#ccc!important; } .v2-text, .v2-list { color:#333!important; } }
+
 @media (max-width: 700px) {
   .finding-card-panels { grid-template-columns: 1fr; }
   .finding-panel-why { border-right: none; border-bottom: 1px solid var(--bd); }
@@ -302,6 +337,43 @@
     <!-- Findings cards -->
     <span class="sec-label">FINDINGS</span>
     <div id="findings-body" class="findings-cards"></div>
+
+    <!-- V2 Deployment Gate -->
+    <section id="deployment-gate-section" class="v2-section" hidden>
+      <div class="v2-head">
+        <div class="v2-title-wrap">
+          <span class="sec-label" style="margin-bottom:0;">DEPLOYMENT GATE</span>
+          <span class="v2-title">Can this agent ship?</span>
+          <p class="v2-sub">A-DAP-T evaluates the scan against a deployment policy and produces a CI-ready safety gate.</p>
+        </div>
+      </div>
+      <div id="deployment-gate-body"></div>
+    </section>
+
+    <!-- V2 Attack Simulations -->
+    <section id="attack-simulations-section" class="v2-section" hidden>
+      <div class="v2-head">
+        <div class="v2-title-wrap">
+          <span class="sec-label" style="margin-bottom:0;">PROVE MODE</span>
+          <span class="v2-title">Static attack simulations</span>
+          <p class="v2-sub">Each simulation is derived from an actual finding. No code is executed and no live target is attacked.</p>
+        </div>
+      </div>
+      <div id="attack-simulations-body" class="v2-grid"></div>
+    </section>
+
+    <!-- V2 Patch Previews -->
+    <section id="patch-previews-section" class="v2-section" hidden>
+      <div class="v2-head">
+        <div class="v2-title-wrap">
+          <span class="sec-label" style="margin-bottom:0;">GENERATED FIXES</span>
+          <span class="v2-title">Developer-ready patch previews</span>
+          <p class="v2-sub">Patch previews are copy/download ready, but still require developer review before applying.</p>
+        </div>
+      </div>
+      <div id="patch-previews-body" class="v2-grid"></div>
+    </section>
+
 
   </div>
 </div>
@@ -484,6 +556,9 @@ function normalizeAdaptBackendResult(scanResult) {
     ai_report_summary_text: formatAiTextForDisplay(scanResult.ai_report_summary),
     ai_remediation_plan_text: formatAiTextForDisplay(scanResult.ai_remediation_plan),
     ai_next_steps_text: formatAiTextForDisplay(scanResult.ai_next_steps),
+    attack_simulations: Array.isArray(scanResult.attack_simulations) ? scanResult.attack_simulations : [],
+    patches: Array.isArray(scanResult.patches) ? scanResult.patches : [],
+    deployment_gate: scanResult.deployment_gate && typeof scanResult.deployment_gate === 'object' ? scanResult.deployment_gate : null,
   };
 }
 
@@ -639,6 +714,190 @@ findings.forEach((f) => {
     }
   });
 });
+
+
+function asArray(value) {
+  return Array.isArray(value) ? value.filter(Boolean) : [];
+}
+
+function safeFileName(value, fallback = 'a-dap-t-artifact.txt') {
+  const cleaned = String(value || fallback)
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return cleaned || fallback;
+}
+
+function formatList(items) {
+  const list = asArray(items);
+  if (!list.length) return '<p class="v2-text">No entries provided.</p>';
+  return `<ul class="v2-list">${list.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`;
+}
+
+function downloadTextFile(filename, content, type = 'text/plain') {
+  const blob = new Blob([String(content || '')], { type: `${type};charset=utf-8` });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = safeFileName(filename);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function copyTextToClipboard(text, btn) {
+  try {
+    await navigator.clipboard.writeText(String(text || ''));
+    if (btn) {
+      const old = btn.textContent;
+      btn.textContent = 'COPIED';
+      setTimeout(() => { btn.textContent = old; }, 1200);
+    }
+  } catch (_) {
+    alert('Could not copy. Please select and copy manually.');
+  }
+}
+
+function gateTagClass(decision) {
+  const d = String(decision || '').toUpperCase();
+  if (d === 'ALLOW') return 'tag-ok';
+  if (d === 'REVIEW') return 'tag-hi';
+  return 'tag-cr';
+}
+
+function renderDeploymentGate(gate) {
+  const section = document.getElementById('deployment-gate-section');
+  const body = document.getElementById('deployment-gate-body');
+  if (!section || !body || !gate) return;
+
+  const decision = String(gate.decision || 'REVIEW').toUpperCase();
+  const blockers = asArray(gate.blockers);
+  const nextActions = asArray(gate.next_actions);
+  const policy = typeof gate.policy_json === 'string' ? gate.policy_json : JSON.stringify(gate.recommended_policy || {}, null, 2);
+  const workflow = gate.github_actions_yaml || '';
+  const workflowName = gate.workflow_filename || 'a-dap-t-agent-safety-gate.yml';
+  const policyName = gate.policy_filename || 'a-dap-t-policy.json';
+
+  section.hidden = false;
+  body.innerHTML = `
+    <div class="v2-card v2-gate">
+      <div class="v2-gate-score">
+        <strong>${escapeHtml(gate.gate_score ?? gate.safety_score ?? score)}</strong>
+        <span>Gate Score</span>
+        <div style="margin-top:.8rem;"><span class="tag ${gateTagClass(decision)}">${escapeHtml(decision)}</span></div>
+      </div>
+      <div>
+        <div class="v2-card-top">
+          <div>
+            <div class="v2-card-title">${escapeHtml(gate.decision_badge || gate.summary || 'Deployment gate decision')}</div>
+            <div class="v2-card-meta">
+              <span class="v2-pill ${decision === 'ALLOW' ? 'v2-pill-green' : decision === 'REVIEW' ? 'v2-pill-yellow' : 'v2-pill-red'}">${escapeHtml(decision)}</span>
+              <span class="v2-pill">Minimum score: ${escapeHtml(gate.minimum_safety_score ?? 75)}</span>
+            </div>
+          </div>
+        </div>
+        <div class="v2-field"><span class="v2-label">Decision reason</span><p class="v2-text">${escapeHtml(gate.decision_reason || gate.reason || 'Deployment policy evaluated against this scan.')}</p></div>
+        <div class="v2-field"><span class="v2-label">Required action</span><p class="v2-text">${escapeHtml(gate.required_action || 'Review blockers before deployment.')}</p></div>
+        <div class="v2-field"><span class="v2-label">Blockers</span>${formatList(blockers)}</div>
+        <div class="v2-field"><span class="v2-label">Next actions</span>${formatList(nextActions)}</div>
+        <div class="v2-actions">
+          <button class="btn btn-o btn-sm" type="button" data-copy-gate="workflow">COPY WORKFLOW</button>
+          <button class="btn btn-g btn-sm" type="button" data-download-gate="workflow">DOWNLOAD ${escapeHtml(workflowName)}</button>
+          <button class="btn btn-g btn-sm" type="button" data-download-gate="policy">DOWNLOAD ${escapeHtml(policyName)}</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  body.querySelector('[data-copy-gate="workflow"]')?.addEventListener('click', event => copyTextToClipboard(workflow, event.currentTarget));
+  body.querySelector('[data-download-gate="workflow"]')?.addEventListener('click', () => downloadTextFile(workflowName, workflow, 'text/yaml'));
+  body.querySelector('[data-download-gate="policy"]')?.addEventListener('click', () => downloadTextFile(policyName, policy, 'application/json'));
+}
+
+function renderAttackSimulations(simulations) {
+  const section = document.getElementById('attack-simulations-section');
+  const body = document.getElementById('attack-simulations-body');
+  const items = asArray(simulations);
+  if (!section || !body || !items.length) return;
+
+  section.hidden = false;
+  body.innerHTML = items.slice(0, 8).map((sim, index) => `
+    <article class="v2-card">
+      <div class="v2-card-top">
+        <div>
+          <div class="v2-card-title">${escapeHtml(sim.title || `Attack simulation ${index + 1}`)}</div>
+          <div class="v2-card-meta">
+            <span class="v2-pill v2-pill-red">${escapeHtml(sim.risk_level || 'risk')}</span>
+            <span class="v2-pill">${escapeHtml(sim.simulation_type || 'static proof')}</span>
+            <span class="v2-pill">Priority ${escapeHtml(sim.priority_score ?? '—')}</span>
+          </div>
+        </div>
+      </div>
+      <div class="v2-field"><span class="v2-label">Linked finding</span><p class="v2-text">${escapeHtml(sim.finding_id || '—')} · ${escapeHtml(sim.location || sim.file || '')}</p></div>
+      <div class="v2-field"><span class="v2-label">Attack goal</span><p class="v2-text">${escapeHtml(sim.attack_goal || '')}</p></div>
+      <div class="v2-field"><span class="v2-label">Malicious prompt / trigger</span><pre class="v2-code">${escapeHtml(sim.malicious_input || '')}</pre></div>
+      <div class="v2-field"><span class="v2-label">Attack steps</span>${formatList(sim.attack_steps)}</div>
+      <div class="v2-field"><span class="v2-label">Expected unsafe behavior</span><p class="v2-text">${escapeHtml(sim.expected_behavior || '')}</p></div>
+      <div class="v2-field"><span class="v2-label">Detection signal</span><p class="v2-text">${escapeHtml(sim.detection_signal || 'Review logs/tool traces for this behavior.')}</p></div>
+      <div class="v2-field"><span class="v2-label">Required guardrail</span><p class="v2-text">${escapeHtml(sim.guardrail || sim.required_fix || '')}</p></div>
+      <div class="v2-field"><span class="v2-label">Safe test note</span><p class="v2-text">${escapeHtml(sim.safe_test_note || 'Static proof-of-risk only. Do not execute against production systems.')}</p></div>
+    </article>
+  `).join('');
+}
+
+function renderPatchPreviews(patches) {
+  const section = document.getElementById('patch-previews-section');
+  const body = document.getElementById('patch-previews-body');
+  const items = asArray(patches);
+  if (!section || !body || !items.length) return;
+
+  section.hidden = false;
+  body.innerHTML = items.slice(0, 8).map((patch, index) => {
+    const filename = patch.patch_filename || `a-dap-t-patch-${index + 1}.patch`;
+    return `
+      <article class="v2-card" data-patch-index="${index}">
+        <div class="v2-card-top">
+          <div>
+            <div class="v2-card-title">${escapeHtml(patch.title || `Patch preview ${index + 1}`)}</div>
+            <div class="v2-card-meta">
+              <span class="v2-pill v2-pill-green">${escapeHtml(patch.patch_type || 'patch')}</span>
+              <span class="v2-pill">${escapeHtml(patch.file || 'unknown file')}</span>
+              <span class="v2-pill">${escapeHtml(patch.estimated_effort || 'review')}</span>
+            </div>
+          </div>
+        </div>
+        <div class="v2-field"><span class="v2-label">Linked finding</span><p class="v2-text">${escapeHtml(patch.finding_id || '—')}</p></div>
+        <div class="v2-field"><span class="v2-label">Explanation</span><p class="v2-text">${escapeHtml(patch.explanation || '')}</p></div>
+        <div class="v2-field"><span class="v2-label">Risk reduction</span><p class="v2-text">${escapeHtml(patch.risk_reduction || 'Reduces the linked deployment risk after developer review.')}</p></div>
+        <div class="v2-field"><span class="v2-label">Validation steps</span>${formatList(patch.validation_steps)}</div>
+        <div class="v2-field"><span class="v2-label">Diff preview</span><pre class="v2-code v2-code-diff">${escapeHtml(patch.diff || '')}</pre></div>
+        <div class="v2-field"><span class="v2-label">Review notes</span><p class="v2-text">${escapeHtml(patch.review_notes || (patch.manual_review_required ? 'Manual review required before applying this patch.' : 'Review before applying.'))}</p></div>
+        <div class="v2-actions">
+          <button class="btn btn-o btn-sm" type="button" data-copy-patch="${index}">${escapeHtml(patch.copy_label || 'COPY PATCH')}</button>
+          <button class="btn btn-g btn-sm" type="button" data-download-patch="${index}">${escapeHtml(patch.download_label || `DOWNLOAD ${filename}`)}</button>
+        </div>
+      </article>
+    `;
+  }).join('');
+
+  body.querySelectorAll('[data-copy-patch]').forEach(btn => {
+    btn.addEventListener('click', event => {
+      const patch = items[Number(event.currentTarget.dataset.copyPatch)] || {};
+      copyTextToClipboard(patch.diff || '', event.currentTarget);
+    });
+  });
+  body.querySelectorAll('[data-download-patch]').forEach(btn => {
+    btn.addEventListener('click', event => {
+      const patch = items[Number(event.currentTarget.dataset.downloadPatch)] || {};
+      downloadTextFile(patch.patch_filename || 'a-dap-t-patch.patch', patch.diff || '', 'text/x-diff');
+    });
+  });
+}
+
+renderDeploymentGate(result.deployment_gate);
+renderAttackSimulations(result.attack_simulations);
+renderPatchPreviews(result.patches);
 
 function buildReportFileName(extension) {
   const project = String(result.project_name || 'a-dap-t-report')

@@ -309,10 +309,10 @@ Decision rules:
 BLOCK if safety_score < minimum_safety_score
 BLOCK if critical finding exists and block_on_critical is true
 BLOCK if secret exposure finding exists and block_on_secrets is true
-BLOCK if missing approval finding exists and block_on_missing_approval is true
-BLOCK if unsafe tool finding exists and block_on_unsafe_tools is true
+BLOCK if high/critical missing approval finding exists and block_on_missing_approval is true
+BLOCK if high/critical unsafe tool finding exists and block_on_unsafe_tools is true
 REVIEW if medium/high findings exist but no hard blocker
-ALLOW if score passes and no blockers exist
+ALLOW if score passes and no medium/high blockers remain
 ```
 
 ---
