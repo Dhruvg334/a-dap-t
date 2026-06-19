@@ -53,6 +53,16 @@ def _severity(finding: dict) -> str:
     return _text(finding.get("severity") or "medium").lower()
 
 
+def _safe_slug(value: str) -> str:
+    slug = re.sub(r"[^a-zA-Z0-9]+", "-", value.strip().lower()).strip("-")
+    return slug or "patch"
+
+
+def _patch_filename(finding: dict, index: int, patch_type: str) -> str:
+    finding_id = _finding_id(finding, index)
+    return f"{_safe_slug(finding_id)}-{_safe_slug(patch_type)}.patch"
+
+
 def _line(finding: dict) -> int | None:
     try:
         line = int(finding.get("line") or 0)
@@ -69,6 +79,9 @@ def _patch_base(finding: dict, index: int, *, title: str, patch_type: str, befor
         "line": _line(finding),
         "language": _language(_file(finding)),
         "patch_type": patch_type,
+        "patch_filename": _patch_filename(finding, index, patch_type),
+        "copy_label": "Copy patch preview",
+        "download_label": "Download .patch",
         "before": before,
         "after": after,
         "diff": diff,

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import re
 from typing import Any
@@ -17,15 +19,23 @@ ALLOWED_KEYWORDS = [
     "prompt", "injection", "tool", "permission", "approval", "gate", "human",
     "audit", "log", "trace", "exposure", "data", "pii", "mask", "remediation",
     "fix", "secure", "patch", "agent", "vulnerable", "config", "jwt", "report",
-    "category", "dashboard", "deploy", "deployment", "attack", "simulate", "simulation",
-    "prove", "proof", "block", "allow", "review", "ci", "github action", "workflow",
-    "yaml", "policy", "guardrail", "rescan", "re-scan", "delta", "improve",
+    "category", "dashboard", "deploy", "deployment", "block", "allow", "review",
+    "attack", "simulate", "prove", "proof", "guardrail", "workflow", "github action",
+    "ci", "cd", "yml", "yaml", "policy",
 ]
 
-SEVERITY_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+SEVERITY_RANK = {"critical": 0, "high": 1, "medium": 2, "low": 3}
 
 
-def _clean_answer(text: str, max_words: int = 110) -> str:
+def _text(value: Any) -> str:
+    return str(value or "").strip()
+
+
+def _lower(value: Any) -> str:
+    return _text(value).lower()
+
+
+def _clean_answer(text: str, max_words: int = 120) -> str:
     text = str(text or "")
     text = text.replace("**", "").replace("`", "")
     text = re.sub(r"^\s*#+\s*", "", text, flags=re.MULTILINE)
@@ -39,150 +49,160 @@ def _clean_answer(text: str, max_words: int = 110) -> str:
     return short if short.endswith((".", "!", "?")) else short + "."
 
 
-def _lower(value: Any) -> str:
-    return str(value or "").strip().lower()
+def _findings(scan_result: dict) -> list[dict]:
+    items = scan_result.get("findings") or []
+    return items if isinstance(items, list) else []
 
 
-def _short(value: Any, limit: int = 150) -> str:
-    text = str(value or "").strip().replace("\n", " ")
-    return text[:limit].rstrip()
+def _simulations(scan_result: dict) -> list[dict]:
+    items = scan_result.get("attack_simulations") or []
+    return items if isinstance(items, list) else []
 
 
-def _finding_location(finding: dict) -> str:
-    file_path = finding.get("file") or "unknown file"
-    line = finding.get("line")
-    return f"{file_path}:{line}" if line else str(file_path)
+def _patches(scan_result: dict) -> list[dict]:
+    items = scan_result.get("patches") or []
+    return items if isinstance(items, list) else []
 
 
-def _sort_findings(findings: list[dict]) -> list[dict]:
+def _gate(scan_result: dict) -> dict:
+    gate = scan_result.get("deployment_gate") or {}
+    return gate if isinstance(gate, dict) else {}
+
+
+def _sorted_findings(scan_result: dict) -> list[dict]:
     return sorted(
-        findings,
-        key=lambda item: (
-            SEVERITY_ORDER.get(_lower(item.get("severity")), 9),
-            str(item.get("category") or ""),
-            str(item.get("title") or ""),
-        ),
+        _findings(scan_result),
+        key=lambda item: SEVERITY_RANK.get(_lower(item.get("severity")), 9),
     )
 
 
-def _patches_by_finding(scan_result: dict) -> dict[str, dict]:
-    patches = scan_result.get("patches") or []
-    return {str(patch.get("finding_id")): patch for patch in patches if patch.get("finding_id")}
+def _linked_patch(scan_result: dict, finding_id: str) -> dict | None:
+    for patch in _patches(scan_result):
+        if _text(patch.get("finding_id")) == finding_id:
+            return patch
+    return None
 
 
-def _attacks_by_finding(scan_result: dict) -> dict[str, dict]:
-    attacks = scan_result.get("attack_simulations") or []
-    return {str(attack.get("finding_id")): attack for attack in attacks if attack.get("finding_id")}
+def _linked_simulation(scan_result: dict, finding_id: str) -> dict | None:
+    for simulation in _simulations(scan_result):
+        if _text(simulation.get("finding_id")) == finding_id:
+            return simulation
+    return None
 
 
-def _top_fix_answer(scan_result: dict) -> str:
-    findings = _sort_findings(scan_result.get("findings") or [])
+def _first_blocked_finding(scan_result: dict) -> dict | None:
+    findings = _sorted_findings(scan_result)
     if not findings:
-        return "This report has no findings to prioritize. Keep normal release checks, logging, and adversarial prompt tests in place."
+        return None
 
-    patches = _patches_by_finding(scan_result)
-    attacks = _attacks_by_finding(scan_result)
-    gate = scan_result.get("deployment_gate") or {}
-    first = findings[0]
-    finding_id = str(first.get("id") or "")
-    patch = patches.get(finding_id)
-    attack = attacks.get(finding_id)
+    gate = _gate(scan_result)
+    blockers = " ".join(_text(item) for item in (gate.get("blockers") or [])).lower()
+    for finding in findings:
+        category = _lower(finding.get("category"))
+        if "secret" in blockers and "secret" in category:
+            return finding
+        if "approval" in blockers and "approval" in category:
+            return finding
+        if "tool" in blockers and "tool" in category:
+            return finding
+        if "critical" in blockers and _lower(finding.get("severity")) == "critical":
+            return finding
+    return findings[0]
 
-    parts = [
-        f"Fix first: {first.get('title', 'the top finding')} ({first.get('severity', 'unknown')}, {first.get('category', 'unknown')}) at {_finding_location(first)}.",
-        f"Why: {_short(first.get('why_it_matters') or first.get('description'), 170)}",
-    ]
-    if attack:
-        parts.append(f"Prove Mode: {_short(attack.get('attack_goal'), 160)}")
-    if patch:
-        parts.append(f"Patch preview: {patch.get('title', 'review generated patch')} ({patch.get('patch_type', 'patch_preview')}).")
-    if gate.get("decision") == "BLOCK":
-        parts.append(f"Gate: BLOCK — {_short(gate.get('decision_reason'), 150)}")
-    return _clean_answer("\n".join(parts), max_words=105)
+
+def _format_finding_line(finding: dict) -> str:
+    title = _text(finding.get("title") or "Untitled finding")
+    severity = _text(finding.get("severity") or "Unknown")
+    file_path = _text(finding.get("file") or "unknown file")
+    line = finding.get("line")
+    location = f"{file_path}:{line}" if line else file_path
+    return f"[{severity}] {title} in {location}"
+
+
+def _deployment_answer(scan_result: dict) -> str:
+    gate = _gate(scan_result)
+    if not gate:
+        return "No deployment gate result is attached to this report. Re-run the scan with V2 report artifacts enabled."
+
+    decision = _text(gate.get("decision") or "UNKNOWN")
+    summary = _text(gate.get("summary"))
+    action = _text(gate.get("required_action"))
+    blockers = gate.get("blockers") or []
+    workflow = _text(gate.get("workflow_filename") or "adapt-agent-safety-gate.yml")
+    policy = _text(gate.get("policy_filename") or "adapt-policy.json")
+
+    lines = [f"Deployment gate: {decision}."]
+    if summary:
+        lines.append(summary)
+    if blockers:
+        lines.append("Blockers: " + "; ".join(_text(item) for item in blockers[:4]))
+    if action:
+        lines.append("Required action: " + action)
+    lines.append(f"Use {workflow} and {policy} as the CI gate artifacts.")
+    return "\n".join(lines)
 
 
 def _attack_answer(scan_result: dict) -> str:
-    attacks = scan_result.get("attack_simulations") or []
-    if not attacks:
-        return "This report has no attack simulations yet. Re-run the scan after V2 proof outputs are enabled."
+    simulations = _simulations(scan_result)
+    if not simulations:
+        return "No attack simulation is attached to this report. I can only prove risks that A-DAP-T actually detected."
 
-    attack = attacks[0]
-    return _clean_answer(
-        "\n".join(
-            [
-                f"Prove Mode: {attack.get('title', 'Attack simulation')}",
-                f"Goal: {_short(attack.get('attack_goal'), 160)}",
-                f"Test prompt: {_short(attack.get('malicious_input'), 180)}",
-                f"Expected risk: {_short(attack.get('expected_behavior'), 180)}",
-                f"Guardrail: {_short(attack.get('guardrail') or attack.get('required_fix'), 180)}",
-            ]
-        ),
-        max_words=105,
-    )
+    top = simulations[0]
+    title = _text(top.get("title") or "Attack simulation")
+    malicious = _text(top.get("malicious_input"))
+    impact = _text(top.get("impact"))
+    guardrail = _text(top.get("guardrail") or top.get("required_fix"))
 
-
-def _gate_answer(scan_result: dict) -> str:
-    gate = scan_result.get("deployment_gate") or {}
-    if not gate:
-        return "This report has no deployment gate result yet. Re-run the scan after V2 gate output is enabled."
-
-    blockers = gate.get("blockers") or []
-    blocker_text = "; ".join(blockers[:3]) if blockers else "No configured blockers were found."
-    return _clean_answer(
-        "\n".join(
-            [
-                f"Deployment decision: {gate.get('decision', 'Unknown')}.",
-                f"Reason: {_short(gate.get('decision_reason') or gate.get('summary'), 180)}",
-                f"Required action: {_short(gate.get('required_action'), 160)}",
-                f"Blockers: {_short(blocker_text, 220)}",
-                f"CI file: {gate.get('workflow_filename', 'adapt-agent-safety-gate.yml')}",
-            ]
-        ),
-        max_words=105,
+    return (
+        f"Most relevant proof path: {title}.\n"
+        f"Malicious input: {malicious}\n"
+        f"Expected impact: {impact}\n"
+        f"Required guardrail: {guardrail}"
     )
 
 
 def _patch_answer(scan_result: dict) -> str:
-    patches = scan_result.get("patches") or []
+    patches = _patches(scan_result)
     if not patches:
-        return "This report has no patch previews yet. Use the finding suggested fixes or re-run the scan after V2 patch output is enabled."
+        return "No patch preview is attached to this report. Use the finding suggested fixes and re-run the scan after changes."
 
     patch = patches[0]
-    notes = "; ".join(patch.get("review_notes") or [])
-    return _clean_answer(
-        "\n".join(
-            [
-                f"Suggested patch: {patch.get('title', 'Patch preview')}.",
-                f"Type: {patch.get('patch_type', 'patch_preview')} for {patch.get('file', 'unknown file')}.",
-                f"Strategy: {patch.get('apply_strategy', 'preview_only')}; manual review required: {patch.get('manual_review_required', True)}.",
-                f"Why: {_short(patch.get('explanation'), 180)}",
-                f"Review notes: {_short(notes, 180)}",
-            ]
-        ),
-        max_words=105,
+    title = _text(patch.get("title") or "Patch preview")
+    filename = _text(patch.get("patch_filename") or "patch.diff")
+    explanation = _text(patch.get("explanation"))
+    confidence = _text(patch.get("confidence") or "medium")
+
+    return (
+        f"Start with patch preview: {title}.\n"
+        f"Download/copy: {filename}.\n"
+        f"Confidence: {confidence}.\n"
+        f"Why: {explanation}\n"
+        "Review manually before applying; A-DAP-T does not auto-modify source code."
     )
 
 
-def _overview_answer(scan_result: dict) -> str:
-    findings = _sort_findings(scan_result.get("findings") or [])
-    gate = scan_result.get("deployment_gate") or {}
-    score = scan_result.get("safety_score", "unknown")
-    status = scan_result.get("status", "unknown")
-    top = findings[0] if findings else None
-    top_text = f"Top issue: {top.get('title')} ({top.get('severity')}) at {_finding_location(top)}." if top else "No findings were provided."
-    gate_text = f"Deployment gate: {gate.get('decision')} — {_short(gate.get('decision_reason'), 140)}" if gate else "Deployment gate output is not available."
-    return _clean_answer(f"Score: {score}/100 ({status}). {top_text} {gate_text}", max_words=90)
+def _fix_first_answer(scan_result: dict) -> str:
+    finding = _first_blocked_finding(scan_result)
+    if not finding:
+        return "This report has no findings. Keep normal adversarial testing and release monitoring in place."
 
+    finding_id = _text(finding.get("id"))
+    patch = _linked_patch(scan_result, finding_id)
+    simulation = _linked_simulation(scan_result, finding_id)
 
-def _build_local_answer(question: str, scan_result: dict) -> str:
-    q = _lower(question)
-    if any(word in q for word in ["deploy", "deployment", "gate", "block", "allow", "ci", "workflow", "yaml", "policy"]):
-        return _gate_answer(scan_result)
-    if any(word in q for word in ["attack", "simulate", "simulation", "prove", "proof", "malicious"]):
-        return _attack_answer(scan_result)
-    if any(word in q for word in ["patch", "fix", "remediate", "code change", "suggested"]):
-        return _top_fix_answer(scan_result)
-    return _overview_answer(scan_result)
+    lines = ["Fix this first: " + _format_finding_line(finding) + "."]
+    fix = _text(finding.get("suggested_fix"))
+    if fix:
+        lines.append("Recommended fix: " + fix)
+    if simulation:
+        lines.append("Why it matters: " + _text(simulation.get("impact")))
+    if patch:
+        filename = _text(patch.get("patch_filename") or "patch.diff")
+        lines.append("Use patch preview: " + filename)
+    gate = _gate(scan_result)
+    if gate.get("decision") == "BLOCK":
+        lines.append("This also helps clear the deployment gate blockers.")
+    return "\n".join(lines)
 
 
 class SecurityAssistantService:
@@ -200,6 +220,16 @@ class SecurityAssistantService:
         ]
         return any(indicator in q_lower for indicator in disallowed_indicators)
 
+    def _deterministic_answer(self, question: str, scan_result: dict) -> str:
+        q = question.lower()
+        if any(word in q for word in ("deploy", "deployment", "block", "allow", "ci", "workflow", "github action", "policy")):
+            return _deployment_answer(scan_result)
+        if any(word in q for word in ("attack", "prove", "simulate", "malicious", "exploit")):
+            return _attack_answer(scan_result)
+        if any(word in q for word in ("patch", "diff", "code", "fix preview", "download")):
+            return _patch_answer(scan_result)
+        return _fix_first_answer(scan_result)
+
     def ask_assistant(self, question: str, scan_result: dict) -> str:
         if self._is_obviously_unrelated(question):
             return REFUSAL_TEXT
@@ -207,16 +237,18 @@ class SecurityAssistantService:
         if not scan_result:
             return "Run or open a scan report first so I can answer from actual A-DAP-T findings."
 
+        fallback = self._deterministic_answer(question, scan_result)
+
         if not self.gemini_service.is_available():
-            return _build_local_answer(question, scan_result)
+            return _clean_answer(fallback)
 
         try:
             response_text = self.gemini_service.generate_text(
                 prompt=build_assistant_user_prompt(question, scan_result),
                 system_instruction=SECURITY_ASSISTANT_SYSTEM_INSTRUCTION,
             )
-            return _clean_answer(response_text) if response_text else _build_local_answer(question, scan_result)
+            return _clean_answer(response_text) if response_text else _clean_answer(fallback)
 
         except Exception as exc:
             logger.error(f"Error in SecurityAssistantService: {str(exc)}")
-            return _build_local_answer(question, scan_result)
+            return _clean_answer(fallback)

@@ -1,99 +1,119 @@
+from __future__ import annotations
+
+from typing import Any
+
 SECURITY_ASSISTANT_SYSTEM_INSTRUCTION = """
 You are DAP, the report-aware assistant for A-DAP-T.
 
 You only answer questions about:
 - the current A-DAP-T scan report
 - findings, safety score, risk categories, and remediation
-- attack simulations / Prove Mode
-- patch previews and developer fix guidance
-- deployment gate decisions, blockers, and CI policy
+- attack simulations, patch previews, and deployment gate decisions
 - AI-agent deployment risks such as prompt injection, exposed secrets, unsafe tools,
   missing approval gates, data exposure, and auditability
 
 Guardrails:
 - Answer only from the provided scan_result.
 - Do not invent vulnerabilities, files, patches, attack paths, or deployment blockers.
-- Prefer the report's deterministic findings, attack_simulations, patches, and deployment_gate.
 - If the question is outside A-DAP-T/security/remediation, refuse with:
   "I can only assist with A-DAP-T security analysis, findings, and safety score improvement."
-- Keep normal answers under 110 words.
+- Keep normal answers under 120 words.
 - Use at most 5 bullets.
 - Be concrete and developer-friendly.
 """
 
 
-def _short(value, limit: int = 220) -> str:
-    text = str(value or "").strip().replace("\n", " ")
-    return text[:limit].rstrip()
+def _text(value: Any) -> str:
+    return str(value or "").strip()
+
+
+def _limit(items: list[Any], limit: int) -> list[Any]:
+    return items[:limit] if isinstance(items, list) else []
+
+
+def _finding_ref(item: dict, fallback: str) -> str:
+    return _text(item.get("id") or item.get("finding_id") or fallback)
+
+
+def _format_findings(scan_result: dict) -> str:
+    findings = scan_result.get("findings") or []
+    lines: list[str] = []
+    for idx, finding in enumerate(_limit(findings, 12), start=1):
+        finding_id = _finding_ref(finding, f"finding_{idx:03d}")
+        title = _text(finding.get("title") or "Untitled finding")
+        severity = _text(finding.get("severity") or "Unknown")
+        category = _text(finding.get("category") or "Unknown")
+        file_path = _text(finding.get("file") or "unknown file")
+        line = finding.get("line")
+        fix = _text(finding.get("suggested_fix") or finding.get("fix") or "No fix provided")
+        evidence = _text(finding.get("evidence"))[:160]
+        location = f"{file_path}:{line}" if line else file_path
+        evidence_suffix = f" | Evidence: {evidence}" if evidence else ""
+        lines.append(
+            f"{finding_id}: [{severity}] {title} | {category} | {location} | Fix: {fix}{evidence_suffix}"
+        )
+    return "\n".join(lines) if lines else "No findings were provided."
+
+
+def _format_attack_simulations(scan_result: dict) -> str:
+    simulations = scan_result.get("attack_simulations") or []
+    lines: list[str] = []
+    for idx, item in enumerate(_limit(simulations, 8), start=1):
+        finding_id = _finding_ref(item, f"simulation_{idx:03d}")
+        title = _text(item.get("title") or "Attack simulation")
+        risk = _text(item.get("risk_level") or "unknown")
+        malicious = _text(item.get("malicious_input"))[:180]
+        impact = _text(item.get("impact"))[:180]
+        guardrail = _text(item.get("guardrail") or item.get("required_fix"))[:180]
+        lines.append(
+            f"{finding_id}: [{risk}] {title} | Prompt/trigger: {malicious} | Impact: {impact} | Guardrail: {guardrail}"
+        )
+    return "\n".join(lines) if lines else "No attack simulations were generated."
+
+
+def _format_patches(scan_result: dict) -> str:
+    patches = scan_result.get("patches") or []
+    lines: list[str] = []
+    for idx, item in enumerate(_limit(patches, 8), start=1):
+        finding_id = _finding_ref(item, f"patch_{idx:03d}")
+        title = _text(item.get("title") or "Patch preview")
+        patch_type = _text(item.get("patch_type") or "unknown")
+        file_path = _text(item.get("file") or "unknown file")
+        filename = _text(item.get("patch_filename") or "patch.diff")
+        confidence = _text(item.get("confidence") or "medium")
+        explanation = _text(item.get("explanation"))[:180]
+        lines.append(
+            f"{finding_id}: {title} | Type: {patch_type} | File: {file_path} | Patch file: {filename} | Confidence: {confidence} | {explanation}"
+        )
+    return "\n".join(lines) if lines else "No patch previews were generated."
+
+
+def _format_deployment_gate(scan_result: dict) -> str:
+    gate = scan_result.get("deployment_gate") or {}
+    if not isinstance(gate, dict) or not gate:
+        return "No deployment gate decision was generated."
+
+    decision = _text(gate.get("decision") or "UNKNOWN")
+    summary = _text(gate.get("summary"))
+    action = _text(gate.get("required_action"))
+    blockers = gate.get("blockers") or []
+    blockers_text = "; ".join(_text(item) for item in blockers[:5]) if isinstance(blockers, list) else ""
+    workflow = _text(gate.get("workflow_filename") or "adapt-agent-safety-gate.yml")
+    policy = _text(gate.get("policy_filename") or "adapt-policy.json")
+
+    return (
+        f"Decision: {decision}\n"
+        f"Summary: {summary}\n"
+        f"Required action: {action}\n"
+        f"Blockers: {blockers_text or 'None'}\n"
+        f"Generated files: {workflow}, {policy}"
+    )
 
 
 def build_assistant_user_prompt(question: str, scan_result: dict) -> str:
     safety_score = scan_result.get("safety_score", "Unknown")
     status = scan_result.get("status", "Unknown")
-    findings = scan_result.get("findings", []) or []
-    category_scores = scan_result.get("category_scores", {}) or {}
-    attack_simulations = scan_result.get("attack_simulations", []) or []
-    patches = scan_result.get("patches", []) or []
-    deployment_gate = scan_result.get("deployment_gate") or {}
-
-    findings_summary = []
-    for idx, finding in enumerate(findings[:10], start=1):
-        finding_id = finding.get("id") or f"finding_{idx:03d}"
-        title = finding.get("title", "Untitled finding")
-        severity = finding.get("severity", "Unknown")
-        category = finding.get("category", "Unknown")
-        file_path = finding.get("file", "unknown file")
-        line = finding.get("line")
-        fix = finding.get("suggested_fix") or finding.get("fix") or "No fix provided"
-        evidence = _short(finding.get("evidence"), 140)
-        location = f"{file_path}:{line}" if line else file_path
-        findings_summary.append(
-            f"{finding_id}: [{severity}] {title} | {category} | {location} | Evidence: {evidence or 'n/a'} | Fix: {fix}"
-        )
-
-    attack_summary = []
-    for attack in attack_simulations[:6]:
-        attack_summary.append(
-            " | ".join(
-                [
-                    f"Finding: {attack.get('finding_id', 'unknown')}",
-                    f"Type: {attack.get('simulation_type', 'attack_simulation')}",
-                    f"Goal: {_short(attack.get('attack_goal'), 150)}",
-                    f"Prompt: {_short(attack.get('malicious_input'), 150)}",
-                    f"Guardrail: {_short(attack.get('guardrail') or attack.get('required_fix'), 150)}",
-                ]
-            )
-        )
-
-    patch_summary = []
-    for patch in patches[:6]:
-        patch_summary.append(
-            " | ".join(
-                [
-                    f"Finding: {patch.get('finding_id', 'unknown')}",
-                    f"Patch: {patch.get('patch_type', 'patch_preview')}",
-                    f"Title: {_short(patch.get('title'), 120)}",
-                    f"Strategy: {patch.get('apply_strategy', 'preview_only')}",
-                    f"Review: {_short('; '.join(patch.get('review_notes') or []), 160)}",
-                ]
-            )
-        )
-
-    gate_summary = "No deployment gate output was provided."
-    if deployment_gate:
-        gate_summary = " | ".join(
-            [
-                f"Decision: {deployment_gate.get('decision', 'Unknown')}",
-                f"Summary: {_short(deployment_gate.get('summary'), 180)}",
-                f"Reason: {_short(deployment_gate.get('decision_reason'), 180)}",
-                f"Action: {_short(deployment_gate.get('required_action'), 180)}",
-                f"Blockers: {_short('; '.join(deployment_gate.get('blockers') or []), 220)}",
-            ]
-        )
-
-    findings_str = "\n".join(findings_summary) if findings_summary else "No findings were provided."
-    attacks_str = "\n".join(attack_summary) if attack_summary else "No attack simulations were provided."
-    patches_str = "\n".join(patch_summary) if patch_summary else "No patch previews were provided."
+    category_scores = scan_result.get("category_scores", {})
 
     return f"""
 Current scan context:
@@ -103,17 +123,17 @@ Safety score: {safety_score}/100
 Risk status: {status}
 Category scores: {category_scores}
 
-Deployment gate:
-{gate_summary}
-
 Findings:
-{findings_str}
+{_format_findings(scan_result)}
 
 Attack simulations / Prove Mode:
-{attacks_str}
+{_format_attack_simulations(scan_result)}
 
 Patch previews:
-{patches_str}
+{_format_patches(scan_result)}
+
+Deployment gate:
+{_format_deployment_gate(scan_result)}
 
 User question:
 {question}

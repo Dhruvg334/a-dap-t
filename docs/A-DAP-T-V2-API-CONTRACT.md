@@ -57,6 +57,7 @@ GET    /reports/{report_id}
 DELETE /reports/{report_id}
 
 POST /assistant/chat
+POST /deployment-gate/evaluate
 ```
 
 ---
@@ -179,6 +180,9 @@ do not call external targets
   "title": "Move hardcoded API key to environment variable",
   "file": "agent.py",
   "patch_type": "env_secret_fix",
+  "patch_filename": "secret-exposure-001-env-secret-fix.patch",
+  "copy_label": "Copy patch preview",
+  "download_label": "Download .patch",
   "before": "API_KEY = \"sk-demo-key\"",
   "after": "API_KEY = os.getenv(\"API_KEY\")",
   "diff": "- API_KEY = \"sk-demo-key\"\n+ API_KEY = os.getenv(\"API_KEY\")",
@@ -359,42 +363,62 @@ PDF export
 
 ---
 
-## DAP Assistant V2 Context
+## Deployment Gate Evaluation Endpoint
 
-`POST /assistant/chat` must receive the current scan report and should be able to answer from the full V2 report context.
+Frontend can re-evaluate the deployment gate with a custom policy without re-running a full scan.
 
-DAP should use:
-
-```text
-findings
-attack_simulations
-patches
-deployment_gate
-safety_score
-category_scores
+```http
+POST /deployment-gate/evaluate
+Authorization: Bearer <firebase_id_token>
 ```
 
-DAP must not invent:
+Request:
 
-```text
-new vulnerabilities
-new files
-new attack paths
-new patches
-new deployment blockers
+```json
+{
+  "scan_result": {
+    "safety_score": 62,
+    "findings": []
+  },
+  "policy": {
+    "minimum_safety_score": 80,
+    "block_on_critical": true,
+    "block_on_secrets": true,
+    "block_on_missing_approval": true,
+    "block_on_unsafe_tools": true
+  }
+}
 ```
 
-If Gemini is unavailable, DAP should still provide a short deterministic fallback answer from the scan report instead of becoming useless.
+Response uses the same `deployment_gate` schema returned inside scan reports.
 
-Expected behavior examples:
+Use this for frontend policy controls such as changing the minimum score threshold or toggling blocker rules.
+
+---
+
+## DAP V2 Context Requirements
+
+DAP must send the current report context to `/assistant/chat`. The `scan_result` should include V2 fields when available:
+
+```json
+{
+  "findings": [],
+  "attack_simulations": [],
+  "patches": [],
+  "deployment_gate": {},
+  "safety_score": 32,
+  "category_scores": {}
+}
+```
+
+DAP should support questions like:
 
 ```text
-Question: What should I fix first?
-Answer should prioritize the highest severity finding, mention the linked patch preview if available, and mention the deployment gate blocker if relevant.
-
-Question: Can I deploy this?
-Answer should use deployment_gate.decision, decision_reason, required_action, blockers, and workflow_filename.
-
-Question: Prove how this can be attacked.
-Answer should use attack_simulations and explain the malicious input, expected unsafe behavior, and required guardrail.
+What should I fix first?
+Can I deploy this?
+Prove how this can be attacked.
+Which patch should I use?
+What does the deployment gate block?
 ```
+
+Backend fallback behavior should still answer from deterministic report fields if Gemini is unavailable.

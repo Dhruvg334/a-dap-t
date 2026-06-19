@@ -83,6 +83,9 @@ class PatchPreviewSchema(BaseModel):
     title: str
     file: str
     patch_type: str
+    patch_filename: str = "patch-preview.patch"
+    copy_label: str = "Copy patch preview"
+    download_label: str = "Download .patch"
     before: str
     after: str
     diff: str

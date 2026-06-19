@@ -19,6 +19,7 @@ from app.graph import build_demo_graph
 from app.risk.scoring import compute_status
 from app.schemas.scan_schema import ScanResultSchema
 from app.services.scan_pipeline import attach_v2_report_artifacts, build_scan_result
+from app.deployment_gate.gate_policy import build_deployment_gate
 from app.utils.zip_utils import validate_zip_meta, extract_zip, cleanup_temp_dir
 from app.routes import auth
 from app.utils.firebase_utils import get_db
@@ -208,6 +209,20 @@ async def scan_secured_demo(
     result = await _save_if_requested(result, user, save_report)
 
     return JSONResponse(result)
+
+
+class DeploymentGateEvaluateRequest(BaseModel):
+    scan_result: dict
+    policy: dict | None = None
+
+
+@app.post("/deployment-gate/evaluate")
+async def evaluate_deployment_gate(
+    payload: DeploymentGateEvaluateRequest,
+    user=Depends(auth.get_current_user),
+):
+    _require_authenticated_user(user)
+    return build_deployment_gate(payload.scan_result, payload.policy)
 
 
 class GitHubScanRequest(BaseModel):

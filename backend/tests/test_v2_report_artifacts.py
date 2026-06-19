@@ -56,6 +56,8 @@ def test_patch_previews_include_review_metadata():
     assert patches[0]["apply_strategy"] == "preview_only"
     assert patches[0]["manual_review_required"] is True
     assert patches[0]["review_notes"]
+    assert patches[0]["patch_filename"].endswith(".patch")
+    assert patches[0]["copy_label"] == "Copy patch preview"
 
 
 def test_deployment_gate_blocks_unsafe_report_and_generates_workflow():
