@@ -356,3 +356,45 @@ DAP assistant
 Raw JSON export
 PDF export
 ```
+
+---
+
+## DAP Assistant V2 Context
+
+`POST /assistant/chat` must receive the current scan report and should be able to answer from the full V2 report context.
+
+DAP should use:
+
+```text
+findings
+attack_simulations
+patches
+deployment_gate
+safety_score
+category_scores
+```
+
+DAP must not invent:
+
+```text
+new vulnerabilities
+new files
+new attack paths
+new patches
+new deployment blockers
+```
+
+If Gemini is unavailable, DAP should still provide a short deterministic fallback answer from the scan report instead of becoming useless.
+
+Expected behavior examples:
+
+```text
+Question: What should I fix first?
+Answer should prioritize the highest severity finding, mention the linked patch preview if available, and mention the deployment gate blocker if relevant.
+
+Question: Can I deploy this?
+Answer should use deployment_gate.decision, decision_reason, required_action, blockers, and workflow_filename.
+
+Question: Prove how this can be attacked.
+Answer should use attack_simulations and explain the malicious input, expected unsafe behavior, and required guardrail.
+```
