@@ -74,6 +74,11 @@ class AttackSimulationSchema(BaseModel):
     evidence: str = ""
     location: str = ""
     guardrail: str = ""
+    priority_score: int = 0
+    preconditions: list[str] = Field(default_factory=list)
+    attack_steps: list[str] = Field(default_factory=list)
+    detection_signal: str = ""
+    safe_test_note: str = ""
 
 
 class PatchPreviewSchema(BaseModel):
@@ -95,6 +100,10 @@ class PatchPreviewSchema(BaseModel):
     line: int | None = None
     language: str = "text"
     apply_strategy: str = "preview_only"
+    estimated_effort: str = "medium"
+    risk_reduction: str = ""
+    affected_controls: list[str] = Field(default_factory=list)
+    validation_steps: list[str] = Field(default_factory=list)
     review_notes: list[str] = Field(default_factory=list)
 
 
@@ -102,7 +111,10 @@ class DeploymentGateSchema(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     decision: str
+    decision_badge: str = ""
     minimum_safety_score: int = 75
+    safety_score: int = 0
+    gate_score: int = 0
     blockers: list[str] = Field(default_factory=list)
     recommended_policy: dict[str, Any] = Field(default_factory=dict)
     github_actions_yaml: str = ""
@@ -110,9 +122,13 @@ class DeploymentGateSchema(BaseModel):
     summary: str = ""
     decision_reason: str = ""
     required_action: str = ""
+    next_actions: list[str] = Field(default_factory=list)
     workflow_filename: str = "adapt-agent-safety-gate.yml"
     policy_filename: str = "adapt-policy.json"
+    download_assets: list[dict[str, Any]] = Field(default_factory=list)
+    ci_secret_requirements: list[dict[str, str]] = Field(default_factory=list)
     category_blocker_counts: dict[str, int] = Field(default_factory=dict)
+    severity_counts: dict[str, int] = Field(default_factory=dict)
 
 
 class ScanResultSchema(BaseModel):

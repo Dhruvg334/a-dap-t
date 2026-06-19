@@ -65,8 +65,9 @@ def _format_attack_simulations(scan_result: dict) -> str:
         malicious = _text(item.get("malicious_input"))[:180]
         impact = _text(item.get("impact"))[:180]
         guardrail = _text(item.get("guardrail") or item.get("required_fix"))[:180]
+        signal = _text(item.get("detection_signal"))[:160]
         lines.append(
-            f"{finding_id}: [{risk}] {title} | Prompt/trigger: {malicious} | Impact: {impact} | Guardrail: {guardrail}"
+            f"{finding_id}: [{risk}] {title} | Prompt/trigger: {malicious} | Impact: {impact} | Guardrail: {guardrail} | Detection signal: {signal}"
         )
     return "\n".join(lines) if lines else "No attack simulations were generated."
 
@@ -82,8 +83,10 @@ def _format_patches(scan_result: dict) -> str:
         filename = _text(item.get("patch_filename") or "patch.diff")
         confidence = _text(item.get("confidence") or "medium")
         explanation = _text(item.get("explanation"))[:180]
+        effort = _text(item.get("estimated_effort") or "medium")
+        reduction = _text(item.get("risk_reduction"))[:160]
         lines.append(
-            f"{finding_id}: {title} | Type: {patch_type} | File: {file_path} | Patch file: {filename} | Confidence: {confidence} | {explanation}"
+            f"{finding_id}: {title} | Type: {patch_type} | File: {file_path} | Patch file: {filename} | Confidence: {confidence} | Effort: {effort} | Risk reduction: {reduction} | {explanation}"
         )
     return "\n".join(lines) if lines else "No patch previews were generated."
 
@@ -100,11 +103,15 @@ def _format_deployment_gate(scan_result: dict) -> str:
     blockers_text = "; ".join(_text(item) for item in blockers[:5]) if isinstance(blockers, list) else ""
     workflow = _text(gate.get("workflow_filename") or "adapt-agent-safety-gate.yml")
     policy = _text(gate.get("policy_filename") or "adapt-policy.json")
+    badge = _text(gate.get("decision_badge"))
+    next_actions = gate.get("next_actions") or []
+    next_text = "; ".join(_text(item) for item in next_actions[:4]) if isinstance(next_actions, list) else ""
 
     return (
-        f"Decision: {decision}\n"
+        f"Decision: {decision} ({badge})\n"
         f"Summary: {summary}\n"
         f"Required action: {action}\n"
+        f"Next actions: {next_text or 'None'}\n"
         f"Blockers: {blockers_text or 'None'}\n"
         f"Generated files: {workflow}, {policy}"
     )

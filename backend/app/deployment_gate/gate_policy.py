@@ -31,6 +31,76 @@ def _severity_count(findings: list[dict], severity: str) -> int:
     return sum(1 for finding in findings if _lower(finding.get("severity")) == target)
 
 
+def _severity_counts(findings: list[dict]) -> dict[str, int]:
+    return {
+        "critical": _severity_count(findings, "critical"),
+        "high": _severity_count(findings, "high"),
+        "medium": _severity_count(findings, "medium"),
+        "low": _severity_count(findings, "low"),
+    }
+
+
+def _gate_score(safety_score: int, blockers: list[str], findings: list[dict]) -> int:
+    penalty = min(len(blockers) * 8, 32)
+    if _has_severity(findings, "critical"):
+        penalty += 10
+    return max(0, min(100, safety_score - penalty))
+
+
+def _decision_badge(decision: str) -> str:
+    return {
+        "BLOCK": "Blocked before deployment",
+        "REVIEW": "Manual review required",
+        "ALLOW": "Ready under current policy",
+    }.get(decision, "Unknown gate decision")
+
+
+def _next_actions(decision: str, blockers: list[str]) -> list[str]:
+    if decision == "BLOCK":
+        actions = ["Fix the listed blockers before release.", "Re-run the scan after applying patches."]
+        if any("secret" in item.lower() for item in blockers):
+            actions.insert(0, "Rotate exposed secrets before deploying again.")
+        if any("approval" in item.lower() for item in blockers):
+            actions.append("Verify high-impact tools fail closed without approval.")
+        if any("tool" in item.lower() for item in blockers):
+            actions.append("Scope risky tools to least privilege and add audit logging.")
+        return actions[:5]
+    if decision == "REVIEW":
+        return [
+            "Review remaining medium/high findings.",
+            "Document accepted risk before release.",
+            "Re-scan after any final remediation.",
+        ]
+    return [
+        "Proceed with normal release checks.",
+        "Keep A-DAP-T in CI to catch future agent-risk regressions.",
+    ]
+
+
+def _download_assets(policy: dict) -> list[dict]:
+    return [
+        {
+            "kind": "github_actions_workflow",
+            "filename": "adapt-agent-safety-gate.yml",
+            "label": "Download GitHub Actions workflow",
+            "content_type": "text/yaml",
+        },
+        {
+            "kind": "deployment_policy",
+            "filename": "adapt-policy.json",
+            "label": "Download deployment policy",
+            "content_type": "application/json",
+        },
+    ]
+
+
+def _ci_secret_requirements() -> list[dict]:
+    return [
+        {"name": "ADAPT_API_URL", "purpose": "Base URL of the deployed A-DAP-T backend"},
+        {"name": "ADAPT_ID_TOKEN", "purpose": "Firebase ID token or CI service token used to call protected scan endpoints"},
+    ]
+
+
 def _category_blockers(findings: list[dict]) -> dict[str, int]:
     return {
         "secret_exposure": sum(1 for finding in findings if "secret exposure" in _lower(finding.get("category"))),
@@ -191,17 +261,28 @@ def build_deployment_gate(scan_result: dict, policy: dict | None = None) -> dict
         indent=2,
     )
 
+    severity_counts = _severity_counts(findings)
+    gate_score = _gate_score(safety_score, blockers, findings)
+    summary = _decision_summary(decision, blockers, safety_score, minimum)
+
     return {
         "decision": decision,
+        "decision_badge": _decision_badge(decision),
         "minimum_safety_score": minimum,
+        "safety_score": safety_score,
+        "gate_score": gate_score,
         "blockers": blockers,
         "recommended_policy": active_policy,
         "github_actions_yaml": _github_actions_yaml(active_policy),
         "policy_json": policy_json,
-        "summary": _decision_summary(decision, blockers, safety_score, minimum),
-        "decision_reason": blockers[0] if blockers else _decision_summary(decision, blockers, safety_score, minimum),
+        "summary": summary,
+        "decision_reason": blockers[0] if blockers else summary,
         "required_action": required_action,
+        "next_actions": _next_actions(decision, blockers),
         "workflow_filename": "adapt-agent-safety-gate.yml",
         "policy_filename": "adapt-policy.json",
+        "download_assets": _download_assets(active_policy),
+        "ci_secret_requirements": _ci_secret_requirements(),
         "category_blocker_counts": category_counts,
+        "severity_counts": severity_counts,
     }

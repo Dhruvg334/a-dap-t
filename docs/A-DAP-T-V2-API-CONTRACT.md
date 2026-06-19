@@ -157,7 +157,16 @@ compare logic may use id/title/category/severity to match findings
   "line": 12,
   "evidence": "def send_refund(order_id):",
   "location": "tools.py:12",
-  "guardrail": "Scope the tool, require approval, and log every invocation."
+  "guardrail": "Scope the tool, require approval, and log every invocation.",
+  "priority_score": 100,
+  "preconditions": ["The risky tool is reachable by the agent."],
+  "attack_steps": [
+    "Send a prompt that frames the action as already approved.",
+    "Pressure the agent to call the exposed tool directly.",
+    "Check whether approval, scope checks, and logging stop the action."
+  ],
+  "detection_signal": "Tool call without approval metadata or matching audit event.",
+  "safe_test_note": "Static proof-of-risk only. Do not execute against production systems."
 }
 ```
 
@@ -182,7 +191,7 @@ do not call external targets
   "patch_type": "env_secret_fix",
   "patch_filename": "secret-exposure-001-env-secret-fix.patch",
   "copy_label": "Copy patch preview",
-  "download_label": "Download .patch",
+  "download_label": "Download secret-exposure-001-env-secret-fix.patch",
   "before": "API_KEY = \"sk-demo-key\"",
   "after": "API_KEY = os.getenv(\"API_KEY\")",
   "diff": "- API_KEY = \"sk-demo-key\"\n+ API_KEY = os.getenv(\"API_KEY\")",
@@ -192,6 +201,14 @@ do not call external targets
   "line": 12,
   "language": "python",
   "apply_strategy": "preview_only",
+  "estimated_effort": "low",
+  "risk_reduction": "Reduces credential leakage and post-deployment key abuse risk.",
+  "affected_controls": ["secret_management", "configuration_hardening"],
+  "validation_steps": [
+    "Confirm the secret is loaded from runtime configuration.",
+    "Rotate the exposed value and verify the old value no longer works.",
+    "Re-run A-DAP-T and compare score/finding changes."
+  ],
   "review_notes": [
     "This is a generated patch preview, not an automatic code modification.",
     "Review surrounding code, imports, tests, and runtime configuration before applying."
@@ -226,7 +243,10 @@ manual_review_required should usually be true
 ```json
 {
   "decision": "BLOCK",
+  "decision_badge": "Blocked before deployment",
   "minimum_safety_score": 75,
+  "safety_score": 42,
+  "gate_score": 10,
   "blockers": [
     "Safety score is below 75.",
     "Critical findings are present."
@@ -243,8 +263,18 @@ manual_review_required should usually be true
   "summary": "Deployment should be blocked until configured blockers are fixed.",
   "decision_reason": "Safety score is below 75.",
   "required_action": "Fix blockers and re-scan before deployment.",
+  "next_actions": ["Fix blockers before release.", "Re-run the scan after applying patches."],
   "workflow_filename": "adapt-agent-safety-gate.yml",
   "policy_filename": "adapt-policy.json",
+  "download_assets": [
+    {"kind": "github_actions_workflow", "filename": "adapt-agent-safety-gate.yml", "label": "Download GitHub Actions workflow"},
+    {"kind": "deployment_policy", "filename": "adapt-policy.json", "label": "Download deployment policy"}
+  ],
+  "ci_secret_requirements": [
+    {"name": "ADAPT_API_URL", "purpose": "Base URL of the deployed A-DAP-T backend"},
+    {"name": "ADAPT_ID_TOKEN", "purpose": "Token used to call protected scan endpoints"}
+  ],
+  "severity_counts": {"critical": 1, "high": 2, "medium": 0, "low": 0},
   "category_blocker_counts": {
     "secret_exposure": 2,
     "human_approval": 1,

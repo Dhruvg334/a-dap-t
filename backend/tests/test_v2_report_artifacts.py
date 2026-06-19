@@ -45,6 +45,10 @@ def test_attack_simulations_are_linked_to_findings():
     assert simulations[0]["simulation_type"] == "secret_reuse"
     assert simulations[0]["location"] == "config.py:4"
     assert simulations[0]["guardrail"]
+    assert simulations[0]["priority_score"] >= 80
+    assert simulations[0]["attack_steps"]
+    assert simulations[0]["detection_signal"]
+    assert "Static proof-of-risk" in simulations[0]["safe_test_note"]
 
 
 def test_patch_previews_include_review_metadata():
@@ -58,6 +62,10 @@ def test_patch_previews_include_review_metadata():
     assert patches[0]["review_notes"]
     assert patches[0]["patch_filename"].endswith(".patch")
     assert patches[0]["copy_label"] == "Copy patch preview"
+    assert patches[0]["download_label"].endswith(".patch")
+    assert patches[0]["risk_reduction"]
+    assert patches[0]["validation_steps"]
+    assert patches[0]["affected_controls"]
 
 
 def test_deployment_gate_blocks_unsafe_report_and_generates_workflow():
@@ -68,3 +76,9 @@ def test_deployment_gate_blocks_unsafe_report_and_generates_workflow():
     assert gate["workflow_filename"] == "adapt-agent-safety-gate.yml"
     assert "curl -sS -X POST" in gate["github_actions_yaml"]
     assert gate["category_blocker_counts"]["secret_exposure"] == 1
+    assert gate["decision_badge"] == "Blocked before deployment"
+    assert gate["next_actions"]
+    assert gate["download_assets"][0]["filename"] == "adapt-agent-safety-gate.yml"
+    assert gate["ci_secret_requirements"]
+    assert gate["severity_counts"]["critical"] == 1
+    assert gate["gate_score"] < gate["safety_score"]

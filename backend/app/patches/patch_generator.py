@@ -71,7 +71,53 @@ def _line(finding: dict) -> int | None:
     return line if line > 0 else None
 
 
+def _effort_for_patch(patch_type: str, confidence: str) -> str:
+    if confidence == "low":
+        return "medium"
+    if patch_type in {"env_secret_fix", "audit_logging_addition"}:
+        return "low"
+    return "medium"
+
+
+def _controls_for_patch(patch_type: str) -> list[str]:
+    mapping = {
+        "env_secret_fix": ["secret_management", "configuration_hardening"],
+        "human_approval_wrapper": ["human_in_the_loop", "high_impact_action_control"],
+        "audit_logging_addition": ["auditability", "incident_response"],
+        "pii_masking_helper": ["data_minimization", "pii_protection"],
+        "prompt_input_sanitization": ["prompt_boundary", "prompt_injection_resistance"],
+        "tool_scope_guard": ["least_privilege_tools", "agent_permission_boundary"],
+    }
+    return mapping.get(patch_type, ["agent_deployment_safety"])
+
+
+def _validation_steps(patch_type: str) -> list[str]:
+    common = ["Apply manually in a branch or staging copy.", "Run the A-DAP-T scan again and compare score/finding changes."]
+    specific = {
+        "env_secret_fix": ["Confirm the secret is loaded from runtime configuration.", "Rotate the exposed value and verify the old value no longer works."],
+        "human_approval_wrapper": ["Test that the risky action fails closed without approval.", "Verify approval metadata is recorded with the tool call."],
+        "audit_logging_addition": ["Trigger the tool in staging and verify logs include user, tool, request ID, redacted arguments, and outcome."],
+        "pii_masking_helper": ["Test with sample customer data and verify raw email/phone/address/token values are not returned."],
+        "prompt_input_sanitization": ["Run adversarial prompt cases and verify user input is treated as data, not instructions."],
+        "tool_scope_guard": ["Try an out-of-scope action and verify the tool refuses or routes to approval."],
+    }
+    return specific.get(patch_type, []) + common
+
+
+def _risk_reduction_for_patch(patch_type: str) -> str:
+    mapping = {
+        "env_secret_fix": "Reduces credential leakage and post-deployment key abuse risk.",
+        "human_approval_wrapper": "Reduces excessive-agency risk for high-impact actions.",
+        "audit_logging_addition": "Improves incident review and traceability for agent tool calls.",
+        "pii_masking_helper": "Reduces sensitive data exposure in agent responses and logs.",
+        "prompt_input_sanitization": "Reduces prompt injection and instruction-confusion risk.",
+        "tool_scope_guard": "Reduces broad tool access by enforcing least privilege and approval boundaries.",
+    }
+    return mapping.get(patch_type, "Reduces the linked deployment risk when reviewed and applied correctly.")
+
+
 def _patch_base(finding: dict, index: int, *, title: str, patch_type: str, before: str, after: str, diff: str, explanation: str, confidence: str = "medium") -> dict:
+    filename = _patch_filename(finding, index, patch_type)
     return {
         "finding_id": _finding_id(finding, index),
         "title": title,
@@ -79,9 +125,9 @@ def _patch_base(finding: dict, index: int, *, title: str, patch_type: str, befor
         "line": _line(finding),
         "language": _language(_file(finding)),
         "patch_type": patch_type,
-        "patch_filename": _patch_filename(finding, index, patch_type),
+        "patch_filename": filename,
         "copy_label": "Copy patch preview",
-        "download_label": "Download .patch",
+        "download_label": f"Download {filename}",
         "before": before,
         "after": after,
         "diff": diff,
@@ -89,6 +135,10 @@ def _patch_base(finding: dict, index: int, *, title: str, patch_type: str, befor
         "confidence": confidence,
         "manual_review_required": True,
         "apply_strategy": "preview_only",
+        "estimated_effort": _effort_for_patch(patch_type, confidence),
+        "risk_reduction": _risk_reduction_for_patch(patch_type),
+        "affected_controls": _controls_for_patch(patch_type),
+        "validation_steps": _validation_steps(patch_type),
         "review_notes": [
             "This is a generated patch preview, not an automatic code modification.",
             "Review surrounding code, imports, tests, and runtime configuration before applying.",

@@ -130,14 +130,20 @@ def _deployment_answer(scan_result: dict) -> str:
     blockers = gate.get("blockers") or []
     workflow = _text(gate.get("workflow_filename") or "adapt-agent-safety-gate.yml")
     policy = _text(gate.get("policy_filename") or "adapt-policy.json")
+    badge = _text(gate.get("decision_badge"))
+    next_actions = gate.get("next_actions") or []
 
     lines = [f"Deployment gate: {decision}."]
+    if badge:
+        lines.append("Verdict: " + badge)
     if summary:
         lines.append(summary)
     if blockers:
         lines.append("Blockers: " + "; ".join(_text(item) for item in blockers[:4]))
     if action:
         lines.append("Required action: " + action)
+    if isinstance(next_actions, list) and next_actions:
+        lines.append("Next actions: " + "; ".join(_text(item) for item in next_actions[:3]))
     lines.append(f"Use {workflow} and {policy} as the CI gate artifacts.")
     return "\n".join(lines)
 
@@ -152,11 +158,16 @@ def _attack_answer(scan_result: dict) -> str:
     malicious = _text(top.get("malicious_input"))
     impact = _text(top.get("impact"))
     guardrail = _text(top.get("guardrail") or top.get("required_fix"))
+    signal = _text(top.get("detection_signal"))
+    steps = top.get("attack_steps") or []
+    step_text = "; ".join(_text(item) for item in steps[:3]) if isinstance(steps, list) else ""
 
     return (
         f"Most relevant proof path: {title}.\n"
         f"Malicious input: {malicious}\n"
         f"Expected impact: {impact}\n"
+        f"Attack steps: {step_text}\n"
+        f"Detection signal: {signal}\n"
         f"Required guardrail: {guardrail}"
     )
 
@@ -171,11 +182,14 @@ def _patch_answer(scan_result: dict) -> str:
     filename = _text(patch.get("patch_filename") or "patch.diff")
     explanation = _text(patch.get("explanation"))
     confidence = _text(patch.get("confidence") or "medium")
+    effort = _text(patch.get("estimated_effort") or "medium")
+    risk_reduction = _text(patch.get("risk_reduction"))
 
     return (
         f"Start with patch preview: {title}.\n"
         f"Download/copy: {filename}.\n"
-        f"Confidence: {confidence}.\n"
+        f"Confidence: {confidence}; effort: {effort}.\n"
+        f"Risk reduction: {risk_reduction}\n"
         f"Why: {explanation}\n"
         "Review manually before applying; A-DAP-T does not auto-modify source code."
     )
