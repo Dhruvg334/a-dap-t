@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, formatApiError } from '@/lib/api';
 import { getAuthState } from '@/lib/auth';
 import { saveCurrentReport } from '@/lib/report-storage';
 import type { ScanReport } from '@/types/scan';
@@ -25,7 +25,7 @@ export default function ProfilePage() {
 
     apiFetch<ScanReport[]>('/reports')
       .then((data) => setReports(Array.isArray(data) ? data : []))
-      .catch((err) => setError(err instanceof Error ? err.message : 'Could not load reports.'))
+      .catch((err) => setError(formatApiError(err, 'Could not load reports.')))
       .finally(() => setLoading(false));
   }, [router]);
 

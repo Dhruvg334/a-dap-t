@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import type { ScanReport } from '@/types/scan';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, formatApiError } from '@/lib/api';
 
 type Message = { role: 'user' | 'bot'; text: string };
 
@@ -35,7 +35,7 @@ export function DapPanel({ report }: { report: ScanReport }) {
       });
       setMessages((prev) => [...prev.slice(0, -1), { role: 'bot', text: data.answer || 'DAP could not produce an answer.' }]);
     } catch (error) {
-      setMessages((prev) => [...prev.slice(0, -1), { role: 'bot', text: error instanceof Error ? error.message : 'DAP is unavailable right now.' }]);
+      setMessages((prev) => [...prev.slice(0, -1), { role: 'bot', text: formatApiError(error, 'DAP is unavailable right now.') }]);
     } finally {
       setLoading(false);
     }

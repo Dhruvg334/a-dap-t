@@ -6,6 +6,13 @@ import { categoryName, gateClass, severityClass, severityLabel } from '@/lib/sco
 import { copyText, downloadText } from '@/lib/api';
 import { DapPanel } from '@/components/dap/DapPanel';
 
+function riskFillStyle(value: number): string {
+  const score = Math.max(0, Math.min(100, Number(value) || 0));
+  if (score <= 39) return 'linear-gradient(90deg, #10b981 0%, #34d399 100%)';
+  if (score <= 69) return 'linear-gradient(90deg, #10b981 0%, #f59e0b 100%)';
+  return 'linear-gradient(90deg, #10b981 0%, #f59e0b 58%, #ef4444 100%)';
+}
+
 export function ReportWorkspace({ report }: { report: ScanReport }) {
   const gate = report.deployment_gate || null;
   const summary = report.summary || {};
@@ -21,7 +28,7 @@ export function ReportWorkspace({ report }: { report: ScanReport }) {
   return (
     <main className="page-shell">
       <div className="container">
-        <div className="page-head">
+        <div className="page-head centered">
           <div>
             <div className="tech-label page-kicker"><span className="pulse-dot" /> V2 REPORT WORKSPACE</div>
             <h1 className="page-title">Deployment<br />verdict.</h1>
@@ -103,7 +110,7 @@ function CategoryPanel({ categories }: { categories: Record<string, number> }) {
       {entries.map(([key, value]) => (
         <div className="category-row" key={key}>
           <div className="category-name">{categoryName(key)}</div>
-          <div className="risk-bar"><div className="risk-fill" style={{ width: `${Math.min(100, Math.max(0, Number(value)))}%` }} /></div>
+          <div className="risk-bar"><div className="risk-fill" style={{ width: `${Math.min(100, Math.max(0, Number(value)))}%`, background: riskFillStyle(Number(value)) }} /></div>
           <div className="faint">{value}</div>
         </div>
       ))}

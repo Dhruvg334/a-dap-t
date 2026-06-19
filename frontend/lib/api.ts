@@ -12,6 +12,28 @@ function shouldTreatAsAuthFailure(status: number, body: unknown): boolean {
   return /invalid|expired|authentication|required|unauthorized/i.test(text);
 }
 
+export function formatApiError(error: unknown, fallback = 'Something went wrong. Please try again.'): string {
+  const message = error instanceof Error ? error.message : String(error || '');
+  const lower = message.toLowerCase();
+
+  if (/quota|limit|rate|429|resource exhausted/.test(lower)) {
+    return 'The AI service or backend hit a usage limit. Wait a short while and try again, or run a demo scan without AI-heavy actions.';
+  }
+  if (/failed to fetch|network|load failed|connection|cors/.test(lower)) {
+    return 'A-DAP-T could not reach the backend. The Render service may be waking up or your network blocked the request.';
+  }
+  if (/expired|invalid token|unauthorized|authentication|required/.test(lower)) {
+    return 'Your session expired. Please sign in again so A-DAP-T can refresh protected scan access.';
+  }
+  if (/github|repository|repo|branch/.test(lower)) {
+    return `GitHub scan failed: ${message}`;
+  }
+  if (/zip|file|upload/.test(lower)) {
+    return `Project upload failed: ${message}`;
+  }
+  return message || fallback;
+}
+
 export async function apiFetch<T = unknown>(path: string, options: ApiOptions = {}): Promise<T> {
   const headers = new Headers(options.headers || {});
 
@@ -25,10 +47,7 @@ export async function apiFetch<T = unknown>(path: string, options: ApiOptions = 
   const data = text ? tryJson(text) : null;
 
   if (!response.ok) {
-    if (shouldTreatAsAuthFailure(response.status, data)) {
-      clearAuthState();
-    }
-
+    if (shouldTreatAsAuthFailure(response.status, data)) clearAuthState();
     const detail = typeof data === 'object' && data && 'detail' in data ? String((data as any).detail) : text;
     throw new Error(detail || `Request failed with status ${response.status}`);
   }
@@ -37,11 +56,7 @@ export async function apiFetch<T = unknown>(path: string, options: ApiOptions = 
 }
 
 function tryJson(text: string): unknown {
-  try {
-    return JSON.parse(text);
-  } catch {
-    return text;
-  }
+  try { return JSON.parse(text); } catch { return text; }
 }
 
 export function downloadText(filename: string, content: string, type = 'text/plain'): void {

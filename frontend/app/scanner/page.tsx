@@ -1,19 +1,27 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, ReactNode, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ScanReport } from '@/types/scan';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, formatApiError } from '@/lib/api';
 import { getAuthState } from '@/lib/auth';
 import { saveCurrentReport } from '@/lib/report-storage';
 
 type ScanMode = 'vulnerable' | 'secured' | 'github' | 'zip';
 
-const scanOptions: Array<{ id: ScanMode; label: string; title: string; body: string; icon: string; meta: string }> = [
-  { id: 'vulnerable', label: 'Intentionally vulnerable', title: 'Vulnerable demo agent', body: 'Run the unsafe support agent and see A-DAP-T prove risky tool paths, generate fixes, and block deployment.', icon: '⚠', meta: 'Best demo starting point' },
-  { id: 'secured', label: 'Hardened demo', title: 'Secured demo agent', body: 'Run the improved version and compare how guardrails change the deployment verdict.', icon: '✓', meta: 'Safer baseline' },
-  { id: 'github', label: 'Public repository', title: 'GitHub repo scan', body: 'Paste a public GitHub repository URL. Code is downloaded as ZIP and read as text only.', icon: '⌁', meta: 'No code execution' },
-  { id: 'zip', label: 'Upload project', title: 'ZIP upload', body: 'Upload a project ZIP with safe extraction limits for local/private demos.', icon: '⇧', meta: '20 MB / 300 file limit' },
+function Icon({ type }: { type: ScanMode }) {
+  const common = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+  if (type === 'vulnerable') return <svg {...common}><path d="M12 3 2.8 20h18.4L12 3Z" /><path d="M12 9v5" /><path d="M12 17.2h.01" /></svg>;
+  if (type === 'secured') return <svg {...common}><path d="M12 3.4 19.5 6v5.6c0 4.8-2.9 8.2-7.5 10-4.6-1.8-7.5-5.2-7.5-10V6L12 3.4Z" /><path d="m8.8 12.3 2.1 2.1 4.4-4.7" /></svg>;
+  if (type === 'github') return <svg {...common}><path d="M9 19c-4 1.2-4-2-5.6-2.4" /><path d="M15 22v-3.6a3.2 3.2 0 0 0-.9-2.5c3-.3 6.1-1.5 6.1-6.6a5.1 5.1 0 0 0-1.4-3.6 4.8 4.8 0 0 0-.1-3.5s-1.1-.3-3.6 1.4a12.4 12.4 0 0 0-6.6 0C6 1.9 4.9 2.2 4.9 2.2a4.8 4.8 0 0 0-.1 3.5 5.1 5.1 0 0 0-1.4 3.6c0 5.1 3.1 6.3 6.1 6.6a3.2 3.2 0 0 0-.9 2.5V22" /></svg>;
+  return <svg {...common}><path d="M12 3v12" /><path d="m7 8 5-5 5 5" /><path d="M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" /></svg>;
+}
+
+const scanOptions: Array<{ id: ScanMode; label: string; title: string; body: string; meta: string }> = [
+  { id: 'vulnerable', label: 'Intentionally vulnerable', title: 'Vulnerable demo agent', body: 'Fastest V2 walkthrough: unsafe tools, proof paths, generated fixes, and blocked deployment.', meta: 'Best starting point' },
+  { id: 'secured', label: 'Hardened demo', title: 'Secured demo agent', body: 'Run the safer baseline and compare how guardrails change the deployment verdict.', meta: 'Safer baseline' },
+  { id: 'github', label: 'Public repository', title: 'GitHub repo scan', body: 'Paste a public GitHub repository URL. Code is downloaded as ZIP and read as text only.', meta: 'No code execution' },
+  { id: 'zip', label: 'Upload project', title: 'ZIP upload', body: 'Upload a project ZIP with safe extraction limits for local or private demos.', meta: '20 MB / 300 files' },
 ];
 
 export default function ScannerPage() {
@@ -28,9 +36,7 @@ export default function ScannerPage() {
   const [progressText, setProgressText] = useState('');
 
   useEffect(() => {
-    if (!getAuthState()) {
-      router.replace(`/signin?next=${encodeURIComponent('/scanner')}`);
-    }
+    if (!getAuthState()) router.replace(`/signin?next=${encodeURIComponent('/scanner')}`);
   }, [router]);
 
   async function runScan(event?: FormEvent) {
@@ -41,7 +47,6 @@ export default function ScannerPage() {
 
     try {
       let report: ScanReport;
-
       if (mode === 'vulnerable') {
         setProgressText('Running vulnerable demo scan...');
         report = await apiFetch<ScanReport>(`/scan/demo/vulnerable?save_report=${saveReport}`);
@@ -63,12 +68,11 @@ export default function ScannerPage() {
         setProgressText('Uploading and scanning ZIP project...');
         report = await apiFetch<ScanReport>('/scan/upload', { method: 'POST', body: formData });
       }
-
       setProgressText('Building V2 report workspace...');
       saveCurrentReport(report);
       router.push('/report/current');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Scan failed.');
+      setError(formatApiError(err, 'Scan failed. Check the scan target and try again.'));
     } finally {
       setLoading(false);
     }
@@ -77,27 +81,27 @@ export default function ScannerPage() {
   return (
     <main className="page-shell">
       <div className="container">
-        <div className="page-head">
+        <div className="page-head centered">
           <div>
             <div className="tech-label page-kicker"><span className="pulse-dot" /> SCAN LAUNCHER</div>
-            <h1 className="page-title">Choose your<br />scan target.</h1>
-            <p className="page-desc">Run built-in demo agents, scan a public GitHub repository, or upload a project ZIP. A-DAP-T reads source files as text and does not execute project code.</p>
+            <h1 className="page-title">Choose your scan target.</h1>
           </div>
-          <button className="btn btn-primary" onClick={() => runScan()} disabled={loading}>{loading ? 'Scanning...' : 'Run scan'}</button>
+          <p className="page-desc">Run built-in demo agents, scan a public GitHub repository, or upload a project ZIP. A-DAP-T reads source files as text and does not execute project code.</p>
+          <button className="btn btn-primary" onClick={() => runScan()} disabled={loading}>{loading ? 'Scanning...' : 'Run Scan'}</button>
         </div>
 
         {error && <div className="form-error" style={{ marginBottom: 18 }}>{error}</div>}
         {loading && <div className="form-success" style={{ marginBottom: 18 }}>{progressText || 'Scanning...'}</div>}
 
-        <section className="grid grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 18 }}>
+        <section className="scan-grid">
           {scanOptions.map((option) => (
             <button key={option.id} className={`glass-card scan-card ${mode === option.id ? 'active shimmer' : ''}`} type="button" onClick={() => setMode(option.id)}>
               <div>
-                <div className="scan-icon">{option.icon}</div>
+                <div className="scan-icon"><Icon type={option.id} /></div>
                 <h3>{option.title}</h3>
                 <p>{option.body}</p>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginTop: 22 }}>
+              <div className="scan-footer">
                 <span className="pill neutral">{option.label}</span>
                 <span className="faint">{option.meta}</span>
               </div>
@@ -118,31 +122,21 @@ export default function ScannerPage() {
 
           {mode === 'github' && (
             <div className="grid grid-2">
-              <label className="form-row">
-                <span className="form-label">Repository URL</span>
-                <input className="input" value={repoUrl} onChange={(e) => setRepoUrl(e.target.value)} placeholder="https://github.com/user/repo" />
-              </label>
-              <label className="form-row">
-                <span className="form-label">Branch</span>
-                <input className="input" value={branch} onChange={(e) => setBranch(e.target.value)} placeholder="main" />
-              </label>
+              <label className="form-row"><span className="form-label">Repository URL</span><input className="input" value={repoUrl} onChange={(e) => setRepoUrl(e.target.value)} placeholder="https://github.com/user/repo" /></label>
+              <label className="form-row"><span className="form-label">Branch</span><input className="input" value={branch} onChange={(e) => setBranch(e.target.value)} placeholder="main" /></label>
             </div>
           )}
 
           {mode === 'zip' && (
-            <label className="form-row">
-              <span className="form-label">Project ZIP</span>
-              <input className="input" type="file" accept=".zip" onChange={(e) => setZipFile(e.target.files?.[0] || null)} />
-              <span className="faint">ZIP limits are enforced by the backend. Uploaded code is never executed.</span>
-            </label>
+            <label className="form-row"><span className="form-label">Project ZIP</span><input className="input" type="file" accept=".zip" onChange={(e) => setZipFile(e.target.files?.[0] || null)} /><span className="faint">ZIP limits are enforced by the backend. Uploaded code is never executed.</span></label>
           )}
 
           {(mode === 'vulnerable' || mode === 'secured') && (
-            <p className="muted">This built-in sample is the fastest way to verify the full V2 loop: score, findings, Prove Mode, patch previews, deployment gate, and DAP.</p>
+            <p className="muted">This built-in sample verifies the full V2 loop: score, findings, Prove Mode, patch previews, deployment gate, and DAP.</p>
           )}
 
           <div style={{ marginTop: 20, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <button className="btn btn-primary" type="submit" disabled={loading}>{loading ? 'Running scan...' : 'Run selected scan'}</button>
+            <button className="btn btn-primary" type="submit" disabled={loading}>{loading ? 'Running scan...' : 'Run Selected Scan'}</button>
             <span className="pill neutral">Scan → Prove → Patch → Gate</span>
           </div>
         </form>

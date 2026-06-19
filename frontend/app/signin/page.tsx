@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, formatApiError } from '@/lib/api';
 import { saveAuthState } from '@/lib/auth';
 
 type LoginResponse = { idToken?: string; refreshToken?: string; expiresIn?: string; localId?: string; email?: string; displayName?: string };
@@ -50,7 +50,7 @@ export default function SignInPage() {
 
       router.push(getNextPath());
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign in failed.');
+      setError(formatApiError(err, 'Sign in failed. Please check your credentials and try again.'));
     } finally {
       setLoading(false);
     }

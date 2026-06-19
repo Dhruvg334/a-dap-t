@@ -3,20 +3,30 @@ import Link from 'next/link';
 const features = [
   {
     label: '01_PROVE',
-    title: 'Static attack paths',
-    body: 'A-DAP-T does not stop at “risky tool found.” It shows how the path could be abused, what preconditions exist, and which guardrail blocks it.'
+    title: 'Prove risky paths',
+    body: 'Static simulations show what can go wrong, the preconditions, the trigger, and the guardrail needed to stop it.'
   },
   {
     label: '02_PATCH',
-    title: 'Developer-ready fixes',
-    body: 'Generated patch previews include diffs, risk reduction, review notes, and validation steps. Nothing is auto-applied without developer control.'
+    title: 'Generate fix previews',
+    body: 'Patch cards include diffs, risk reduction, effort, and validation steps. Developers stay in control.'
   },
   {
     label: '03_GATE',
-    title: 'Deployment safety gate',
-    body: 'Reports produce BLOCK, REVIEW, or ALLOW decisions with GitHub Actions workflow and policy JSON output for CI/CD enforcement.'
+    title: 'Block unsafe releases',
+    body: 'Deployment gate output gives BLOCK, REVIEW, or ALLOW with CI workflow and policy JSON artifacts.'
   }
 ];
+
+function MiniRisk({ label, value, tone }: { label: string; value: number; tone: string }) {
+  return (
+    <div className="mock-risk">
+      <span>{label}</span>
+      <div className="risk-bar"><div className="risk-fill" style={{ width: `${value}%`, background: tone }} /></div>
+      <strong>{value}</strong>
+    </div>
+  );
+}
 
 export default function HomePage() {
   return (
@@ -33,8 +43,8 @@ export default function HomePage() {
               A-DAP-T checks agent code, tools, secrets, approval gates, and audit trails — then proves risky paths, generates patch previews, and blocks unsafe deployments before release.
             </p>
             <div className="hero-actions">
-              <Link className="btn btn-primary" href="/scanner">Start scanning →</Link>
-              <Link className="btn btn-secondary" href="/methodology">View methodology</Link>
+              <Link className="btn btn-primary" href="/scanner">Start Scanning</Link>
+              <Link className="btn btn-secondary" href="/methodology">View Methodology</Link>
             </div>
             <div className="hero-meta">
               <span className="meta-item">Rule-based verdict</span>
@@ -47,40 +57,45 @@ export default function HomePage() {
             <div className="mock-window">
               <div className="window-dots"><span /><span /><span /></div>
               <div className="tech-label">LIVE SCAN OUTPUT</div>
-              <div className="mock-row">
-                <div>
-                  <div className="mock-score">32</div>
-                  <p className="muted">Vulnerable support agent</p>
+              <div className="mock-dashboard">
+                <div className="mock-main">
+                  <div>
+                    <div className="mock-score">32</div>
+                    <p className="mock-score-caption">Safety score</p>
+                  </div>
+                  <div>
+                    <strong>Vulnerable support agent</strong>
+                    <p className="faint" style={{ margin: '4px 0 0' }}>13 findings · 8 proof paths · 8 patches</p>
+                  </div>
+                  <span className="mock-badge block">Blocked</span>
                 </div>
-                <span className="mock-badge block">Blocked</span>
-              </div>
-              <div className="mock-row">
-                <div>
-                  <strong>Prove Mode</strong>
-                  <p className="faint">8 static attack paths generated</p>
+
+                <div className="mock-metrics">
+                  <div className="mock-metric"><span className="panel-label">Prove</span><strong>8</strong><span className="faint">paths</span></div>
+                  <div className="mock-metric"><span className="panel-label">Patch</span><strong>8</strong><span className="faint">fixes</span></div>
+                  <div className="mock-metric"><span className="panel-label">Gate</span><strong>BLOCK</strong><span className="faint">CI</span></div>
                 </div>
-                <span className="mock-badge safe">Ready</span>
-              </div>
-              <div className="mock-row">
-                <div>
-                  <strong>Generated fixes</strong>
-                  <p className="faint">8 patch previews with validation steps</p>
+
+                <div className="mock-risk-list">
+                  <MiniRisk label="Secret exposure" value={65} tone="linear-gradient(90deg, #10b981, #f59e0b)" />
+                  <MiniRisk label="Tool permission" value={45} tone="linear-gradient(90deg, #10b981, #f59e0b)" />
+                  <MiniRisk label="Data exposure" value={65} tone="linear-gradient(90deg, #10b981, #f59e0b)" />
                 </div>
-                <span className="mock-badge safe">Patch</span>
+                <pre className="code-block" style={{ marginTop: 2 }}>{`> adapt gate --min-score 75\nstatus: BLOCK\nreason: critical findings present`}</pre>
+                <div className="mock-scanline" />
               </div>
-              <pre className="code-block" style={{ marginTop: 14 }}>{`> adapt gate --min-score 75\nstatus: BLOCK\nreason: critical findings present`}</pre>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="container" style={{ padding: '70px 22px' }}>
-        <div className="page-head">
+      <section className="container" style={{ padding: '66px 22px' }}>
+        <div className="page-head centered">
           <div>
             <div className="tech-label"><span className="pulse-dot" /> PRODUCT LOOP</div>
-            <h2 className="section-title">Scan. Prove. Patch. Re-scan. Gate.</h2>
+            <h2 className="section-title" style={{ marginTop: 14 }}>Scan. Prove. Patch. Gate.</h2>
           </div>
-          <p className="page-desc">This version moves A-DAP-T from a risk report into a deployment safety workflow for AI agents.</p>
+          <p className="page-desc">A-DAP-T V2 moves from a report into a deployment workflow for AI agents that can act.</p>
         </div>
         <div className="grid grid-3">
           {features.map((feature) => (
@@ -93,12 +108,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="container" style={{ padding: '32px 22px 82px' }}>
-        <div className="glass-card panel" style={{ textAlign: 'center', padding: '44px 22px' }}>
+      <section className="container" style={{ padding: '22px 22px 82px' }}>
+        <div className="glass-card panel centered" style={{ padding: '40px 22px' }}>
           <div className="tech-label"><span className="pulse-dot" /> READY FOR V2</div>
-          <h2 className="section-title" style={{ margin: '14px auto 18px', maxWidth: 860 }}>A deployment gate built for agents that can act.</h2>
-          <p className="page-desc" style={{ margin: '0 auto 28px' }}>Run the vulnerable demo, inspect Prove Mode, review patch previews, and copy the generated CI gate workflow.</p>
-          <Link className="btn btn-primary" href="/scanner">Run the demo scan</Link>
+          <h2 className="section-title" style={{ margin: '14px auto 18px', maxWidth: 820 }}>A deployment gate built for agents that take action.</h2>
+          <p className="page-desc" style={{ margin: '0 auto 26px' }}>Run the vulnerable demo, inspect Prove Mode, review patch previews, and copy the generated CI gate workflow.</p>
+          <Link className="btn btn-primary" href="/scanner">Run Demo Scan</Link>
         </div>
       </section>
     </main>
