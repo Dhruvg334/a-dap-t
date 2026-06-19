@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import './globals.css';
 import { Navbar } from '@/components/layout/Navbar';
+import { Footer } from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
   title: 'A-DAP-T | AI Agent Deployment Safety Gate',
@@ -18,6 +19,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <div className="bg-orb two" />
         <Navbar />
         {children}
+        <Footer />
       </body>
     </html>
   );

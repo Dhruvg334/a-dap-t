@@ -8,6 +8,13 @@ import { saveAuthState } from '@/lib/auth';
 
 type LoginResponse = { idToken?: string; refreshToken?: string; expiresIn?: string; localId?: string; email?: string; displayName?: string };
 
+const accessReasons = [
+  ['Run scans', 'Use protected demo, GitHub, and ZIP scan endpoints.'],
+  ['Save history', 'Reopen previous reports and continue review later.'],
+  ['Ask DAP', 'Use the current report context for fix-first guidance.'],
+  ['Gate deploys', 'Generate workflow and policy artifacts for CI/CD.'],
+];
+
 export default function SignUpPage() {
   const router = useRouter();
   const [displayName, setDisplayName] = useState('');
@@ -67,31 +74,52 @@ export default function SignUpPage() {
 
   return (
     <main className="auth-wrap">
-      <section className="glass-card auth-card shimmer">
-        <div className="tech-label"><span className="pulse-dot" /> CREATE ACCESS</div>
-        <h1>Start scanning.</h1>
-        <p className="muted">Create an account to save reports and run protected scan endpoints.</p>
-        <form className="form-stack" onSubmit={submit} style={{ marginTop: 24 }}>
-          {error && <div className="form-error">{error}</div>}
-          <label className="form-row">
-            <span className="form-label">Name</span>
-            <input className="input" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
-          </label>
-          <label className="form-row">
-            <span className="form-label">Email</span>
-            <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          </label>
-          <label className="form-row">
-            <span className="form-label">Password</span>
-            <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-          </label>
-          <label className="form-row">
-            <span className="form-label">Confirm Password</span>
-            <input className="input" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
-          </label>
-          <button className="btn btn-primary" type="submit" disabled={loading}>{loading ? 'Creating...' : 'Create account'}</button>
-        </form>
-        <p className="muted" style={{ marginTop: 18 }}>Already have an account? <Link href="/signin" style={{ color: 'var(--text)' }}>Sign in</Link></p>
+      <section className="auth-grid">
+        <div className="glass-card auth-card shimmer">
+          <div className="tech-label"><span className="pulse-dot" /> CREATE ACCESS</div>
+          <h1>Start scanning.</h1>
+          <p className="muted">Create an account to run protected scans, save reports, and use DAP with report context.</p>
+          <form className="form-stack" onSubmit={submit} style={{ marginTop: 22 }}>
+            {error && <div className="form-error">{error}</div>}
+            <label className="form-row">
+              <span className="form-label">Name</span>
+              <input className="input" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
+            </label>
+            <label className="form-row">
+              <span className="form-label">Email</span>
+              <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            </label>
+            <div className="grid grid-2">
+              <label className="form-row">
+                <span className="form-label">Password</span>
+                <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              </label>
+              <label className="form-row">
+                <span className="form-label">Confirm</span>
+                <input className="input" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
+              </label>
+            </div>
+            <button className="btn btn-primary" type="submit" disabled={loading}>{loading ? 'Creating...' : 'Create account'}</button>
+          </form>
+          <p className="muted" style={{ marginTop: 16 }}>Already have an account? <Link href="/signin" style={{ color: 'var(--text)' }}>Sign in</Link></p>
+        </div>
+
+        <aside className="glass-card auth-info">
+          <div>
+            <div className="tech-label"><span className="pulse-dot" /> WHY ACCOUNT ACCESS</div>
+            <h2 className="panel-title" style={{ marginTop: 12 }}>A-DAP-T is not just a landing page.</h2>
+            <p className="muted">The app stores report history and protects scan resources, so authenticated access keeps the workflow reliable during demos and real scans.</p>
+            <div className="auth-info-list">
+              {accessReasons.map(([title, body], index) => (
+                <div className="auth-info-item" key={title}>
+                  <span className="auth-info-icon">{index + 1}</span>
+                  <div><strong>{title}</strong><p className="faint" style={{ margin: '3px 0 0' }}>{body}</p></div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <p className="faint" style={{ marginTop: 22 }}>Safety note: project files are read as text only. Uploaded code is not executed by the scanner.</p>
+        </aside>
       </section>
     </main>
   );

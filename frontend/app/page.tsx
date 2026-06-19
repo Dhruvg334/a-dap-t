@@ -74,7 +74,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="container" style={{ padding: '86px 24px' }}>
+      <section className="container" style={{ padding: '70px 22px' }}>
         <div className="page-head">
           <div>
             <div className="tech-label"><span className="pulse-dot" /> PRODUCT LOOP</div>
@@ -93,8 +93,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="container" style={{ padding: '40px 24px 100px' }}>
-        <div className="glass-card panel" style={{ textAlign: 'center', padding: '58px 24px' }}>
+      <section className="container" style={{ padding: '32px 22px 82px' }}>
+        <div className="glass-card panel" style={{ textAlign: 'center', padding: '44px 22px' }}>
           <div className="tech-label"><span className="pulse-dot" /> READY FOR V2</div>
           <h2 className="section-title" style={{ margin: '14px auto 18px', maxWidth: 860 }}>A deployment gate built for agents that can act.</h2>
           <p className="page-desc" style={{ margin: '0 auto 28px' }}>Run the vulnerable demo, inspect Prove Mode, review patch previews, and copy the generated CI gate workflow.</p>
