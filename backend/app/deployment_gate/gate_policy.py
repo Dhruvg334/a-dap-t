@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 from typing import Any
 
-
 DEFAULT_POLICY = {
     "minimum_safety_score": 75,
     "block_on_critical": True,
@@ -27,8 +26,26 @@ def _has_severity(findings: list[dict], severity: str) -> bool:
     return any(_lower(finding.get("severity")) == target for finding in findings)
 
 
+def _severity_count(findings: list[dict], severity: str) -> int:
+    target = severity.lower()
+    return sum(1 for finding in findings if _lower(finding.get("severity")) == target)
+
+
+def _category_blockers(findings: list[dict]) -> dict[str, int]:
+    return {
+        "secret_exposure": sum(1 for finding in findings if "secret exposure" in _lower(finding.get("category"))),
+        "human_approval": sum(1 for finding in findings if "human approval" in _lower(finding.get("category"))),
+        "tool_permission": sum(1 for finding in findings if "tool permission" in _lower(finding.get("category"))),
+    }
+
+
 def _github_actions_yaml(policy: dict) -> str:
     minimum = int(policy.get("minimum_safety_score", 75))
+    block_critical = str(bool(policy.get("block_on_critical", True))).lower()
+    block_secrets = str(bool(policy.get("block_on_secrets", True))).lower()
+    block_approval = str(bool(policy.get("block_on_missing_approval", True))).lower()
+    block_tools = str(bool(policy.get("block_on_unsafe_tools", True))).lower()
+
     return f"""name: A-DAP-T Agent Safety Gate
 
 on:
@@ -39,20 +56,98 @@ on:
 jobs:
   adapt-safety-gate:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run A-DAP-T scan
+      - name: Build repository scan URL
+        id: repo
         run: |
-          echo "Run A-DAP-T before deployment"
-          echo "Minimum required safety score: {minimum}"
-          echo "Connect this step to the hosted A-DAP-T API or CLI runner."
+          echo "repo_url=https://github.com/${{{{ github.repository }}}}" >> "$GITHUB_OUTPUT"
+
+      - name: Run A-DAP-T scan
+        env:
+          ADAPT_API_URL: ${{{{ secrets.ADAPT_API_URL }}}}
+          ADAPT_ID_TOKEN: ${{{{ secrets.ADAPT_ID_TOKEN }}}}
+          REPO_URL: ${{{{ steps.repo.outputs.repo_url }}}}
+        run: |
+          test -n "$ADAPT_API_URL" || (echo "Missing ADAPT_API_URL secret" && exit 1)
+          test -n "$ADAPT_ID_TOKEN" || (echo "Missing ADAPT_ID_TOKEN secret" && exit 1)
+
+          curl -sS -X POST "$ADAPT_API_URL/scan/github" \\
+            -H "Authorization: Bearer $ADAPT_ID_TOKEN" \\
+            -H "Content-Type: application/json" \\
+            -d "{{\"repo_url\":\"$REPO_URL\",\"branch\":\"${{{{ github.ref_name }}}}\",\"save_report\":false}}" \\
+            -o adapt-report.json
+
+          cat adapt-report.json
 
       - name: Enforce A-DAP-T policy
+        env:
+          MINIMUM_SAFETY_SCORE: "{minimum}"
+          BLOCK_ON_CRITICAL: "{block_critical}"
+          BLOCK_ON_SECRETS: "{block_secrets}"
+          BLOCK_ON_MISSING_APPROVAL: "{block_approval}"
+          BLOCK_ON_UNSAFE_TOOLS: "{block_tools}"
         run: |
-          echo "Block deployment if score is below {minimum} or hard blockers are present."
+          python - <<'PY'
+          import json, os, sys
+
+          with open('adapt-report.json', 'r', encoding='utf-8') as f:
+              report = json.load(f)
+
+          score = int(report.get('safety_score') or 0)
+          findings = report.get('findings') or []
+          minimum = int(os.environ['MINIMUM_SAFETY_SCORE'])
+
+          blockers = []
+          if score < minimum:
+              blockers.append(f"Safety score {{score}} is below required minimum {{minimum}}")
+
+          def enabled(name):
+              return os.environ.get(name, '').lower() == 'true'
+
+          def has_severity(level):
+              return any(str(f.get('severity', '')).lower() == level for f in findings)
+
+          def has_category(text):
+              return any(text in str(f.get('category', '')).lower() for f in findings)
+
+          if enabled('BLOCK_ON_CRITICAL') and has_severity('critical'):
+              blockers.append('Critical findings are present')
+          if enabled('BLOCK_ON_SECRETS') and has_category('secret exposure'):
+              blockers.append('Secret exposure risk detected')
+          if enabled('BLOCK_ON_MISSING_APPROVAL') and has_category('human approval'):
+              blockers.append('Missing approval gate detected')
+          if enabled('BLOCK_ON_UNSAFE_TOOLS') and has_category('tool permission'):
+              blockers.append('Unsafe tool permission detected')
+
+          if blockers:
+              print('A-DAP-T deployment gate: BLOCK')
+              for item in blockers:
+                  print(f'- {{item}}')
+              sys.exit(1)
+
+          print('A-DAP-T deployment gate: PASS')
+          PY
+
+      - name: Upload A-DAP-T report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: adapt-report
+          path: adapt-report.json
 """.strip()
+
+
+def _decision_summary(decision: str, blockers: list[str], safety_score: int, minimum: int) -> str:
+    if decision == "BLOCK":
+        return f"Deployment should be blocked. Safety score is {safety_score}/{minimum} threshold and {len(blockers)} blocker(s) were found."
+    if decision == "REVIEW":
+        return "Deployment should wait for manual review. No hard blocker was found, but unresolved medium/high risk remains."
+    return "Deployment can proceed under the current policy. No configured blocker was found."
 
 
 def build_deployment_gate(scan_result: dict, policy: dict | None = None) -> dict:
@@ -65,7 +160,7 @@ def build_deployment_gate(scan_result: dict, policy: dict | None = None) -> dict
     if safety_score < minimum:
         blockers.append(f"Safety score is below {minimum}.")
     if active_policy.get("block_on_critical") and _has_severity(findings, "critical"):
-        blockers.append("Critical findings are present.")
+        blockers.append(f"Critical findings are present ({_severity_count(findings, 'critical')}).")
     if active_policy.get("block_on_secrets") and _has_category(findings, "secret exposure"):
         blockers.append("Secret exposure risk detected.")
     if active_policy.get("block_on_missing_approval") and _has_category(findings, "human approval"):
@@ -76,10 +171,25 @@ def build_deployment_gate(scan_result: dict, policy: dict | None = None) -> dict
     has_high_or_medium = any(_lower(f.get("severity")) in {"high", "medium"} for f in findings)
     if blockers:
         decision = "BLOCK"
+        required_action = "Fix blockers and re-scan before deployment."
     elif has_high_or_medium:
         decision = "REVIEW"
+        required_action = "Review remaining findings and accept risk explicitly before deployment."
     else:
         decision = "ALLOW"
+        required_action = "Proceed, while keeping normal monitoring and release checks in place."
+
+    category_counts = _category_blockers(findings)
+    policy_json = json.dumps(
+        {
+            "policy": active_policy,
+            "decision": decision,
+            "minimum_safety_score": minimum,
+            "blockers": blockers,
+            "category_blocker_counts": category_counts,
+        },
+        indent=2,
+    )
 
     return {
         "decision": decision,
@@ -87,5 +197,11 @@ def build_deployment_gate(scan_result: dict, policy: dict | None = None) -> dict
         "blockers": blockers,
         "recommended_policy": active_policy,
         "github_actions_yaml": _github_actions_yaml(active_policy),
-        "policy_json": json.dumps(active_policy, indent=2),
+        "policy_json": policy_json,
+        "summary": _decision_summary(decision, blockers, safety_score, minimum),
+        "decision_reason": blockers[0] if blockers else _decision_summary(decision, blockers, safety_score, minimum),
+        "required_action": required_action,
+        "workflow_filename": "adapt-agent-safety-gate.yml",
+        "policy_filename": "adapt-policy.json",
+        "category_blocker_counts": category_counts,
     }

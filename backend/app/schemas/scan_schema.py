@@ -57,6 +57,8 @@ class GraphSchema(BaseModel):
 
 
 class AttackSimulationSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
     finding_id: str
     title: str
     attack_goal: str
@@ -66,9 +68,17 @@ class AttackSimulationSchema(BaseModel):
     impact: str
     required_fix: str
     risk_level: str
+    simulation_type: str = ""
+    file: str = ""
+    line: int | None = None
+    evidence: str = ""
+    location: str = ""
+    guardrail: str = ""
 
 
 class PatchPreviewSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
     finding_id: str
     title: str
     file: str
@@ -79,15 +89,27 @@ class PatchPreviewSchema(BaseModel):
     explanation: str
     confidence: str = "medium"
     manual_review_required: bool = True
+    line: int | None = None
+    language: str = "text"
+    apply_strategy: str = "preview_only"
+    review_notes: list[str] = Field(default_factory=list)
 
 
 class DeploymentGateSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
     decision: str
     minimum_safety_score: int = 75
     blockers: list[str] = Field(default_factory=list)
     recommended_policy: dict[str, Any] = Field(default_factory=dict)
     github_actions_yaml: str = ""
     policy_json: str = ""
+    summary: str = ""
+    decision_reason: str = ""
+    required_action: str = ""
+    workflow_filename: str = "adapt-agent-safety-gate.yml"
+    policy_filename: str = "adapt-policy.json"
+    category_blocker_counts: dict[str, int] = Field(default_factory=dict)
 
 
 class ScanResultSchema(BaseModel):

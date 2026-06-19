@@ -88,7 +88,7 @@ All scan endpoints should return this shape, with additional metadata allowed fo
   "findings": [],
   "attack_simulations": [],
   "patches": [],
-  "deployment_gate": null,
+  "deployment_gate": {},
   "score_delta": null,
   "graph": {
     "nodes": [],
@@ -150,7 +150,13 @@ compare logic may use id/title/category/severity to match findings
   "expected_behavior": "The agent may call send_refund() without requiring human confirmation.",
   "impact": "Financial action can be triggered through prompt manipulation.",
   "required_fix": "Wrap refund execution behind require_human_approval().",
-  "risk_level": "critical"
+  "risk_level": "critical",
+  "simulation_type": "tool_abuse",
+  "file": "tools.py",
+  "line": 12,
+  "evidence": "def send_refund(order_id):",
+  "location": "tools.py:12",
+  "guardrail": "Scope the tool, require approval, and log every invocation."
 }
 ```
 
@@ -178,7 +184,14 @@ do not call external targets
   "diff": "- API_KEY = \"sk-demo-key\"\n+ API_KEY = os.getenv(\"API_KEY\")",
   "explanation": "Moves the secret out of source code and into environment configuration.",
   "confidence": "medium",
-  "manual_review_required": true
+  "manual_review_required": true,
+  "line": 12,
+  "language": "python",
+  "apply_strategy": "preview_only",
+  "review_notes": [
+    "This is a generated patch preview, not an automatic code modification.",
+    "Review surrounding code, imports, tests, and runtime configuration before applying."
+  ]
 }
 ```
 
@@ -190,6 +203,7 @@ human_approval_wrapper
 audit_logging_addition
 pii_masking_helper
 prompt_input_sanitization
+tool_scope_guard
 ```
 
 Rules:
@@ -221,7 +235,17 @@ manual_review_required should usually be true
     "block_on_unsafe_tools": true
   },
   "github_actions_yaml": "name: A-DAP-T Agent Safety Gate\n...",
-  "policy_json": "{...}"
+  "policy_json": "{...}",
+  "summary": "Deployment should be blocked until configured blockers are fixed.",
+  "decision_reason": "Safety score is below 75.",
+  "required_action": "Fix blockers and re-scan before deployment.",
+  "workflow_filename": "adapt-agent-safety-gate.yml",
+  "policy_filename": "adapt-policy.json",
+  "category_blocker_counts": {
+    "secret_exposure": 2,
+    "human_approval": 1,
+    "tool_permission": 3
+  }
 }
 ```
 
