@@ -1,10 +1,11 @@
 'use client';
 
-import { FormEvent, ReactNode, useEffect, useState } from 'react';
+import { FormEvent, ReactNode, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ScanReport } from '@/types/scan';
 import { apiFetch, formatApiError } from '@/lib/api';
-import { getAuthState } from '@/lib/auth';
+import { AuthGate } from '@/components/auth/AuthGate';
+import { BrandWord } from '@/components/ui/BrandWord';
 import { saveCurrentReport } from '@/lib/report-storage';
 
 type ScanMode = 'vulnerable' | 'secured' | 'github' | 'zip';
@@ -34,10 +35,6 @@ export default function ScannerPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [progressText, setProgressText] = useState('');
-
-  useEffect(() => {
-    if (!getAuthState()) router.replace(`/signin?next=${encodeURIComponent('/scanner')}`);
-  }, [router]);
 
   async function runScan(event?: FormEvent) {
     event?.preventDefault();
@@ -79,14 +76,15 @@ export default function ScannerPage() {
   }
 
   return (
-    <main className="page-shell">
+    <AuthGate nextPath="/scanner" label="Checking access before opening the scan launcher...">
+      <main className="page-shell">
       <div className="container">
         <div className="page-head centered">
           <div>
             <div className="tech-label page-kicker"><span className="pulse-dot" /> SCAN LAUNCHER</div>
             <h1 className="page-title">Choose your scan target.</h1>
           </div>
-          <p className="page-desc">Run built-in demo agents, scan a public GitHub repository, or upload a project ZIP. A-DAP-T reads source files as text and does not execute project code.</p>
+          <p className="page-desc">Run built-in demo agents, scan a public GitHub repository, or upload a project ZIP. <BrandWord /> reads source files as text and does not execute project code.</p>
           <button className="btn btn-primary" onClick={() => runScan()} disabled={loading}>{loading ? 'Scanning...' : 'Run Scan'}</button>
         </div>
 
@@ -141,6 +139,7 @@ export default function ScannerPage() {
           </div>
         </form>
       </div>
-    </main>
+      </main>
+    </AuthGate>
   );
 }

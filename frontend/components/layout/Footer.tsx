@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { BrandWord } from '@/components/ui/BrandWord';
 
 export function Footer() {
   return (
@@ -6,7 +7,7 @@ export function Footer() {
       <div className="container">
         <div className="footer-grid">
           <div>
-            <h2 className="footer-brand">A-DAP-T</h2>
+            <h2 className="footer-brand"><BrandWord /></h2>
             <p className="muted" style={{ maxWidth: 420 }}>
               Deployment safety gate for AI agents. Scan risky behavior, prove attack paths, generate fix previews, and block unsafe releases.
             </p>

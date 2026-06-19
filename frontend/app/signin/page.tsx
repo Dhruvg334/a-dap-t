@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch, formatApiError } from '@/lib/api';
 import { saveAuthState } from '@/lib/auth';
+import { BrandWord } from '@/components/ui/BrandWord';
 
 type LoginResponse = { idToken?: string; refreshToken?: string; expiresIn?: string; localId?: string; email?: string; displayName?: string };
 
@@ -83,7 +84,7 @@ export default function SignInPage() {
           <div>
             <div className="tech-label"><span className="pulse-dot" /> SESSION CONTEXT</div>
             <h2 className="panel-title" style={{ marginTop: 12 }}>Return to your risk workspace.</h2>
-            <p className="muted">After sign in, A-DAP-T can refresh your Firebase token before protected calls and keep scans, DAP, and report history available during longer review sessions.</p>
+            <p className="muted">After sign in, <BrandWord /> can refresh your Firebase token before protected calls and keep scans, DAP, and report history available during longer review sessions.</p>
             <div className="auth-info-list">
               <div className="auth-info-item"><span className="auth-info-icon">✓</span><div><strong>Saved reports</strong><p className="faint" style={{ margin: '3px 0 0' }}>Open previous scans and continue review.</p></div></div>
               <div className="auth-info-item"><span className="auth-info-icon">✓</span><div><strong>Report-aware DAP</strong><p className="faint" style={{ margin: '3px 0 0' }}>Ask what to fix first using the current report.</p></div></div>

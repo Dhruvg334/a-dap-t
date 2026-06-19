@@ -3,8 +3,15 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { clearAuthState, getAuthState } from '@/lib/auth';
+import { BrandWord } from '@/components/ui/BrandWord';
 
 function ShieldMark() {
+  const [imageFailed, setImageFailed] = useState(false);
+
+  if (!imageFailed) {
+    return <img className="brand-logo-img" src="/adapt-logo.svg" alt="" onError={() => setImageFailed(true)} />;
+  }
+
   return (
     <svg className="brand-shield" viewBox="0 0 24 26" fill="none" aria-hidden="true">
       <path d="M12 2.2 20.5 5.4v6.3c0 5.5-3.3 9.4-8.5 12.1-5.2-2.7-8.5-6.6-8.5-12.1V5.4L12 2.2Z" stroke="currentColor" strokeWidth="1.8" />
@@ -12,6 +19,7 @@ function ShieldMark() {
     </svg>
   );
 }
+
 
 export function Navbar() {
   const [isAuthed, setIsAuthed] = useState(false);
@@ -31,7 +39,7 @@ export function Navbar() {
       <div className="container nav-inner">
         <Link href="/" className="brand" aria-label="A-DAP-T home">
           <span className="brand-mark"><ShieldMark /></span>
-          <span className="brand-name">A-DAP-T</span>
+          <span className="brand-name"><BrandWord /></span>
         </Link>
 
         <nav className="nav-links" aria-label="Primary navigation">

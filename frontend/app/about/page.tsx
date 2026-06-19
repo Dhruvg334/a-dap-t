@@ -1,3 +1,5 @@
+import { BrandWord } from '@/components/ui/BrandWord';
+
 const people = [
   {
     name: 'Dhruv Gupta',
@@ -22,17 +24,17 @@ export default function AboutPage() {
       <div className="container">
         <div className="page-head centered">
           <div>
-            <div className="tech-label page-kicker"><span className="pulse-dot" /> ABOUT A-DAP-T</div>
+            <div className="tech-label page-kicker"><span className="pulse-dot" /> ABOUT</div>
             <h1 className="page-title">Built for agents that can act.</h1>
           </div>
-          <p className="page-desc">A-DAP-T started as an AI-agent risk scanner and is now moving toward a deployment safety gate: scan, prove, patch, re-scan, and gate unsafe releases before they ship.</p>
+          <p className="page-desc"><BrandWord /> started as an AI-agent risk scanner and is now moving toward a deployment safety gate: scan, prove, patch, re-scan, and gate unsafe releases before they ship.</p>
         </div>
 
         <section className="grid grid-3" style={{ marginBottom: 18 }}>
           <article className="glass-card panel shimmer">
             <div className="panel-label">Mission</div>
             <h2 className="panel-title">Make agent risk visible.</h2>
-            <p className="muted">AI agents now call tools, touch records, and trigger workflow actions. A-DAP-T helps teams see risky paths before deployment.</p>
+            <p className="muted">AI agents now call tools, touch records, and trigger workflow actions. <BrandWord /> helps teams see risky paths before deployment.</p>
           </article>
           <article className="glass-card panel">
             <div className="panel-label">Approach</div>
@@ -52,7 +54,7 @@ export default function AboutPage() {
               <div className="panel-label">Developer introductions</div>
               <h2 className="panel-title">Team behind the build.</h2>
             </div>
-            <span className="pill neutral">A-DAP-T V2</span>
+            <span className="pill neutral"><BrandWord /> V2</span>
           </div>
           <div className="grid grid-3">
             {people.map((person) => (

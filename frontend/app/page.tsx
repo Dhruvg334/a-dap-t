@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { BrandWord } from '@/components/ui/BrandWord';
 
 const features = [
   {
@@ -37,10 +38,10 @@ export default function HomePage() {
         </video>
         <div className="container hero-grid">
           <div className="hero-copy">
-            <div className="tech-label"><span className="pulse-dot" /> 01_AGENT SAFETY GATE</div>
-            <h1 className="display-title">Scan your AI agent<br />before it <em>ships.</em></h1>
+            <div className="tech-label"><span className="pulse-dot" /> AGENT DEPLOYMENT GATE</div>
+            <h1 className="display-title">Scan AI agents<br />before they <em>ship.</em></h1>
             <p>
-              A-DAP-T checks agent code, tools, secrets, approval gates, and audit trails — then proves risky paths, generates patch previews, and blocks unsafe deployments before release.
+              <BrandWord /> checks agent code, tools, secrets, approval gates, and audit trails — then proves risky paths, generates patch previews, and blocks unsafe deployments before release.
             </p>
             <div className="hero-actions">
               <Link className="btn btn-primary" href="/scanner">Start Scanning</Link>
@@ -55,7 +56,7 @@ export default function HomePage() {
 
           <div className="glass-card shimmer mockup">
             <div className="mock-window">
-              <div className="window-dots"><span /><span /><span /></div>
+              <div className="window-dots"><span className="dot-red" /><span className="dot-yellow" /><span className="dot-green" /></div>
               <div className="tech-label">LIVE SCAN OUTPUT</div>
               <div className="mock-dashboard">
                 <div className="mock-main">
@@ -81,8 +82,12 @@ export default function HomePage() {
                   <MiniRisk label="Tool permission" value={45} tone="linear-gradient(90deg, #10b981, #f59e0b)" />
                   <MiniRisk label="Data exposure" value={65} tone="linear-gradient(90deg, #10b981, #f59e0b)" />
                 </div>
-                <pre className="code-block" style={{ marginTop: 2 }}>{`> adapt gate --min-score 75\nstatus: BLOCK\nreason: critical findings present`}</pre>
-                <div className="mock-scanline" />
+                <div className="hero-terminal">
+                  <div><span>&gt; adapt scan support-agent</span><strong>completed</strong></div>
+                  <div><span>&gt; prove risky paths</span><strong>8 paths</strong></div>
+                  <div><span>&gt; generate patches</span><strong>8 previews</strong></div>
+                  <div><span>&gt; gate --min-score 75</span><strong className="terminal-danger">blocked</strong></div>
+                </div>
               </div>
             </div>
           </div>
@@ -95,7 +100,7 @@ export default function HomePage() {
             <div className="tech-label"><span className="pulse-dot" /> PRODUCT LOOP</div>
             <h2 className="section-title" style={{ marginTop: 14 }}>Scan. Prove. Patch. Gate.</h2>
           </div>
-          <p className="page-desc">A-DAP-T V2 moves from a report into a deployment workflow for AI agents that can act.</p>
+          <p className="page-desc"><BrandWord /> V2 moves from a report into a deployment workflow for AI agents that can act.</p>
         </div>
         <div className="grid grid-3">
           {features.map((feature) => (

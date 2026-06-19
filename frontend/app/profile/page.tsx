@@ -5,10 +5,11 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch, formatApiError } from '@/lib/api';
 import { getAuthState } from '@/lib/auth';
+import { AuthGate } from '@/components/auth/AuthGate';
 import { saveCurrentReport } from '@/lib/report-storage';
 import type { ScanReport } from '@/types/scan';
 
-export default function ProfilePage() {
+function ProfileContent() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [reports, setReports] = useState<ScanReport[]>([]);
@@ -17,11 +18,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const auth = getAuthState();
-    if (!auth) {
-      router.replace(`/signin?next=${encodeURIComponent('/profile')}`);
-      return;
-    }
-    setEmail(auth.email || 'A-DAP-T user');
+    setEmail(auth?.email || 'A-DAP-T user');
 
     apiFetch<ScanReport[]>('/reports')
       .then((data) => setReports(Array.isArray(data) ? data : []))
@@ -73,5 +70,13 @@ export default function ProfilePage() {
         </section>
       </div>
     </main>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <AuthGate nextPath="/profile" label="Checking access before opening saved reports...">
+      <ProfileContent />
+    </AuthGate>
   );
 }

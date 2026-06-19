@@ -5,6 +5,7 @@ import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch, formatApiError } from '@/lib/api';
 import { saveAuthState } from '@/lib/auth';
+import { BrandWord } from '@/components/ui/BrandWord';
 
 type LoginResponse = { idToken?: string; refreshToken?: string; expiresIn?: string; localId?: string; email?: string; displayName?: string };
 
@@ -107,7 +108,7 @@ export default function SignUpPage() {
         <aside className="glass-card auth-info">
           <div>
             <div className="tech-label"><span className="pulse-dot" /> WHY ACCOUNT ACCESS</div>
-            <h2 className="panel-title" style={{ marginTop: 12 }}>A-DAP-T is not just a landing page.</h2>
+            <h2 className="panel-title" style={{ marginTop: 12 }}><BrandWord /> is not just a landing page.</h2>
             <p className="muted">The app stores report history and protects scan resources, so authenticated access keeps the workflow reliable during demos and real scans.</p>
             <div className="auth-info-list">
               {accessReasons.map(([title, body], index) => (

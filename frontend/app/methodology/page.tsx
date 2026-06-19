@@ -1,3 +1,5 @@
+import { BrandWord } from '@/components/ui/BrandWord';
+
 const riskRows = [
   ['Prompt Injection', 'Committed prompts, unsafe prompt assembly, raw user input inside agent instructions.', 'Prompt Injection Risk'],
   ['Secret Exposure', 'Hardcoded keys, tokens, JWT secrets, and credential-like source values.', 'Secret Exposure Risk'],
@@ -10,7 +12,7 @@ const riskRows = [
 const flow = [
   ['01', 'Load source', 'GitHub ZIP, uploaded ZIP, or demo agent files are read as text only.'],
   ['02', 'Run scanners', 'Rule modules detect agent-specific risks and produce stable finding IDs.'],
-  ['03', 'Build artifacts', 'A-DAP-T generates Prove Mode paths, patch previews, and a deployment gate decision.'],
+  ['03', 'Build artifacts', 'The backend generates Prove Mode paths, patch previews, and a deployment gate decision.'],
   ['04', 'Explain safely', 'Gemini summarizes the deterministic result. It does not decide the verdict.'],
   ['05', 'Review report', 'Frontend shows score, risk panels, findings, patches, DAP, and export actions.'],
 ];
@@ -22,7 +24,7 @@ export default function MethodologyPage() {
         <div className="page-head centered">
           <div>
             <div className="tech-label page-kicker"><span className="pulse-dot" /> METHODOLOGY</div>
-            <h1 className="page-title">How A-DAP-T decides risk.</h1>
+            <h1 className="page-title">How the scanner decides risk.</h1>
           </div>
           <p className="page-desc">The security verdict is deterministic. Gemini explains results only after rule-based scanning creates findings, severity, scores, patch previews, attack paths, and deployment gate decisions.</p>
         </div>
