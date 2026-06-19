@@ -107,4 +107,8 @@ export type ScanReport = {
   ai_enrichment_status?: string;
   saved_report?: boolean;
   report_id?: string | null;
+  id?: string | null;
+  created_at?: string | null;
+  timestamp?: string | null;
+  upload_name?: string | null;
 };

@@ -33,7 +33,8 @@ export default function HomePage() {
   return (
     <main>
       <section className="hero">
-        <video className="hero-video" autoPlay muted loop playsInline poster="/gradient.png">
+        <video className="hero-video" autoPlay muted loop playsInline preload="auto" poster="/gradient.png" aria-hidden="true">
+          <source src="/hero-bg.webm" type="video/webm" />
           <source src="/hero-bg.mp4" type="video/mp4" />
         </video>
         <div className="container hero-grid">
