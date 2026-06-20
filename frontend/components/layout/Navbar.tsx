@@ -2,16 +2,15 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { clearAuthState, getAuthState } from '@/lib/auth';
 import { BrandWord } from '@/components/ui/BrandWord';
 
 function ShieldMark() {
   const [imageFailed, setImageFailed] = useState(false);
-
   if (!imageFailed) {
     return <img className="brand-logo-img" src="/adapt-logo.svg" alt="" onError={() => setImageFailed(true)} />;
   }
-
   return (
     <svg className="brand-shield" viewBox="0 0 24 26" fill="none" aria-hidden="true">
       <path d="M12 2.2 20.5 5.4v6.3c0 5.5-3.3 9.4-8.5 12.1-5.2-2.7-8.5-6.6-8.5-12.1V5.4L12 2.2Z" stroke="currentColor" strokeWidth="1.8" />
@@ -20,19 +19,34 @@ function ShieldMark() {
   );
 }
 
-
 export function Navbar() {
+  const pathname = usePathname();
   const [isAuthed, setIsAuthed] = useState(false);
 
-  useEffect(() => {
+  const checkAuth = () => {
     setIsAuthed(!!getAuthState());
-  }, []);
+  };
+
+  useEffect(() => {
+    checkAuth();
+    window.addEventListener('storage', checkAuth);
+    return () => window.removeEventListener('storage', checkAuth);
+  }, [pathname]);
 
   function logout() {
     clearAuthState();
     setIsAuthed(false);
     window.location.href = '/';
   }
+
+  const navLinks = [
+    { name: 'About', href: '/about' },
+    { name: 'Scanner', href: '/scanner' },
+    { name: 'Report', href: '/report/current' },
+    { name: 'Compare', href: '/compare' },
+    { name: 'Profile', href: '/profile' },
+    { name: 'Methodology', href: '/methodology' },
+  ];
 
   return (
     <header className="navbar">
@@ -43,11 +57,16 @@ export function Navbar() {
         </Link>
 
         <nav className="nav-links" aria-label="Primary navigation">
-          <Link className="nav-link" href="/scanner">Scanner</Link>
-          <Link className="nav-link" href="/report/current">Report</Link>
-          <Link className="nav-link" href="/profile">Profile</Link>
-          <Link className="nav-link" href="/methodology">Methodology</Link>
-          <Link className="nav-link" href="/about">About</Link>
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              className={`nav-link ${pathname === link.href ? 'active' : ''}`}
+              href={link.href}
+              style={pathname === link.href ? { color: 'var(--emerald)' } : {}}
+            >
+              {link.name}
+            </Link>
+          ))}
         </nav>
 
         <div className="nav-actions">
@@ -64,6 +83,9 @@ export function Navbar() {
           )}
         </div>
       </div>
+      <style jsx>{`
+        .nav-link.active::after { width: 100%; }
+      `}</style>
     </header>
   );
 }
