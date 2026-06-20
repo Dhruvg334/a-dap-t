@@ -8,7 +8,10 @@ import app.scanners.framework_scanner as framework_scanner
 import app.scanners.secret_scanner as secret_scanner
 import app.scanners.tool_scanner as tool_scanner
 from app.ai.ai_enrichment import enrich_scan_result_with_ai
+from app.attack_simulator.simulator import build_attack_simulations
+from app.deployment_gate.gate_policy import build_deployment_gate
 from app.graph import build_upload_graph
+from app.patches.patch_generator import build_patch_previews
 from app.risk.scoring import (
     CATEGORY_TO_SCHEMA_KEY,
     compute_category_score,
@@ -71,19 +74,51 @@ def run_scanners(files: dict[str, str]) -> list[Finding]:
     )
 
 
-def serialize_findings(findings: list[Finding]) -> list[dict]:
-    return [
-        {
-            "title": finding.title,
-            "severity": finding.severity,
-            "category": finding.category,
-            "file": finding.file,
-            "line": finding.line,
-            "why_it_matters": finding.why_it_matters,
-            "suggested_fix": finding.suggested_fix,
-        }
-        for finding in findings
-    ]
+def _category_id(category: str) -> str:
+    return (
+        category.lower()
+        .replace(" risk", "")
+        .replace(" ", "_")
+        .replace("/", "_")
+    )
+
+
+def _evidence_for_finding(finding: Finding, files: dict[str, str]) -> str:
+    text = files.get(finding.file, "")
+    if not text:
+        return ""
+
+    lines = text.splitlines()
+    if finding.line < 1 or finding.line > len(lines):
+        return ""
+
+    return lines[finding.line - 1].strip()[:220]
+
+
+def serialize_findings(findings: list[Finding], files: dict[str, str] | None = None) -> list[dict]:
+    counters: dict[str, int] = {}
+    serialized: list[dict] = []
+    files = files or {}
+
+    for finding in findings:
+        key = _category_id(finding.category)
+        counters[key] = counters.get(key, 0) + 1
+        serialized.append(
+            {
+                "id": f"{key}_{counters[key]:03d}",
+                "title": finding.title,
+                "severity": finding.severity,
+                "category": finding.category,
+                "file": finding.file,
+                "line": finding.line,
+                "why_it_matters": finding.why_it_matters,
+                "suggested_fix": finding.suggested_fix,
+                "description": finding.why_it_matters,
+                "evidence": _evidence_for_finding(finding, files),
+            }
+        )
+
+    return serialized
 
 
 def _serialize_graph(graph: dict) -> dict:
@@ -164,6 +199,17 @@ def build_attack_replay(findings: list[Finding]) -> list[str]:
     return replay
 
 
+def attach_v2_report_artifacts(result: dict) -> dict:
+    """Attach V2 proof, patch, and gate fields derived from deterministic findings."""
+    updated = dict(result)
+    findings = updated.get("findings") or []
+    updated["attack_simulations"] = build_attack_simulations(findings)
+    updated["patches"] = build_patch_previews(findings)
+    updated["deployment_gate"] = build_deployment_gate(updated)
+    updated.setdefault("score_delta", None)
+    return updated
+
+
 def build_scan_result(
     project_dir: str,
     project_name: str,
@@ -184,11 +230,13 @@ def build_scan_result(
         "status": compute_status(safety_score),
         "summary": compute_summary(findings),
         "category_scores": category_scores,
-        "findings": serialize_findings(findings),
+        "findings": serialize_findings(findings, files),
         "graph": _serialize_graph(build_upload_graph(findings)),
         "attack_replay": build_attack_replay(findings),
         "remediation_checklist": build_remediation_checklist(findings),
     }
+
+    result = attach_v2_report_artifacts(result)
 
     if extra_metadata:
         result.update(extra_metadata)

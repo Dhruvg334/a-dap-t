@@ -47,3 +47,15 @@ service-account*.json
 firebase-service-account*.json
 *.firebase.json
 *.zip
+
+# Frontend build/tooling
+.vercel/
+.turbo/
+coverage/
+*.tsbuildinfo
+# Next.js deployment/output
+frontend/out/
+frontend/.vercel/
+
+# Local generated scan snapshots
+backend/*_result.json

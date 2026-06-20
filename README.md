@@ -4,15 +4,15 @@
 
 ### AI-Agent Deployment Assessment and Protection Toolkit
 
-**A pre-deployment risk scanner for GenAI and agentic application projects.**
+**A deployment safety gate for GenAI and agentic application projects.**
 
-A-DAP-T scans AI-agent repositories and uploaded projects for deployment risks such as exposed secrets, unsafe tool permissions, missing human approval gates, prompt-injection-prone workflows, weak auditability, and sensitive data exposure.
+A-DAP-T scans AI-agent repositories and uploaded projects for deployment risks such as exposed secrets, unsafe tool permissions, missing human approval gates, prompt-injection-prone workflows, weak auditability, and sensitive data exposure. V2 extends the scanner into a full **Scan → Prove → Patch → Compare → Gate** workflow.
 
 <br/>
 
 [![Live App](https://img.shields.io/badge/Live_App-A--DAP--T-22c55e?style=for-the-badge)](https://a-dap-t.vercel.app/)
 [![Backend](https://img.shields.io/badge/API-FastAPI-009688?style=for-the-badge)](https://adapt-3s27.onrender.com/docs)
-[![Frontend](https://img.shields.io/badge/Frontend-Vercel-000000?style=for-the-badge)](https://a-dap-t.vercel.app/)
+[![Frontend](https://img.shields.io/badge/Frontend-Next.js-000000?style=for-the-badge)](https://a-dap-t.vercel.app/)
 [![AI](https://img.shields.io/badge/AI-Gemini-4285F4?style=for-the-badge)](#ai-layer)
 [![Database](https://img.shields.io/badge/Database-Firestore-FFCA28?style=for-the-badge)](#authentication-and-report-history)
 
@@ -30,17 +30,33 @@ A-DAP-T scans AI-agent repositories and uploaded projects for deployment risks s
 
 ## Overview
 
-Modern AI agents are no longer simple chat interfaces. They can call tools, read files, query databases, access customer records, send emails, trigger refunds, and perform workflow actions.
+Modern AI agents are no longer simple chat interfaces. They can call tools, query databases, access customer records, send emails, trigger refunds, read files, and perform workflow actions.
 
-That creates a deployment problem: many teams can build an agent that works, but they do not always know whether the agent is safe enough to ship.
+That creates a deployment problem: teams can often prove that an agent works, but they cannot always prove that the agent is safe enough to ship.
 
-**A-DAP-T helps developers assess AI-agent deployment risk before release.** It combines rule-based static scanning, agent-specific risk checks, safety scoring, Gemini-powered report summarization, authenticated report history, and a report-aware assistant called **DAP**.
+**A-DAP-T helps developers review AI-agent deployment risk before release.** It combines rule-based static scanning, agent-specific risk checks, safety scoring, attack simulation, patch previews, deployment gate output, saved report history, report comparison, Gemini-powered summaries, and a report-aware assistant called **DAP**.
+
+---
+
+## Product Workflow
+
+```text
+Scan → Prove → Patch → Compare → Gate
+```
+
+| Step | What A-DAP-T Does |
+|---|---|
+| Scan | Reads project files safely as text and runs AI-agent risk checks |
+| Prove | Generates static attack simulations linked to actual findings |
+| Patch | Creates developer-readable fix previews without auto-applying changes |
+| Compare | Compares saved reports to show score deltas and risk reduction |
+| Gate | Produces a BLOCK / REVIEW / ALLOW deployment decision and CI policy template |
+
+A-DAP-T does **not** execute uploaded code and does **not** run active exploits against external systems.
 
 ---
 
 ## What A-DAP-T Detects
-
-A-DAP-T focuses on risks that matter specifically for AI-agent and GenAI applications:
 
 | Risk Area | What A-DAP-T Looks For |
 |---|---|
@@ -56,55 +72,43 @@ A-DAP-T focuses on risks that matter specifically for AI-agent and GenAI applica
 ## Core Features
 
 - **Authenticated scanning flow**
-  - Users must sign in before running scans or viewing reports.
+  - Users sign in before running scans, saving reports, or using protected report actions.
 
 - **Public GitHub repository scanning**
   - Paste a public GitHub repository URL and scan it directly.
 
 - **ZIP upload scanning**
-  - Upload project ZIP files with safe file limits and no code execution.
+  - Upload project ZIP files with safe extraction limits and no code execution.
 
 - **Built-in demo scans**
   - Compare a vulnerable support agent against a secured support agent.
 
 - **AI-agent-specific scanner rules**
-  - Detects common LangChain, LangGraph, CrewAI, OpenAI-tool, Python, and JS/TS agent patterns.
+  - Detects LangChain, LangGraph, CrewAI, OpenAI-tool, Python, and JS/TS agent patterns.
 
 - **Safety scoring**
-  - Produces an overall score and category-level risk scores.
+  - Produces an overall safety score and category-level risk scores.
 
-- **Report dashboard**
-  - Shows category scores, findings, attack replay, permission graph, and remediation guidance.
+- **Prove Mode / Attack Simulations**
+  - Shows static attack paths for detected findings, including malicious input, expected unsafe behavior, detection signal, and required guardrail.
+
+- **Patch Previews**
+  - Generates preview-only fixes for exposed secrets, missing approval gates, audit logging gaps, PII exposure, unsafe prompt handling, and tool scoping issues.
+
+- **Deployment Gate**
+  - Generates BLOCK / REVIEW / ALLOW decisions, policy JSON, GitHub Actions workflow template, blockers, next actions, and required CI secrets.
+
+- **Report comparison**
+  - Compares saved reports to show score movement, fixed findings, new findings, and category-level risk reduction.
 
 - **Saved report history**
-  - Authenticated users can revisit previously saved reports.
-
-- **Gemini report enrichment**
-  - Generates compact scan summaries, remediation plans, and next steps.
+  - Authenticated users can reopen reports, delete reports, organize local report groups, and track score trends.
 
 - **DAP assistant**
-  - A report-aware assistant that answers questions using the current scan context.
+  - A report-aware assistant that answers questions using the current scan context, including V2 artifacts such as attack simulations, patches, and deployment gate output.
 
-- **Raw JSON export**
-  - Download the current scan report as JSON.
-
-- **PDF export**
-  - Use browser print/save-as-PDF flow for report export.
-
----
-
-## Demo Video
-
-A short walkthrough video will be added here after final submission recording.
-
-Recommended demo flow:
-
-1. Show the problem and product positioning.
-2. Run the vulnerable demo scan.
-3. Walk through the report, dashboard, and DAP assistant.
-4. Run a public GitHub repository scan.
-5. Open a saved report from profile history.
-6. Export the report as JSON or PDF.
+- **Exports**
+  - Raw JSON export, browser PDF export, patch downloads, policy JSON download, and GitHub Actions workflow download.
 
 ---
 
@@ -112,14 +116,14 @@ Recommended demo flow:
 
 ```mermaid
 flowchart TD
-    U[User] --> F[Vercel Frontend]
+    U[User] --> F[Next.js Frontend on Vercel]
 
     F -->|Sign in / Sign up| AUTH[Firebase Auth]
     AUTH -->|ID Token| F
 
     F -->|Authenticated API Request| API[FastAPI Backend on Render]
-
     API -->|Verify Token| AUTH
+
     API --> SCAN[Scan Pipeline]
 
     SCAN --> GH[GitHub Repo ZIP Download]
@@ -132,13 +136,13 @@ flowchart TD
 
     SAFE --> RULES[Rule-Based Risk Scanners]
 
-    RULES --> R1[Secret Exposure Scanner]
-    RULES --> R2[Tool Permission Scanner]
-    RULES --> R3[Human Approval Scanner]
-    RULES --> R4[Prompt Injection Scanner]
-    RULES --> R5[Data Exposure Scanner]
-    RULES --> R6[Auditability Scanner]
-    RULES --> R7[Framework Pattern Scanner]
+    RULES --> R1[Secret Exposure]
+    RULES --> R2[Tool Permission]
+    RULES --> R3[Human Approval]
+    RULES --> R4[Prompt Injection]
+    RULES --> R5[Data Exposure]
+    RULES --> R6[Auditability]
+    RULES --> R7[Framework Patterns]
 
     R1 --> SCORE[Risk Scoring + Report Builder]
     R2 --> SCORE
@@ -148,8 +152,16 @@ flowchart TD
     R6 --> SCORE
     R7 --> SCORE
 
-    SCORE --> GEMINI[Gemini AI Enrichment]
-    GEMINI --> REPORT[Final Scan Report]
+    SCORE --> PROVE[Attack Simulation / Prove Mode]
+    SCORE --> PATCH[Patch Preview Generator]
+    SCORE --> GATE[Deployment Gate]
+
+    PROVE --> REPORT[Final V2 Report]
+    PATCH --> REPORT
+    GATE --> REPORT
+
+    REPORT --> GEMINI[Gemini AI Enrichment]
+    GEMINI --> REPORT
 
     REPORT --> FIRESTORE[Firestore Report History]
     REPORT --> F
@@ -171,6 +183,7 @@ sequenceDiagram
     participant Frontend
     participant Backend
     participant Scanner
+    participant V2 as V2 Artifacts
     participant Gemini
     participant Firestore
 
@@ -179,12 +192,13 @@ sequenceDiagram
     Backend->>Backend: Verify auth token
     Backend->>Scanner: Load project files safely
     Scanner->>Scanner: Run AI-agent risk checks
-    Scanner->>Backend: Return findings and scores
-    Backend->>Gemini: Request compact report summary
+    Scanner->>V2: Build attack simulations, patches, deployment gate
+    V2->>Backend: Return V2 report artifacts
+    Backend->>Gemini: Request compact explanation
     Gemini->>Backend: Return AI enrichment
     Backend->>Firestore: Save report if requested
-    Backend->>Frontend: Return final scan response
-    Frontend->>User: Show report and dashboard
+    Backend->>Frontend: Return final scan report
+    Frontend->>User: Show report workspace, DAP, exports, compare flow
 ```
 
 ---
@@ -193,20 +207,21 @@ sequenceDiagram
 
 | Layer | Technology |
 |---|---|
-| Frontend | HTML, CSS, JavaScript |
+| Frontend | Next.js 14 App Router, React, TypeScript, custom CSS |
 | Backend | Python, FastAPI, Pydantic, Uvicorn |
 | Authentication | Firebase Auth |
 | Database | Firebase Firestore |
-| AI Layer | Gemini |
+| AI Layer | Gemini, default model `gemini-2.5-flash` |
+| Charts | Chart.js, react-chartjs-2 |
 | Hosting | Vercel frontend, Render backend |
-| Scanner Style | Rule-based static analysis + controlled simulation |
-| Export | Raw JSON download, browser print/save-as-PDF |
+| Scanner Style | Rule-based static analysis + controlled V2 report artifacts |
+| Export | Raw JSON, browser PDF, `.patch`, policy JSON, GitHub Actions YAML |
 
 ---
 
 ## Backend API
 
-> Authenticated scan endpoints require `Authorization: Bearer <firebase_id_token>`.
+> Protected endpoints require `Authorization: Bearer <firebase_id_token>`.
 
 | Method | Endpoint | Purpose |
 |---|---|---|
@@ -220,12 +235,13 @@ sequenceDiagram
 | `GET` | `/reports/{report_id}` | Fetch one saved report |
 | `DELETE` | `/reports/{report_id}` | Delete one saved report |
 | `POST` | `/assistant/chat` | Ask DAP about the current scan report |
+| `POST` | `/deployment-gate/evaluate` | Re-evaluate a report against a deployment gate policy |
 
 ---
 
 ## Expected Scan Response
 
-A-DAP-T scan endpoints return a structured report object:
+A-DAP-T scan endpoints return a structured V2 report object:
 
 ```json
 {
@@ -248,6 +264,16 @@ A-DAP-T scan endpoints return a structured report object:
     "auditability": 45
   },
   "findings": [],
+  "attack_simulations": [],
+  "patches": [],
+  "deployment_gate": {
+    "decision": "BLOCK",
+    "decision_badge": "Blocked before deployment",
+    "minimum_safety_score": 75,
+    "blockers": [],
+    "github_actions_yaml": "name: A-DAP-T Agent Safety Gate...",
+    "policy_json": "{...}"
+  },
   "graph": {},
   "attack_replay": [],
   "remediation_checklist": [],
@@ -255,7 +281,9 @@ A-DAP-T scan endpoints return a structured report object:
   "ai_report_summary": "Short report-safe summary.",
   "ai_remediation_plan": [],
   "ai_next_steps": [],
-  "ai_enrichment_status": "gemini_success"
+  "ai_enrichment_status": "gemini_success",
+  "saved_report": true,
+  "report_id": "..."
 }
 ```
 
@@ -297,7 +325,7 @@ Uploaded projects are handled conservatively:
 
 ## AI Layer
 
-A-DAP-T uses Gemini only after rule-based scanning is complete.
+A-DAP-T uses Gemini only after deterministic scanning and V2 artifact generation are complete.
 
 Gemini helps generate:
 
@@ -314,6 +342,9 @@ Gemini does **not** decide:
 - category scores
 - safety score
 - deployment status
+- attack simulations
+- patch logic
+- deployment gate decision
 
 The core detection remains rule-based and explainable.
 
@@ -326,10 +357,11 @@ The core detection remains rule-based and explainable.
 It uses the current scan report as context and helps answer questions like:
 
 - What should I fix first?
-- Why is this finding high risk?
-- Which category is most important?
+- Can this agent be deployed?
+- Prove how this can be attacked.
+- Which patch should I use?
+- What does the deployment gate block?
 - How can I improve the score?
-- What does this tool permission issue mean?
 
 DAP is intentionally scoped to report interpretation and remediation guidance. It is not a generic chatbot.
 
@@ -345,6 +377,9 @@ Authenticated users can:
 - save reports
 - view report history
 - reopen previous reports
+- delete saved reports
+- organize local project groups
+- compare saved reports
 - ask DAP questions using report context
 
 The frontend stores authenticated session metadata locally and refreshes Firebase ID tokens before protected API calls when needed. If refresh fails, the user is redirected back to sign in.
@@ -390,13 +425,20 @@ Open a second terminal:
 
 ```bash
 cd frontend
-python -m http.server 5173
+npm install
+npm run dev
 ```
 
 Frontend runs at:
 
 ```text
-http://localhost:5173/index.html
+http://localhost:3000
+```
+
+You can also run from the repository root:
+
+```bash
+npm run build
 ```
 
 ---
@@ -414,6 +456,12 @@ FIREBASE_CLIENT_EMAIL=your_service_account_email
 FIREBASE_PRIVATE_KEY=your_private_key
 ```
 
+The frontend reads the backend URL from:
+
+```env
+NEXT_PUBLIC_ADAPT_API_BASE=https://adapt-3s27.onrender.com
+```
+
 Do not commit real secrets.
 
 ---
@@ -428,37 +476,40 @@ a-dap-t/
 │   ├── .env.example
 │   ├── app/
 │   │   ├── ai/
-│   │   ├── auth/
-│   │   ├── content/
+│   │   ├── attack_simulator/
+│   │   ├── deployment_gate/
 │   │   ├── github/
-│   │   ├── graph/
-│   │   ├── risk/
+│   │   ├── patches/
 │   │   ├── scanners/
 │   │   ├── schemas/
 │   │   ├── security_assistant/
 │   │   ├── services/
 │   │   └── utils/
+│   ├── scripts/
 │   └── tests/
 │
 ├── frontend/
-│   ├── index.html
-│   ├── main.js
-│   ├── shared.css
-│   ├── signin.html
-│   ├── signup.html
-│   ├── profile.html
-│   └── pages/
-│       ├── scanner.html
-│       ├── dashboard.html
-│       ├── report.html
-│       └── methodology.html
+│   ├── app/
+│   │   ├── about/
+│   │   ├── compare/
+│   │   ├── methodology/
+│   │   ├── profile/
+│   │   ├── report/current/
+│   │   ├── scanner/
+│   │   ├── signin/
+│   │   └── signup/
+│   ├── components/
+│   ├── lib/
+│   ├── public/
+│   └── types/
 │
 ├── sample_agents/
 │   ├── vulnerable-support-agent/
 │   └── secured-support-agent/
 │
 └── docs/
-    ├── DEMO_SCRIPT.md
+    ├── A-DAP-T-V2-API-CONTRACT.md
+    ├── V2_FRONTEND_HANDOFF.md
     ├── LIMITATIONS.md
     ├── SCORING_METHODOLOGY.md
     └── THREAT_MODEL.md
@@ -472,11 +523,13 @@ Most scanners look for generic code security issues. A-DAP-T focuses on **AI-age
 
 - Can the agent call a risky tool?
 - Is a human approval gate missing?
+- Can a risky path be explained as a static attack simulation?
 - Are sensitive records passed into the agent?
 - Are system prompts exposed?
 - Are agent actions logged?
 - Are tool permissions too broad?
-- Can developers understand what must be fixed before deployment?
+- Can developers get patch previews instead of only warnings?
+- Can the repo be blocked before deployment through a gate policy?
 
 That makes A-DAP-T more focused than a normal repository scanner and more practical than a generic chatbot demo.
 
@@ -484,17 +537,18 @@ That makes A-DAP-T more focused than a normal repository scanner and more practi
 
 ## Limitations
 
-A-DAP-T is an early risk visibility tool.
+A-DAP-T is an early risk visibility and deployment-safety tool.
 
 It does not:
 
 - execute uploaded projects
+- auto-apply generated patches
 - replace a professional security audit
 - detect every possible vulnerability
 - fully validate runtime behavior
 - guarantee that an AI agent is safe for production
 
-It is designed to help developers catch common deployment risks earlier.
+It is designed to help developers catch common AI-agent deployment risks earlier.
 
 ---
 
