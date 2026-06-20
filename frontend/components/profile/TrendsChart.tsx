@@ -48,62 +48,55 @@ const COLORS = ['#10b981', '#60a5fa', '#f59e0b', '#ef4444', '#8a8a80', '#38c46a'
 
 export function TrendsChart({ reports, groupBy }: TrendsChartProps) {
   const chartData = useMemo(() => {
-    let datasets: any[] = [];
+    const toPoint = (report: ScanReport) => {
+      const rawDate = report.created_at || report.timestamp || '';
+      const time = new Date(rawDate).getTime();
+      return {
+        label: formatDate(rawDate),
+        time: Number.isNaN(time) ? 0 : time,
+        score: Number(report.safety_score || 0),
+        project: report.project_name || 'Unlabeled',
+      };
+    };
 
     if (groupBy === 'project') {
-      const groups: Record<string, ScanReport[]> = {};
-      reports.forEach(r => {
-        const proj = r.project_name || 'Unlabeled';
-        if (!groups[proj]) groups[proj] = [];
-        groups[proj].push(r);
-      });
+      const grouped = reports.reduce<Record<string, ReturnType<typeof toPoint>[]>>((acc, report) => {
+        const point = toPoint(report);
+        acc[point.project] = acc[point.project] || [];
+        acc[point.project].push(point);
+        return acc;
+      }, {});
 
-      Object.keys(groups).forEach((proj, i) => {
-        const sorted = [...groups[proj]].sort((a, b) =>
-          new Date(a.created_at || a.timestamp || 0).getTime() -
-          new Date(b.created_at || b.timestamp || 0).getTime()
-        );
-
-        datasets.push({
-          label: proj,
-          data: sorted.map(r => ({
-            x: formatDate(r.created_at || r.timestamp),
-            y: r.safety_score
-          })),
-          borderColor: COLORS[i % COLORS.length],
-          backgroundColor: COLORS[i % COLORS.length] + '22',
-          tension: 0.3,
+      const labels = Array.from(new Set(Object.values(grouped).flat().sort((a, b) => a.time - b.time).map((point) => point.label)));
+      const datasets = Object.entries(grouped).map(([project, points], index) => {
+        const byLabel = new Map(points.map((point) => [point.label, point.score]));
+        return {
+          label: project,
+          data: labels.map((label) => byLabel.get(label) ?? null),
+          borderColor: COLORS[index % COLORS.length],
+          backgroundColor: COLORS[index % COLORS.length] + '22',
+          tension: 0.32,
           fill: true,
           pointRadius: 4,
-          pointHoverRadius: 6
-        });
+          pointHoverRadius: 6,
+        };
       });
-    } else {
-      const sorted = [...reports].sort((a, b) =>
-        new Date(a.created_at || a.timestamp || 0).getTime() -
-        new Date(b.created_at || b.timestamp || 0).getTime()
-      );
-
-      datasets.push({
-        label: 'Safety Scores',
-        data: sorted.map(r => ({
-          x: formatDate(r.created_at || r.timestamp),
-          y: r.safety_score
-        })),
-        borderColor: '#10b981',
-        backgroundColor: 'rgba(16, 185, 129, 0.15)',
-        tension: 0.2,
-        fill: true,
-        pointRadius: 5
-      });
+      return { labels, datasets };
     }
 
-    const allLabels = Array.from(new Set(datasets.flatMap(ds => ds.data.map((d: any) => d.x))))
-      .sort((a: any, b: any) => new Date(a).getTime() - new Date(b).getTime());
-
+    const points = reports.map(toPoint).sort((a, b) => a.time - b.time);
     return {
-      labels: allLabels,
-      datasets
+      labels: points.map((point) => point.label),
+      datasets: [{
+        label: 'Safety score',
+        data: points.map((point) => point.score),
+        borderColor: '#10b981',
+        backgroundColor: 'rgba(16, 185, 129, 0.15)',
+        tension: 0.28,
+        fill: true,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+      }],
     };
   }, [reports, groupBy]);
 
@@ -117,12 +110,12 @@ export function TrendsChart({ reports, groupBy }: TrendsChartProps) {
         labels: {
           boxWidth: 12,
           padding: 15,
-          color: 'rgba(242, 242, 237, 0.68)', // var(--muted)
+          color: 'rgba(242, 242, 237, 0.68)',
           font: { size: 10, family: 'Inter, sans-serif' }
         }
       },
       tooltip: {
-        backgroundColor: 'rgba(17, 23, 21, 0.95)',
+        backgroundColor: 'rgba(17, 23, 21, 0.96)',
         titleColor: '#f2f2ed',
         bodyColor: '#f2f2ed',
         borderColor: 'rgba(255, 255, 255, 0.11)',
@@ -134,20 +127,13 @@ export function TrendsChart({ reports, groupBy }: TrendsChartProps) {
     scales: {
       x: {
         grid: { display: false },
-        ticks: {
-          color: 'rgba(242, 242, 237, 0.44)',
-          font: { size: 9 }
-        }
+        ticks: { color: 'rgba(242, 242, 237, 0.44)', font: { size: 9 }, maxRotation: 0 }
       },
       y: {
         min: 0,
         max: 100,
         grid: { color: 'rgba(255, 255, 255, 0.05)' },
-        ticks: {
-          stepSize: 20,
-          color: 'rgba(242, 242, 237, 0.44)',
-          font: { size: 9 }
-        }
+        ticks: { stepSize: 20, color: 'rgba(242, 242, 237, 0.44)', font: { size: 9 } }
       }
     }
   };

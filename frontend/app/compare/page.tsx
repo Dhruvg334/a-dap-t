@@ -1,286 +1,323 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { apiFetch, formatApiError } from '@/lib/api';
+import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, CheckCircle, GitCompareArrows, TrendingUp } from 'lucide-react';
 import { AuthGate } from '@/components/auth/AuthGate';
-import { ChevronRight, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
-import type { ScanReport, Finding } from '@/types/scan';
+import { apiFetch, formatApiError } from '@/lib/api';
+import type { Finding, ScanReport } from '@/types/scan';
 
 const CAT_LABELS: Record<string, string> = {
-  prompt_injection: 'Prompt Injection Risk',
-  secret_exposure: 'Secret Exposure Risk',
-  tool_permission: 'Tool Permission Risk',
-  human_approval: 'Human Approval Risk',
-  data_exposure: 'Data Exposure Risk',
-  auditability: 'Auditability Risk'
+  prompt_injection: 'Prompt Injection',
+  secret_exposure: 'Secret Exposure',
+  tool_permission: 'Tool Permission',
+  human_approval: 'Human Approval',
+  data_exposure: 'Data Exposure',
+  auditability: 'Auditability',
 };
 
+type ReportSummary = ScanReport & { id?: string; created_at?: string; timestamp?: string };
+
+function reportId(report: ReportSummary) {
+  return report.report_id || report.id || '';
+}
+
+function reportLabel(report: ReportSummary) {
+  const dateValue = report.created_at || report.timestamp;
+  const date = dateValue ? new Date(dateValue) : null;
+  const labelDate = date && !Number.isNaN(date.getTime()) ? date.toLocaleDateString() : 'saved report';
+  return `${report.project_name || 'A-DAP-T scan'} · ${labelDate} · score ${report.safety_score ?? '—'}`;
+}
+
+function findingKey(finding: Finding) {
+  return [finding.id, finding.category, finding.title, finding.file, finding.line].filter(Boolean).join('::') || finding.title;
+}
+
+function severityCount(findings: Finding[], severity: string) {
+  return findings.filter((f) => String(f.severity || '').toLowerCase() === severity).length;
+}
+
+function deltaClass(value: number) {
+  if (value > 0) return 'safe';
+  if (value < 0) return 'danger';
+  return 'neutral';
+}
+
 function CompareContent() {
-  const [allReports, setAllReports] = useState<ScanReport[]>([]);
-  const [beforeId, setBeforeId] = useState<string>('');
-  const [afterId, setAfterId] = useState<string>('');
+  const [reports, setReports] = useState<ReportSummary[]>([]);
+  const [beforeId, setBeforeId] = useState('');
+  const [afterId, setAfterId] = useState('');
   const [beforeReport, setBeforeReport] = useState<ScanReport | null>(null);
   const [afterReport, setAfterReport] = useState<ScanReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    apiFetch<ScanReport[]>('/reports')
-      .then(data => setAllReports(Array.isArray(data) ? data : []))
-      .catch(err => setError(formatApiError(err)));
+    apiFetch<ReportSummary[]>('/reports')
+      .then((data) => setReports(Array.isArray(data) ? data : []))
+      .catch((err) => setError(formatApiError(err, 'Could not load saved reports.')));
   }, []);
 
   useEffect(() => {
-    if (beforeId && afterId) {
-      loadComparison();
-    } else {
+    if (!beforeId || !afterId || beforeId === afterId) {
       setBeforeReport(null);
       setAfterReport(null);
+      return;
     }
-  }, [beforeId, afterId]);
 
-  async function loadComparison() {
+    let cancelled = false;
     setLoading(true);
     setError('');
-    try {
-      const [before, after] = await Promise.all([
-        apiFetch<ScanReport>(`/reports/${encodeURIComponent(beforeId)}`),
-        apiFetch<ScanReport>(`/reports/${encodeURIComponent(afterId)}`)
-      ]);
-      setBeforeReport(before);
-      setAfterReport(after);
-    } catch (err) {
-      setError(formatApiError(err));
-    } finally {
-      setLoading(false);
-    }
-  }
 
-  const comparisonData = useMemo(() => {
+    Promise.all([
+      apiFetch<ScanReport>(`/reports/${encodeURIComponent(beforeId)}`),
+      apiFetch<ScanReport>(`/reports/${encodeURIComponent(afterId)}`),
+    ])
+      .then(([before, after]) => {
+        if (cancelled) return;
+        setBeforeReport(before);
+        setAfterReport(after);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(formatApiError(err, 'Could not compare these reports.'));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [beforeId, afterId]);
+
+  const comparison = useMemo(() => {
     if (!beforeReport || !afterReport) return null;
 
-    const bScore = beforeReport.safety_score || 0;
-    const aScore = afterReport.safety_score || 0;
-    const scoreDelta = aScore - bScore;
+    const beforeScore = Number(beforeReport.safety_score || 0);
+    const afterScore = Number(afterReport.safety_score || 0);
+    const scoreDelta = afterScore - beforeScore;
+    const beforeFindings = beforeReport.findings || [];
+    const afterFindings = afterReport.findings || [];
+    const afterMap = new Map(afterFindings.map((f) => [findingKey(f), f]));
+    const beforeMap = new Map(beforeFindings.map((f) => [findingKey(f), f]));
+    const fixed = beforeFindings.filter((f) => !afterMap.has(findingKey(f)));
+    const added = afterFindings.filter((f) => !beforeMap.has(findingKey(f)));
 
-    const bFindings = beforeReport.findings || [];
-    const aFindings = afterReport.findings || [];
-
-    const bMap = new Map(bFindings.map(f => [f.id || f.title, f]));
-    const aMap = new Map(aFindings.map(f => [f.id || f.title, f]));
-
-    const fixed = bFindings.filter(f => !aMap.has(f.id || f.title));
-    const added = aFindings.filter(f => !bMap.has(f.id || f.title));
-
-    const criticalFixed = fixed.filter(f => String(f.severity).toLowerCase() === 'critical').length;
-    const highFixed = fixed.filter(f => String(f.severity).toLowerCase() === 'high').length;
-
-    // Category Deltas
-    const categoryDeltas = Object.keys(CAT_LABELS).map(key => {
-      const b = beforeReport.category_scores?.[key] ?? 0;
-      const a = afterReport.category_scores?.[key] ?? 0;
-      const improvement = b - a; // Risk decrease is improvement
-      return { key, label: CAT_LABELS[key], before: b, after: a, improvement };
+    const categoryDeltas = Object.keys(CAT_LABELS).map((key) => {
+      const beforeRisk = Number(beforeReport.category_scores?.[key] || 0);
+      const afterRisk = Number(afterReport.category_scores?.[key] || 0);
+      return {
+        key,
+        label: CAT_LABELS[key],
+        beforeRisk,
+        afterRisk,
+        riskReduction: beforeRisk - afterRisk,
+      };
     });
 
-    const largestImprovement = [...categoryDeltas].sort((a, b) => b.improvement - a.improvement)[0];
+    const strongestReduction = [...categoryDeltas].sort((a, b) => b.riskReduction - a.riskReduction)[0];
+    const criticalFixed = severityCount(fixed, 'critical');
+    const highFixed = severityCount(fixed, 'high');
+    const criticalAdded = severityCount(added, 'critical');
+    const highAdded = severityCount(added, 'high');
 
-    // Summary
-    let summary = '';
-    if (scoreDelta > 0) {
-      summary = `The rescan shows a significant security improvement of ${scoreDelta} points. `;
-      if (criticalFixed > 0 || highFixed > 0) {
-        summary += `Key risk reduction was achieved by resolving ${criticalFixed} critical and ${highFixed} high findings. `;
-      }
-      if (fixed.length > 0) {
-        summary += `Overall, ${fixed.length} previously identified issues were resolved. `;
-      }
-      if (added.length > 0) {
-        summary += `However, ${added.length} new potential risks were introduced that should be reviewed.`;
-      }
-    } else if (scoreDelta < 0) {
-      summary = `The overall safety score has decreased by ${Math.abs(scoreDelta)} points. `;
-      summary += `New findings have been introduced that increase the total risk profile of the agent.`;
-    } else {
-      summary = `The safety score remained unchanged. `;
-      if (fixed.length > 0 || added.length > 0) {
-        summary += `While some findings were resolved, others were introduced, maintaining a similar risk level.`;
-      }
-    }
+    let verdict = 'No material score change';
+    if (scoreDelta > 0) verdict = 'Security posture improved';
+    if (scoreDelta < 0) verdict = 'Security posture regressed';
 
     return {
+      beforeScore,
+      afterScore,
       scoreDelta,
       fixed,
       added,
       criticalFixed,
       highFixed,
+      criticalAdded,
+      highAdded,
       categoryDeltas,
-      largestImprovement,
-      summary
+      strongestReduction,
+      verdict,
     };
   }, [beforeReport, afterReport]);
 
+  const hasEnoughReports = reports.length >= 2;
+  const sameReportSelected = beforeId && afterId && beforeId === afterId;
+
   return (
-    <main className="page-shell">
+    <main className="page-shell compare-page">
       <div className="container">
-        <div className="page-head">
+        <div className="page-head centered narrow-head">
           <div className="tech-label page-kicker"><span className="pulse-dot" /> RE-SCAN / SCORE DELTA</div>
           <h1 className="page-title">Compare Reports</h1>
-          <p className="page-desc">Select two reports to visualize security improvements and track risk reduction over time.</p>
+          <p className="page-desc">Measure how much safer an agent became after fixes. A higher safety score is better; a lower category risk score is better.</p>
         </div>
 
-        <div className="solid-card panel" style={{ marginBottom: '2rem' }}>
-          <div className="grid grid-2">
-            <div className="form-row">
-              <label className="form-label">Before Report (Baseline)</label>
-              <select
-                className="input"
-                value={beforeId}
-                onChange={(e) => setBeforeId(e.target.value)}
-              >
-                <option value="">Select a report...</option>
-                {allReports.map(r => (
-                  <option key={r.id || r.report_id} value={r.id || r.report_id || ''}>
-                    {r.project_name || 'A-DAP-T Scan'} ({new Date(r.created_at || r.timestamp || '').toLocaleDateString()}) - Score: {r.safety_score ?? '—'}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="form-row">
-              <label className="form-label">After Report (Target)</label>
-              <select
-                className="input"
-                value={afterId}
-                onChange={(e) => setAfterId(e.target.value)}
-              >
-                <option value="">Select a report...</option>
-                {allReports.map(r => (
-                  <option key={r.id || r.report_id} value={r.id || r.report_id || ''}>
-                    {r.project_name || 'A-DAP-T Scan'} ({new Date(r.created_at || r.timestamp || '').toLocaleDateString()}) - Score: {r.safety_score ?? '—'}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
+        {!hasEnoughReports && (
+          <section className="solid-card panel empty-history-card">
+            <GitCompareArrows size={34} className="text-emerald" />
+            <h2 className="panel-title">Run at least two scans first.</h2>
+            <p className="muted">Compare needs a baseline report and a later report. Run the vulnerable and secured demo scans for the cleanest walkthrough.</p>
+            <Link className="btn btn-primary" href="/scanner">Run Scans</Link>
+          </section>
+        )}
 
-        {loading && <div className="form-success">Loading comparison data...</div>}
+        {hasEnoughReports && (
+          <section className="solid-card panel compare-selector-card">
+            <div className="compare-selector-head">
+              <div>
+                <div className="panel-label">Report Pair</div>
+                <h2 className="panel-title">Choose a baseline and a target.</h2>
+              </div>
+              <div className="compare-help">Tip: baseline = before fixes, target = after fixes.</div>
+            </div>
+
+            <div className="grid grid-2">
+              <label className="form-row">
+                <span className="form-label">Before Report</span>
+                <select className="input" value={beforeId} onChange={(e) => setBeforeId(e.target.value)}>
+                  <option value="">Select baseline...</option>
+                  {reports.map((report) => {
+                    const id = reportId(report);
+                    return <option key={id} value={id} disabled={id === afterId}>{reportLabel(report)}</option>;
+                  })}
+                </select>
+              </label>
+
+              <label className="form-row">
+                <span className="form-label">After Report</span>
+                <select className="input" value={afterId} onChange={(e) => setAfterId(e.target.value)}>
+                  <option value="">Select target...</option>
+                  {reports.map((report) => {
+                    const id = reportId(report);
+                    return <option key={id} value={id} disabled={id === beforeId}>{reportLabel(report)}</option>;
+                  })}
+                </select>
+              </label>
+            </div>
+          </section>
+        )}
+
+        {sameReportSelected && <div className="form-error">Select two different reports to compare score movement.</div>}
+        {loading && <div className="form-success">Loading full reports for comparison...</div>}
         {error && <div className="form-error">{error}</div>}
 
-        {comparisonData && (
-          <div className="animate-in">
-            {comparisonData.largestImprovement.improvement > 0 && (
-              <div className="solid-card panel shimmer" style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(16, 185, 129, 0.05)', borderColor: 'var(--emerald)' }}>
-                <TrendingUp className="text-emerald" size={24} />
-                <div>
-                  <div className="tech-label" style={{ color: 'var(--emerald)' }}>Largest Improvement</div>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>
-                    {comparisonData.largestImprovement.label}: +{comparisonData.largestImprovement.improvement} Improvement
-                  </div>
-                </div>
+        {comparison && beforeReport && afterReport && (
+          <div className="compare-results animate-in">
+            <section className={`solid-card panel compare-verdict ${deltaClass(comparison.scoreDelta)}`}>
+              <div>
+                <div className="panel-label">Verdict</div>
+                <h2 className="panel-title">{comparison.verdict}</h2>
+                <p className="muted">
+                  {comparison.scoreDelta > 0 && `Safety score improved by ${comparison.scoreDelta} points. ${comparison.fixed.length} previous findings are no longer present.`}
+                  {comparison.scoreDelta < 0 && `Safety score dropped by ${Math.abs(comparison.scoreDelta)} points. Review the newly introduced findings before deploying.`}
+                  {comparison.scoreDelta === 0 && 'The safety score did not move. Check fixed and new findings to see what changed under the same score.'}
+                </p>
               </div>
-            )}
+              <div className="delta-orb">
+                <span>{comparison.scoreDelta >= 0 ? '+' : ''}{comparison.scoreDelta}</span>
+                <small>score delta</small>
+              </div>
+            </section>
 
-            <div className="tech-label" style={{ marginBottom: '1rem' }}>Overall Improvement</div>
-            <div className="stat-grid" style={{ marginBottom: '2rem' }}>
+            <section className="compare-score-grid">
               <div className="solid-card stat">
-                <div className="stat-label">Before Score</div>
-                <div className="stat-value">{beforeReport?.safety_score}</div>
+                <div className="stat-label">Baseline Score</div>
+                <div className="stat-value">{comparison.beforeScore}</div>
               </div>
               <div className="solid-card stat">
-                <div className="stat-label">After Score</div>
-                <div className="stat-value">{afterReport?.safety_score}</div>
+                <div className="stat-label">Target Score</div>
+                <div className="stat-value">{comparison.afterScore}</div>
               </div>
-              <div className="solid-card stat">
-                <div className="stat-label">Improvement</div>
-                <div className={`stat-value ${comparisonData.scoreDelta >= 0 ? 'text-emerald' : 'text-red'}`}>
-                  {comparisonData.scoreDelta >= 0 ? '+' : ''}{comparisonData.scoreDelta}
-                </div>
-              </div>
-            </div>
-
-            <div className="tech-label" style={{ marginBottom: '1rem' }}>Risk Reduction</div>
-            <div className="stat-grid" style={{ marginBottom: '2rem' }}>
               <div className="solid-card stat">
                 <div className="stat-label">Critical Fixed</div>
-                <div className="stat-value text-emerald">{comparisonData.criticalFixed}</div>
+                <div className="stat-value text-emerald">{comparison.criticalFixed}</div>
               </div>
               <div className="solid-card stat">
                 <div className="stat-label">High Fixed</div>
-                <div className="stat-value text-emerald">{comparisonData.highFixed}</div>
+                <div className="stat-value text-emerald">{comparison.highFixed}</div>
               </div>
-              <div className="solid-card stat">
-                <div className="stat-label">Total Fixed</div>
-                <div className="stat-value text-emerald">{comparisonData.fixed.length}</div>
-              </div>
-            </div>
+            </section>
 
-            <div className="tech-label" style={{ marginBottom: '1rem' }}>Category Improvements</div>
-            <div className="solid-card panel" style={{ marginBottom: '2rem', padding: 0, overflow: 'hidden' }}>
-              <div className="method-table">
-                <div className="method-row method-head">
-                  <div className="method-cell">Category</div>
-                  <div className="method-cell">Before</div>
-                  <div className="method-cell">After</div>
-                  <div className="method-cell">Delta</div>
+            {comparison.strongestReduction?.riskReduction > 0 && (
+              <section className="solid-card panel compare-highlight">
+                <TrendingUp size={20} className="text-emerald" />
+                <div>
+                  <div className="panel-label">Largest Risk Reduction</div>
+                  <strong>{comparison.strongestReduction.label}</strong>
+                  <p className="muted">Risk decreased by {comparison.strongestReduction.riskReduction} points in this category.</p>
                 </div>
-                {comparisonData.categoryDeltas.map(cat => (
-                  <div className="method-row" key={cat.key}>
-                    <div className="method-cell">{cat.label}</div>
-                    <div className="method-cell">{cat.before}</div>
-                    <div className="method-cell">{cat.after}</div>
-                    <div className={`method-cell ${cat.improvement >= 0 ? 'text-emerald' : 'text-red'}`}>
-                      {cat.improvement >= 0 ? '+' : ''}{cat.improvement}
+              </section>
+            )}
+
+            <section className="solid-card panel compare-category-panel">
+              <div className="panel-head">
+                <div>
+                  <div className="panel-label">Category Movement</div>
+                  <h2 className="panel-title">Risk score deltas</h2>
+                </div>
+                <p className="muted">Positive reduction is good because category scores measure risk.</p>
+              </div>
+              <div className="compare-category-list">
+                {comparison.categoryDeltas.map((item) => (
+                  <div className="compare-category-row" key={item.key}>
+                    <div>
+                      <strong>{item.label}</strong>
+                      <span>{item.beforeRisk} → {item.afterRisk}</span>
                     </div>
+                    <div className="compare-risk-track" aria-hidden="true">
+                      <span style={{ width: `${Math.min(100, Math.max(0, item.beforeRisk))}%` }} />
+                      <em style={{ width: `${Math.min(100, Math.max(0, item.afterRisk))}%` }} />
+                    </div>
+                    <div className={`pill ${item.riskReduction >= 0 ? 'safe' : 'danger'}`}>{item.riskReduction >= 0 ? '-' : '+'}{Math.abs(item.riskReduction)} risk</div>
                   </div>
                 ))}
               </div>
-            </div>
+            </section>
 
-            <div className="grid grid-2" style={{ marginBottom: '2rem' }}>
-              <div>
-                <div className="tech-label" style={{ marginBottom: '1rem' }}>Fixed Findings <span className="text-emerald">({comparisonData.fixed.length})</span></div>
-                <div className="grid" style={{ gap: '0.75rem' }}>
-                  {comparisonData.fixed.length > 0 ? comparisonData.fixed.map((f, i) => (
-                    <div key={i} className="solid-card panel" style={{ padding: '1rem' }}>
-                      <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{f.title}</div>
-                      <div className="tech-label">{f.severity?.toUpperCase()} · {f.category}</div>
-                    </div>
-                  )) : (
-                    <div className="muted" style={{ padding: '1rem' }}>No findings in this category.</div>
-                  )}
+            <section className="grid grid-2 compare-findings-grid">
+              <div className="solid-card panel">
+                <div className="panel-head compact">
+                  <div>
+                    <div className="panel-label">Resolved</div>
+                    <h2 className="panel-title">Fixed findings</h2>
+                  </div>
+                  <CheckCircle size={20} className="text-emerald" />
                 </div>
+                <FindingList findings={comparison.fixed} empty="No previous findings disappeared between these reports." />
               </div>
-              <div>
-                <div className="tech-label" style={{ marginBottom: '1rem' }}>New Findings <span className="text-red">({comparisonData.added.length})</span></div>
-                <div className="grid" style={{ gap: '0.75rem' }}>
-                  {comparisonData.added.length > 0 ? comparisonData.added.map((f, i) => (
-                    <div key={i} className="solid-card panel" style={{ padding: '1rem' }}>
-                      <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{f.title}</div>
-                      <div className="tech-label">{f.severity?.toUpperCase()} · {f.category}</div>
-                    </div>
-                  )) : (
-                    <div className="muted" style={{ padding: '1rem' }}>No findings in this category.</div>
-                  )}
+              <div className="solid-card panel">
+                <div className="panel-head compact">
+                  <div>
+                    <div className="panel-label">Introduced</div>
+                    <h2 className="panel-title">New findings</h2>
+                  </div>
+                  <AlertTriangle size={20} className="text-red" />
                 </div>
+                <FindingList findings={comparison.added} empty="No new findings were introduced in the target report." />
               </div>
-            </div>
-
-            <div className="tech-label" style={{ marginBottom: '1rem' }}>Summary</div>
-            <div className="solid-card panel">
-              <p className="page-desc" style={{ maxWidth: '100%', margin: 0 }}>{comparisonData.summary}</p>
-            </div>
+            </section>
           </div>
         )}
       </div>
-
-      <style jsx>{`
-        .text-emerald { color: var(--emerald); }
-        .text-red { color: var(--red); }
-        .animate-in { animation: fadeIn 0.5s var(--ease); }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-      `}</style>
     </main>
+  );
+}
+
+function FindingList({ findings, empty }: { findings: Finding[]; empty: string }) {
+  if (!findings.length) return <p className="muted empty-list-copy">{empty}</p>;
+  return (
+    <div className="compare-finding-list">
+      {findings.slice(0, 8).map((finding, index) => (
+        <div className="compare-finding-card" key={`${findingKey(finding)}-${index}`}>
+          <div>
+            <strong>{finding.title || 'Untitled finding'}</strong>
+            <span>{finding.category || 'Uncategorized'}</span>
+          </div>
+          <div className="pill neutral">{String(finding.severity || 'info').toUpperCase()}</div>
+        </div>
+      ))}
+      {findings.length > 8 && <p className="muted">+{findings.length - 8} more findings not shown here.</p>}
+    </div>
   );
 }
 

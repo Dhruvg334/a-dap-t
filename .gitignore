@@ -53,3 +53,9 @@ firebase-service-account*.json
 .turbo/
 coverage/
 *.tsbuildinfo
+# Next.js deployment/output
+frontend/out/
+frontend/.vercel/
+
+# Local generated scan snapshots
+backend/*_result.json

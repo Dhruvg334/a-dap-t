@@ -40,12 +40,11 @@ export function Navbar() {
   }
 
   const navLinks = [
-    { name: 'About', href: '/about' },
     { name: 'Scanner', href: '/scanner' },
     { name: 'Report', href: '/report/current' },
     { name: 'Compare', href: '/compare' },
-    { name: 'Profile', href: '/profile' },
     { name: 'Methodology', href: '/methodology' },
+    { name: 'About', href: '/about' },
   ];
 
   return (
