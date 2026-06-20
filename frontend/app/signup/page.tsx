@@ -74,6 +74,16 @@ export default function SignUpPage() {
       });
 
       router.push(getNextPath());
+      const redirectPath = getNextPath();
+      if (typeof pendo !== 'undefined') {
+        pendo.track('account_created', {
+          display_name: displayName,
+          signup_method: 'email',
+          redirect_path: redirectPath,
+        });
+      }
+
+      router.push(redirectPath);
     } catch (err) {
       setError(formatApiError(err, 'Sign up failed. Please check the details and try again.'));
     } finally {

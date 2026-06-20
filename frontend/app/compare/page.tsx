@@ -43,6 +43,8 @@ function deltaClass(value: number) {
   return 'neutral';
 }
 
+const trackedComparisonPairs = new Set<string>();
+
 function CompareContent() {
   const [reports, setReports] = useState<ReportSummary[]>([]);
   const [beforeId, setBeforeId] = useState('');
@@ -77,6 +79,46 @@ function CompareContent() {
         if (cancelled) return;
         setBeforeReport(before);
         setAfterReport(after);
+
+        const pairKey = `${beforeId}::${afterId}`;
+        if (typeof pendo !== 'undefined' && !trackedComparisonPairs.has(pairKey)) {
+          trackedComparisonPairs.add(pairKey);
+          const beforeScore = Number(before.safety_score || 0);
+          const afterScore = Number(after.safety_score || 0);
+          const scoreDelta = afterScore - beforeScore;
+          const beforeFindings = before.findings || [];
+          const afterFindings = after.findings || [];
+          const afterKeys = new Set(afterFindings.map((f) => findingKey(f)));
+          const beforeKeys = new Set(beforeFindings.map((f) => findingKey(f)));
+          const fixed = beforeFindings.filter((f) => !afterKeys.has(findingKey(f)));
+          const added = afterFindings.filter((f) => !beforeKeys.has(findingKey(f)));
+
+          let verdict = 'No material score change';
+          if (scoreDelta > 0) verdict = 'Security posture improved';
+          if (scoreDelta < 0) verdict = 'Security posture regressed';
+
+          const catDeltas = Object.keys(CAT_LABELS).map((key) => ({
+            key,
+            reduction: Number(before.category_scores?.[key] || 0) - Number(after.category_scores?.[key] || 0),
+          }));
+          const strongest = catDeltas.sort((a, b) => b.reduction - a.reduction)[0];
+
+          pendo.track('report_comparison_completed', {
+            before_report_id: beforeId,
+            after_report_id: afterId,
+            before_score: beforeScore,
+            after_score: afterScore,
+            score_delta: scoreDelta,
+            verdict,
+            fixed_findings_count: fixed.length,
+            new_findings_count: added.length,
+            critical_fixed: severityCount(fixed, 'critical'),
+            high_fixed: severityCount(fixed, 'high'),
+            critical_added: severityCount(added, 'critical'),
+            high_added: severityCount(added, 'high'),
+            strongest_reduction_category: strongest?.key || '',
+          });
+        }
       })
       .catch((err) => {
         if (cancelled) return;

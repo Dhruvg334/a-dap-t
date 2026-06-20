@@ -67,8 +67,35 @@ export default function ScannerPage() {
       }
       setProgressText('Building V2 report workspace...');
       saveCurrentReport(report);
+
+      if (typeof pendo !== 'undefined') {
+        pendo.track('scan_completed', {
+          scan_mode: mode,
+          project_name: report.project_name || report.repo_name || '',
+          safety_score: Number(report.safety_score ?? 0),
+          gate_decision: report.deployment_gate?.decision || '',
+          findings_count: report.findings?.length || 0,
+          critical_count: report.summary?.critical || 0,
+          high_count: report.summary?.high || 0,
+          attack_simulations_count: report.attack_simulations?.length || 0,
+          patches_count: report.patches?.length || 0,
+          blockers_count: report.deployment_gate?.blockers?.length || 0,
+          save_report_enabled: saveReport,
+          scan_type: report.scan_type || mode,
+          repo_url: mode === 'github' ? repoUrl : '',
+          repo_branch: mode === 'github' ? branch : '',
+        });
+      }
+
       router.push('/report/current');
     } catch (err) {
+      if (typeof pendo !== 'undefined') {
+        pendo.track('scan_failed', {
+          scan_mode: mode,
+          error_message: String(err instanceof Error ? err.message : err).substring(0, 200),
+          error_type: err instanceof Error ? err.name : 'unknown',
+        });
+      }
       setError(formatApiError(err, 'Scan failed. Check the scan target and try again.'));
     } finally {
       setLoading(false);

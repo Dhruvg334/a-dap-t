@@ -119,7 +119,16 @@ function ProfileContent() {
   function createGroup() {
     const name = newGroupName.trim();
     if (!name) return;
-    setGroups((current) => [...current, { id: `group_${Date.now()}`, name, reportIds: [] }]);
+    setGroups((current) => {
+      const updated = [...current, { id: `group_${Date.now()}`, name, reportIds: [] }];
+      if (typeof pendo !== 'undefined') {
+        pendo.track('project_group_created', {
+          group_name: name,
+          total_groups_count: updated.length,
+        });
+      }
+      return updated;
+    });
     setNewGroupName('');
     setShowGroupForm(false);
     setNotice(`Project group "${name}" created.`);
@@ -137,11 +146,27 @@ function ProfileContent() {
     const group = groups.find((item) => item.id === groupId);
     if (!group) return;
     if (!window.confirm(`Delete project group "${group.name}"? Reports will stay saved and move to Ungrouped.`)) return;
+    if (typeof pendo !== 'undefined') {
+      pendo.track('project_group_deleted', {
+        group_id: groupId,
+        group_name: group.name,
+        reports_in_group_count: group.reportIds.length,
+      });
+    }
     setGroups((current) => current.filter((item) => item.id !== groupId));
     if (activeGroupId === groupId) setActiveGroupId('all');
   }
 
   function moveReport(reportId: string, targetGroupId: string) {
+    const targetGroup = groups.find((g) => g.id === targetGroupId);
+    if (typeof pendo !== 'undefined') {
+      pendo.track('report_moved_to_group', {
+        report_id: reportId,
+        target_group_id: targetGroupId || '',
+        target_group_name: targetGroup?.name || '',
+        moved_to_ungrouped: !targetGroupId,
+      });
+    }
     setGroups((current) => current.map((group) => {
       const withoutReport = group.reportIds.filter((id) => id !== reportId);
       if (targetGroupId && group.id === targetGroupId) return { ...group, reportIds: [...withoutReport, reportId] };
@@ -156,6 +181,19 @@ function ProfileContent() {
     try {
       const fullReport = id ? await apiFetch<ScanReport>(`/reports/${encodeURIComponent(id)}`) : report;
       saveCurrentReport(fullReport);
+
+      if (typeof pendo !== 'undefined') {
+        const createdAt = report.created_at || report.timestamp;
+        const reportAgeDays = createdAt ? Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000) : -1;
+        pendo.track('report_opened_from_history', {
+          report_id: id || '',
+          project_name: report.project_name || '',
+          scan_type: report.scan_type || '',
+          safety_score: Number(report.safety_score ?? 0),
+          report_age_days: reportAgeDays,
+        });
+      }
+
       router.push('/report/current');
     } catch (err) {
       setError(formatApiError(err, 'Could not open this report.'));
@@ -171,6 +209,14 @@ function ProfileContent() {
     setError(''); setNotice('');
     try {
       await apiFetch(`/reports/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      if (typeof pendo !== 'undefined') {
+        pendo.track('report_deleted', {
+          report_id: id,
+          project_name: report.project_name || '',
+          scan_type: report.scan_type || '',
+          safety_score: Number(report.safety_score ?? 0),
+        });
+      }
       setReports((current) => current.filter((item) => getReportId(item) !== id));
       setGroups((current) => current.map((group) => ({ ...group, reportIds: group.reportIds.filter((reportId) => reportId !== id) })));
       setNotice('Report deleted from saved history.');

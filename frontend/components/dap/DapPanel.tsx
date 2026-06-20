@@ -29,16 +29,33 @@ export function DapPanel({ report }: { report: ScanReport }) {
     setQuestion('');
     setLoading(true);
 
+    const isQuickQuestion = quickQuestions.includes(clean);
+    let responseSuccess = false;
+    let responseLength = 0;
+
     try {
       const data = await apiFetch<{ answer?: string }>('/assistant/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: clean, scan_result: report }),
       });
+      responseSuccess = true;
+      responseLength = (data.answer || '').length;
       setMessages((prev) => [...prev.slice(0, -1), { role: 'bot', text: data.answer || 'DAP could not produce an answer.' }]);
     } catch (error) {
       setMessages((prev) => [...prev.slice(0, -1), { role: 'bot', text: formatApiError(error, 'DAP is unavailable right now.') }]);
     } finally {
+      if (typeof pendo !== 'undefined') {
+        pendo.track('dap_question_asked', {
+          question_text: clean.substring(0, 200),
+          is_quick_question: isQuickQuestion,
+          question_source: isQuickQuestion ? 'quick_button' : 'text_input',
+          response_success: responseSuccess,
+          response_length: responseLength,
+          project_name: report.project_name || report.repo_name || '',
+          safety_score: Number(report.safety_score ?? 0),
+        });
+      }
       setLoading(false);
     }
   }
@@ -52,8 +69,14 @@ export function DapPanel({ report }: { report: ScanReport }) {
     <>
       {open && <button className="dap-backdrop" type="button" aria-label="Close DAP assistant" onClick={() => setOpen(false)} />}
       <button className="dap-floating-button" type="button" onClick={() => setOpen(true)} aria-label="Open DAP assistant">
-        <span className="dap-bot-mark">DAP</span>
-        <span className="dap-bot-copy">Ask report</span>
+        <span className="dap-bot-mark" aria-hidden="true">
+          <svg className="dap-bot-icon" viewBox="0 0 24 24" role="img" focusable="false">
+            <path d="M12 2.75a.75.75 0 0 1 .75.75v1.38h1.05c3.35 0 5.7 2.28 5.7 5.55v4.1c0 3.28-2.35 5.55-5.7 5.55H10.2c-3.35 0-5.7-2.27-5.7-5.55v-4.1c0-3.27 2.35-5.55 5.7-5.55h1.05V3.5a.75.75 0 0 1 .75-.75Z" />
+            <path d="M8.15 11.25c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5Zm4.7 0c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5Z" className="dap-bot-eye" />
+            <path d="M9.15 15.45c0-.36.29-.65.65-.65h4.4c.36 0 .65.29.65.65s-.29.65-.65.65H9.8a.65.65 0 0 1-.65-.65Z" className="dap-bot-mouth" />
+          </svg>
+        </span>
+        <span className="dap-bot-copy">Ask DAP</span>
       </button>
       <aside className={`dap-drawer ${open ? 'open' : ''}`} aria-hidden={!open}>
         <div className="glass-card panel dap-box">
