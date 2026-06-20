@@ -20,9 +20,7 @@ A-DAP-T scans AI-agent repositories and uploaded projects for deployment risks s
 
 <a href="https://a-dap-t.vercel.app/"><b>Open Live App</b></a>
 &nbsp;&nbsp;•&nbsp;&nbsp;
-<a href="https://adapt-3s27.onrender.com/docs"><b>API Docs</b></a>
-&nbsp;&nbsp;•&nbsp;&nbsp;
-<b>Demo Video:</b> Coming soon
+<a href="https://www.youtube.com/watch?v=1r-QIjQmbbo"><b>Demo Video</b></a>
 
 </div>
 
