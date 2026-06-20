@@ -23,7 +23,7 @@ const people = [
 
 export default function AboutPage() {
   // Hardcoded YouTube ID for the A-DAP-T Website Demo as per user instruction
-  const videoId = "VzN88xAFiDA";
+  const videoId = "1r-QIjQmbbo";
 
   return (
     <main className="page-shell">
