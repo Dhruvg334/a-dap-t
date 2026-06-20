@@ -49,6 +49,14 @@ export default function SignInPage() {
         displayName: data.displayName || 'A-DAP-T User',
       });
 
+      pendo.identify({
+        visitor: {
+          id: data.localId || '',
+          email: data.email || email,
+          full_name: data.displayName || 'A-DAP-T User',
+        },
+      });
+
       router.push(getNextPath());
     } catch (err) {
       setError(formatApiError(err, 'Sign in failed. Please check your credentials and try again.'));

@@ -65,6 +65,14 @@ export default function SignUpPage() {
         displayName: data.displayName || displayName,
       });
 
+      pendo.identify({
+        visitor: {
+          id: data.localId || '',
+          email: data.email || email,
+          full_name: data.displayName || displayName,
+        },
+      });
+
       router.push(getNextPath());
     } catch (err) {
       setError(formatApiError(err, 'Sign up failed. Please check the details and try again.'));
