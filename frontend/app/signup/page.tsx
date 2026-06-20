@@ -65,6 +65,15 @@ export default function SignUpPage() {
         displayName: data.displayName || displayName,
       });
 
+      pendo.identify({
+        visitor: {
+          id: data.localId || '',
+          email: data.email || email,
+          full_name: data.displayName || displayName,
+        },
+      });
+
+      router.push(getNextPath());
       const redirectPath = getNextPath();
       if (typeof pendo !== 'undefined') {
         pendo.track('account_created', {

@@ -49,6 +49,15 @@ export default function SignInPage() {
         displayName: data.displayName || 'A-DAP-T User',
       });
 
+      pendo.identify({
+        visitor: {
+          id: data.localId || '',
+          email: data.email || email,
+          full_name: data.displayName || 'A-DAP-T User',
+        },
+      });
+
+      router.push(getNextPath());
       const redirectPath = getNextPath();
       const nextParam = new URLSearchParams(window.location.search).get('next');
       if (typeof pendo !== 'undefined') {
