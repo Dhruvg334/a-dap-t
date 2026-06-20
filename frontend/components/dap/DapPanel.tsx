@@ -29,16 +29,33 @@ export function DapPanel({ report }: { report: ScanReport }) {
     setQuestion('');
     setLoading(true);
 
+    const isQuickQuestion = quickQuestions.includes(clean);
+    let responseSuccess = false;
+    let responseLength = 0;
+
     try {
       const data = await apiFetch<{ answer?: string }>('/assistant/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: clean, scan_result: report }),
       });
+      responseSuccess = true;
+      responseLength = (data.answer || '').length;
       setMessages((prev) => [...prev.slice(0, -1), { role: 'bot', text: data.answer || 'DAP could not produce an answer.' }]);
     } catch (error) {
       setMessages((prev) => [...prev.slice(0, -1), { role: 'bot', text: formatApiError(error, 'DAP is unavailable right now.') }]);
     } finally {
+      if (typeof pendo !== 'undefined') {
+        pendo.track('dap_question_asked', {
+          question_text: clean.substring(0, 200),
+          is_quick_question: isQuickQuestion,
+          question_source: isQuickQuestion ? 'quick_button' : 'text_input',
+          response_success: responseSuccess,
+          response_length: responseLength,
+          project_name: report.project_name || report.repo_name || '',
+          safety_score: Number(report.safety_score ?? 0),
+        });
+      }
       setLoading(false);
     }
   }

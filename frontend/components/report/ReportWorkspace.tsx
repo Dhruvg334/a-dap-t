@@ -47,8 +47,29 @@ export function ReportWorkspace({ report }: { report: ScanReport }) {
             <p className="page-desc">Review score, policy blockers, findings, static proof paths, generated patch previews, and deployment gate output in one report workspace.</p>
           </div>
           <div className="report-export-actions">
-            <button className="btn btn-secondary" onClick={() => downloadText(`${projectName}-report.json`, JSON.stringify(report, null, 2), 'application/json')}>Download JSON</button>
-            <button className="btn btn-primary" onClick={() => window.print()}>Export PDF</button>
+            <button className="btn btn-secondary" onClick={() => {
+              if (typeof pendo !== 'undefined') {
+                pendo.track('report_json_downloaded', {
+                  project_name: projectName,
+                  safety_score: score,
+                  gate_decision: gateDecision,
+                  findings_count: findings.length,
+                  file_format: 'json',
+                });
+              }
+              downloadText(`${projectName}-report.json`, JSON.stringify(report, null, 2), 'application/json');
+            }}>Download JSON</button>
+            <button className="btn btn-primary" onClick={() => {
+              if (typeof pendo !== 'undefined') {
+                pendo.track('report_pdf_exported', {
+                  project_name: projectName,
+                  safety_score: score,
+                  gate_decision: gateDecision,
+                  findings_count: findings.length,
+                });
+              }
+              window.print();
+            }}>Export PDF</button>
           </div>
         </div>
 
@@ -247,8 +268,33 @@ function PatchPanel({ patches }: { patches: PatchPreview[] }) {
                 </div>
                 <div className="patch-action-row">
                   <button className="btn btn-secondary btn-small" onClick={() => setOpenId(isOpen ? null : id)}>{isOpen ? 'Hide diff' : 'View diff'}</button>
-                  <button className="btn btn-secondary btn-small" onClick={() => copyText(patch.diff || '')}>Copy</button>
-                  <button className="btn btn-primary btn-small" onClick={() => downloadText(patch.patch_filename || 'adapt.patch', patch.diff || '')}>Download</button>
+                  <button className="btn btn-secondary btn-small" onClick={() => {
+                    if (typeof pendo !== 'undefined') {
+                      pendo.track('patch_diff_copied', {
+                        finding_id: patch.finding_id || '',
+                        patch_type: patch.patch_type || '',
+                        patch_title: (patch.title || '').substring(0, 100),
+                        estimated_effort: patch.estimated_effort || '',
+                        risk_reduction: patch.risk_reduction || '',
+                        confidence: patch.confidence || '',
+                      });
+                    }
+                    copyText(patch.diff || '');
+                  }}>Copy</button>
+                  <button className="btn btn-primary btn-small" onClick={() => {
+                    if (typeof pendo !== 'undefined') {
+                      pendo.track('patch_downloaded', {
+                        finding_id: patch.finding_id || '',
+                        patch_filename: patch.patch_filename || 'adapt.patch',
+                        patch_type: patch.patch_type || '',
+                        patch_title: (patch.title || '').substring(0, 100),
+                        estimated_effort: patch.estimated_effort || '',
+                        risk_reduction: patch.risk_reduction || '',
+                        confidence: patch.confidence || '',
+                      });
+                    }
+                    downloadText(patch.patch_filename || 'adapt.patch', patch.diff || '');
+                  }}>Download</button>
                 </div>
               </div>
               {isOpen && <pre className="code-block">{patch.diff || 'No diff provided.'}</pre>}
@@ -289,9 +335,41 @@ function DeploymentGatePanel({ gate, score }: { gate: ScanReport['deployment_gat
         <div>
           {gate.next_actions?.length ? <ul className="list-clean">{gate.next_actions.map((a, i) => <li key={i}>{a}</li>)}</ul> : null}
           <div className="gate-action-row">
-            <button className="btn btn-secondary btn-small" onClick={() => copyText(workflow)}>Copy workflow</button>
-            <button className="btn btn-secondary btn-small" onClick={() => downloadText(gate.workflow_filename || 'adapt-safety-gate.yml', workflow, 'text/yaml')}>Download workflow</button>
-            <button className="btn btn-primary btn-small" onClick={() => downloadText(gate.policy_filename || 'adapt-policy.json', policy, 'application/json')}>Download policy</button>
+            <button className="btn btn-secondary btn-small" onClick={() => {
+              if (typeof pendo !== 'undefined') {
+                pendo.track('gate_workflow_copied', {
+                  gate_decision: gate.decision || '',
+                  safety_score: score,
+                  minimum_safety_score: minimum,
+                  blockers_count: gate.blockers?.length || 0,
+                });
+              }
+              copyText(workflow);
+            }}>Copy workflow</button>
+            <button className="btn btn-secondary btn-small" onClick={() => {
+              if (typeof pendo !== 'undefined') {
+                pendo.track('gate_workflow_downloaded', {
+                  gate_decision: gate.decision || '',
+                  safety_score: score,
+                  minimum_safety_score: minimum,
+                  blockers_count: gate.blockers?.length || 0,
+                  workflow_filename: gate.workflow_filename || 'adapt-safety-gate.yml',
+                });
+              }
+              downloadText(gate.workflow_filename || 'adapt-safety-gate.yml', workflow, 'text/yaml');
+            }}>Download workflow</button>
+            <button className="btn btn-primary btn-small" onClick={() => {
+              if (typeof pendo !== 'undefined') {
+                pendo.track('gate_policy_downloaded', {
+                  gate_decision: gate.decision || '',
+                  safety_score: score,
+                  minimum_safety_score: minimum,
+                  blockers_count: gate.blockers?.length || 0,
+                  policy_filename: gate.policy_filename || 'adapt-policy.json',
+                });
+              }
+              downloadText(gate.policy_filename || 'adapt-policy.json', policy, 'application/json');
+            }}>Download policy</button>
           </div>
         </div>
       </div>
