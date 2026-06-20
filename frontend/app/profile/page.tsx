@@ -2,14 +2,23 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { Edit2, FolderPlus, Trash2 } from 'lucide-react';
 import { AuthGate } from '@/components/auth/AuthGate';
 import { apiFetch, formatApiError } from '@/lib/api';
 import { getAuthState } from '@/lib/auth';
 import { saveCurrentReport } from '@/lib/report-storage';
-import { TrendsChart } from '@/components/profile/TrendsChart';
 import type { ScanReport } from '@/types/scan';
+
+
+const TrendsChart = dynamic(
+  () => import('@/components/profile/TrendsChart').then((module) => module.TrendsChart),
+  {
+    ssr: false,
+    loading: () => <div className="chart-loading">Loading score movement...</div>,
+  }
+);
 
 type ReportSummary = ScanReport & {
   id?: string;
@@ -183,9 +192,9 @@ function ProfileContent() {
           <span className={`pill ${decisionClass(decision)}`}>{String(decision || 'SAVED').toUpperCase()}</span>
         </div>
         <div className="report-card-main">
-          <div>
+          <div className="report-card-copy">
             <h3 className="panel-title report-card-title">{report.project_name || report.upload_name || 'A-DAP-T Scan'}</h3>
-            <p className="muted">{report.repo_url || 'Saved report from scan history.'}</p>
+            <p className="muted report-card-source">{report.repo_url || 'Saved report from scan history.'}</p>
           </div>
           <div className="report-score-orb"><strong>{report.safety_score ?? '—'}</strong><span>score</span></div>
         </div>
@@ -284,7 +293,7 @@ function ProfileContent() {
                 </div>
                 <Link className="btn btn-secondary btn-small" href="/compare">Compare Reports</Link>
               </div>
-              <div className="grid grid-3 report-grid">{organized.ungrouped.map(renderReportCard)}</div>
+              <div className="report-grid">{organized.ungrouped.map(renderReportCard)}</div>
             </section>
 
             {groups.map((group) => (
@@ -296,7 +305,7 @@ function ProfileContent() {
                   </div>
                   <div className="group-actions"><span className="pill neutral">{organized.groupedMap[group.id]?.length || 0} reports</span><button className="btn btn-secondary btn-small" type="button" onClick={() => renameGroup(group.id)}><Edit2 size={13} /> Rename</button><button className="btn btn-danger btn-small" type="button" onClick={() => deleteGroup(group.id)}><Trash2 size={13} /> Delete</button></div>
                 </div>
-                <div className="grid grid-3 report-grid">
+                <div className="report-grid">
                   {(organized.groupedMap[group.id] || []).length ? organized.groupedMap[group.id].map(renderReportCard) : <div className="solid-card panel"><p className="muted">No reports in this group yet.</p></div>}
                 </div>
               </section>
