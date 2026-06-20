@@ -49,7 +49,16 @@ export default function SignInPage() {
         displayName: data.displayName || 'A-DAP-T User',
       });
 
-      router.push(getNextPath());
+      const redirectPath = getNextPath();
+      const nextParam = new URLSearchParams(window.location.search).get('next');
+      if (typeof pendo !== 'undefined') {
+        pendo.track('user_signed_in', {
+          has_next_redirect: Boolean(nextParam),
+          redirect_path: redirectPath,
+        });
+      }
+
+      router.push(redirectPath);
     } catch (err) {
       setError(formatApiError(err, 'Sign in failed. Please check your credentials and try again.'));
     } finally {
