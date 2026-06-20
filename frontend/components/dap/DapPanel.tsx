@@ -1,10 +1,8 @@
 'use client';
 
-import { FormEvent, useRef, useState } from 'react';
+import { FormEvent, useState } from 'react';
 import type { ScanReport } from '@/types/scan';
 import { apiFetch, formatApiError } from '@/lib/api';
-
-const AGENT_ID = 'Lze6qsMDkTny5QtOz5W69FR3OG4';
 
 type Message = { role: 'user' | 'bot'; text: string };
 
@@ -22,9 +20,8 @@ export function DapPanel({ report }: { report: ScanReport }) {
     { role: 'bot', text: 'Ask DAP about this report. I can use findings, Prove Mode, patch previews, and the deployment gate.' }
   ]);
   const [loading, setLoading] = useState(false);
-  const conversationId = useRef(crypto.randomUUID());
 
-  async function ask(text: string, isSuggested = false) {
+  async function ask(text: string) {
     const clean = text.trim();
     if (!clean || loading) return;
     setOpen(true);
@@ -32,29 +29,13 @@ export function DapPanel({ report }: { report: ScanReport }) {
     setQuestion('');
     setLoading(true);
 
-    window.pendo?.trackAgent("prompt", {
-      agentId: AGENT_ID,
-      conversationId: conversationId.current,
-      messageId: crypto.randomUUID(),
-      content: clean,
-      suggestedPrompt: isSuggested,
-    });
-
     try {
       const data = await apiFetch<{ answer?: string }>('/assistant/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: clean, scan_result: report }),
       });
-      const responseText = data.answer || 'DAP could not produce an answer.';
-      setMessages((prev) => [...prev.slice(0, -1), { role: 'bot', text: responseText }]);
-
-      window.pendo?.trackAgent("agent_response", {
-        agentId: AGENT_ID,
-        conversationId: conversationId.current,
-        messageId: crypto.randomUUID(),
-        content: responseText,
-      });
+      setMessages((prev) => [...prev.slice(0, -1), { role: 'bot', text: data.answer || 'DAP could not produce an answer.' }]);
     } catch (error) {
       setMessages((prev) => [...prev.slice(0, -1), { role: 'bot', text: formatApiError(error, 'DAP is unavailable right now.') }]);
     } finally {
@@ -71,8 +52,14 @@ export function DapPanel({ report }: { report: ScanReport }) {
     <>
       {open && <button className="dap-backdrop" type="button" aria-label="Close DAP assistant" onClick={() => setOpen(false)} />}
       <button className="dap-floating-button" type="button" onClick={() => setOpen(true)} aria-label="Open DAP assistant">
-        <span className="dap-bot-mark">DAP</span>
-        <span className="dap-bot-copy">Ask report</span>
+        <span className="dap-bot-mark" aria-hidden="true">
+          <svg className="dap-bot-icon" viewBox="0 0 24 24" role="img" focusable="false">
+            <path d="M12 2.75a.75.75 0 0 1 .75.75v1.38h1.05c3.35 0 5.7 2.28 5.7 5.55v4.1c0 3.28-2.35 5.55-5.7 5.55H10.2c-3.35 0-5.7-2.27-5.7-5.55v-4.1c0-3.27 2.35-5.55 5.7-5.55h1.05V3.5a.75.75 0 0 1 .75-.75Z" />
+            <path d="M8.15 11.25c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5Zm4.7 0c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5Z" className="dap-bot-eye" />
+            <path d="M9.15 15.45c0-.36.29-.65.65-.65h4.4c.36 0 .65.29.65.65s-.29.65-.65.65H9.8a.65.65 0 0 1-.65-.65Z" className="dap-bot-mouth" />
+          </svg>
+        </span>
+        <span className="dap-bot-copy">Ask DAP</span>
       </button>
       <aside className={`dap-drawer ${open ? 'open' : ''}`} aria-hidden={!open}>
         <div className="glass-card panel dap-box">
@@ -85,7 +72,7 @@ export function DapPanel({ report }: { report: ScanReport }) {
           </div>
           <div className="dap-quick-row">
             {quickQuestions.map((item) => (
-              <button key={item} className="btn btn-secondary btn-small" type="button" onClick={() => ask(item, true)} disabled={loading}>{item}</button>
+              <button key={item} className="btn btn-secondary btn-small" type="button" onClick={() => ask(item)} disabled={loading}>{item}</button>
             ))}
           </div>
           <div className="dap-messages">
