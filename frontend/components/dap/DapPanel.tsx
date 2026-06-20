@@ -1,8 +1,10 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useRef, useState } from 'react';
 import type { ScanReport } from '@/types/scan';
 import { apiFetch, formatApiError } from '@/lib/api';
+
+const AGENT_ID = 'Lze6qsMDkTny5QtOz5W69FR3OG4';
 
 type Message = { role: 'user' | 'bot'; text: string };
 
@@ -20,8 +22,9 @@ export function DapPanel({ report }: { report: ScanReport }) {
     { role: 'bot', text: 'Ask DAP about this report. I can use findings, Prove Mode, patch previews, and the deployment gate.' }
   ]);
   const [loading, setLoading] = useState(false);
+  const conversationId = useRef(crypto.randomUUID());
 
-  async function ask(text: string) {
+  async function ask(text: string, isSuggested = false) {
     const clean = text.trim();
     if (!clean || loading) return;
     setOpen(true);
@@ -29,13 +32,29 @@ export function DapPanel({ report }: { report: ScanReport }) {
     setQuestion('');
     setLoading(true);
 
+    window.pendo?.trackAgent("prompt", {
+      agentId: AGENT_ID,
+      conversationId: conversationId.current,
+      messageId: crypto.randomUUID(),
+      content: clean,
+      suggestedPrompt: isSuggested,
+    });
+
     try {
       const data = await apiFetch<{ answer?: string }>('/assistant/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: clean, scan_result: report }),
       });
-      setMessages((prev) => [...prev.slice(0, -1), { role: 'bot', text: data.answer || 'DAP could not produce an answer.' }]);
+      const responseText = data.answer || 'DAP could not produce an answer.';
+      setMessages((prev) => [...prev.slice(0, -1), { role: 'bot', text: responseText }]);
+
+      window.pendo?.trackAgent("agent_response", {
+        agentId: AGENT_ID,
+        conversationId: conversationId.current,
+        messageId: crypto.randomUUID(),
+        content: responseText,
+      });
     } catch (error) {
       setMessages((prev) => [...prev.slice(0, -1), { role: 'bot', text: formatApiError(error, 'DAP is unavailable right now.') }]);
     } finally {
@@ -66,7 +85,7 @@ export function DapPanel({ report }: { report: ScanReport }) {
           </div>
           <div className="dap-quick-row">
             {quickQuestions.map((item) => (
-              <button key={item} className="btn btn-secondary btn-small" type="button" onClick={() => ask(item)} disabled={loading}>{item}</button>
+              <button key={item} className="btn btn-secondary btn-small" type="button" onClick={() => ask(item, true)} disabled={loading}>{item}</button>
             ))}
           </div>
           <div className="dap-messages">
