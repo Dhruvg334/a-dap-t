@@ -15,6 +15,7 @@ const quickQuestions = [
 
 export function DapPanel({ report }: { report: ScanReport }) {
   const [question, setQuestion] = useState('');
+  const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     { role: 'bot', text: 'Ask DAP about this report. I can use findings, Prove Mode, patch previews, and the deployment gate.' }
   ]);
@@ -23,6 +24,7 @@ export function DapPanel({ report }: { report: ScanReport }) {
   async function ask(text: string) {
     const clean = text.trim();
     if (!clean || loading) return;
+    setOpen(true);
     setMessages((prev) => [...prev, { role: 'user', text: clean }, { role: 'bot', text: 'Thinking through the report...' }]);
     setQuestion('');
     setLoading(true);
@@ -47,27 +49,37 @@ export function DapPanel({ report }: { report: ScanReport }) {
   }
 
   return (
-    <aside className="glass-card panel dap-box">
-      <div className="panel-head">
-        <div>
-          <div className="panel-label">DAP assistant</div>
-          <h2 className="panel-title">Ask the report.</h2>
+    <>
+      {open && <button className="dap-backdrop" type="button" aria-label="Close DAP assistant" onClick={() => setOpen(false)} />}
+      <button className="dap-floating-button" type="button" onClick={() => setOpen(true)} aria-label="Open DAP assistant">
+        <span className="dap-bot-mark">DAP</span>
+        <span className="dap-bot-copy">Ask report</span>
+      </button>
+      <aside className={`dap-drawer ${open ? 'open' : ''}`} aria-hidden={!open}>
+        <div className="glass-card panel dap-box">
+          <div className="panel-head dap-drawer-head">
+            <div>
+              <div className="panel-label">DAP assistant</div>
+              <h2 className="panel-title">Ask the report.</h2>
+            </div>
+            <button className="btn btn-secondary btn-small" type="button" onClick={() => setOpen(false)}>Close</button>
+          </div>
+          <div className="dap-quick-row">
+            {quickQuestions.map((item) => (
+              <button key={item} className="btn btn-secondary btn-small" type="button" onClick={() => ask(item)} disabled={loading}>{item}</button>
+            ))}
+          </div>
+          <div className="dap-messages">
+            {messages.map((message, index) => (
+              <div className={`dap-msg ${message.role === 'user' ? 'user' : ''}`} key={`${message.role}-${index}`}>{message.text}</div>
+            ))}
+          </div>
+          <form className="form-stack dap-form" onSubmit={onSubmit}>
+            <input className="input" value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="Ask about this scan..." />
+            <button className="btn btn-primary" type="submit" disabled={loading}>{loading ? 'Asking DAP...' : 'Ask DAP'}</button>
+          </form>
         </div>
-      </div>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
-        {quickQuestions.map((item) => (
-          <button key={item} className="btn btn-secondary btn-small" type="button" onClick={() => ask(item)} disabled={loading}>{item}</button>
-        ))}
-      </div>
-      <div className="dap-messages">
-        {messages.map((message, index) => (
-          <div className={`dap-msg ${message.role === 'user' ? 'user' : ''}`} key={`${message.role}-${index}`}>{message.text}</div>
-        ))}
-      </div>
-      <form className="form-stack" style={{ marginTop: 14 }} onSubmit={onSubmit}>
-        <input className="input" value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="Ask about this scan..." />
-        <button className="btn btn-primary" type="submit" disabled={loading}>{loading ? 'Asking DAP...' : 'Ask DAP'}</button>
-      </form>
-    </aside>
+      </aside>
+    </>
   );
 }
