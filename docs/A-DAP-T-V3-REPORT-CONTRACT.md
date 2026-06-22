@@ -233,3 +233,76 @@ Initial risk types:
 - `unsafe_archive_extraction`
 
 The scanner includes conservative edge-case handling: it skips comment-only lines, checks nearby code windows for visible controls, bounds all evidence snippets, deduplicates repeated hits, and reports confidence instead of pretending every pattern is a confirmed runtime exploit.
+
+## `capability_map`
+
+Gate 3A adds a project capability map. This artifact answers: what can the scanned project or agent appear able to do?
+
+```json
+{
+  "capability_map": {
+    "summary": {
+      "total_capabilities": 8,
+      "risk_counts": {"critical": 1, "high": 3, "medium": 2, "low": 2},
+      "type_counts": {"api_endpoint": 2, "write_action": 2, "external_action": 1},
+      "external_effect_count": 5,
+      "approval_required_count": 4,
+      "approval_missing_count": 3,
+      "audit_missing_count": 4,
+      "sensitive_data_capability_count": 2
+    },
+    "capabilities": [],
+    "scanner_version": "v3-capability-map-1",
+    "notes": []
+  }
+}
+```
+
+Initial capability types:
+
+- `api_endpoint`
+- `read_action`
+- `write_action`
+- `external_action`
+- `code_execution`
+- `file_operation`
+- `memory_operation`
+- `database_access`
+- `auth_boundary`
+- `security_sink`
+- `context_to_tool_flow`
+
+Capability detection is static and evidence-based. It uses function definitions, API surface results, AppSec risks, and context poisoning risks. It does not prove runtime reachability.
+
+## `trust_boundaries`
+
+Gate 3A also adds the first trust-boundary map. This converts scanner artifacts into flow-level risk crossings.
+
+```json
+{
+  "trust_boundaries": {
+    "summary": {
+      "total_boundaries": 4,
+      "weak_boundaries": 2,
+      "partial_boundaries": 2,
+      "review_boundaries": 0,
+      "severity_counts": {"High": 2, "Medium": 2}
+    },
+    "boundaries": [],
+    "scanner_version": "v3-trust-boundary-map-1",
+    "notes": []
+  }
+}
+```
+
+Initial boundary types include:
+
+- `unauthenticated_api_boundary`
+- `missing_abuse_throttle_boundary`
+- `privileged_action_without_approval`
+- `external_effect_without_audit`
+- `sensitive_data_without_masking`
+- context poisoning risk types
+- high-impact AppSec sink types such as SSRF, command execution, path traversal, unsafe archive extraction, and SQL injection
+
+The trust boundary map is intentionally derived from existing deterministic artifacts. It should be treated as a security review map, not runtime exploit proof.

@@ -4,6 +4,7 @@ import os
 
 from app.api_security.api_surface_scanner import build_api_surface
 from app.appsec.appsec_scanner import build_appsec_risks
+from app.capabilities import build_capability_map, build_trust_boundaries
 from app.context_security.context_poisoning_scanner import build_context_poisoning_risks
 import app.scanners.approval_scanner as approval_scanner
 import app.scanners.audit_scanner as audit_scanner
@@ -234,6 +235,19 @@ def attach_v3_project_context(
     api_surface = build_api_surface(files)
     context_poisoning_risks = build_context_poisoning_risks(files)
     appsec_risks = build_appsec_risks(files)
+    capability_map = build_capability_map(
+        files,
+        findings=result.get("findings", []),
+        api_surface=api_surface,
+        appsec_risks=appsec_risks,
+        context_poisoning_risks=context_poisoning_risks,
+    )
+    trust_boundaries = build_trust_boundaries(
+        capability_map=capability_map,
+        api_surface=api_surface,
+        appsec_risks=appsec_risks,
+        context_poisoning_risks=context_poisoning_risks,
+    )
     project_metadata = build_project_metadata(
         project_name=project_name,
         scan_type=scan_type,
@@ -251,6 +265,8 @@ def attach_v3_project_context(
     updated["api_surface"] = api_surface
     updated["context_poisoning_risks"] = context_poisoning_risks
     updated["appsec_risks"] = appsec_risks
+    updated["capability_map"] = capability_map
+    updated["trust_boundaries"] = trust_boundaries
     return updated
 
 

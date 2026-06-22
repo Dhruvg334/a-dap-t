@@ -179,6 +179,11 @@ project_metadata
 file_inventory
 framework_detection
 dependency_risks
+api_surface
+context_poisoning_risks
+appsec_risks
+capability_map
+trust_boundaries
 ```
 
 Existing v2 fields such as findings, attack simulations, patches, deployment gate, and DAP context remain intact.
@@ -347,8 +352,8 @@ Gate 1: complete
 Gate 2A dependency foundation: complete
 Gate 2B API surface + context poisoning scanner: complete
 Gate 2C AppSec subset: complete
-Gate 3 intelligence artifacts: next
-Gate 3 intelligence artifacts: pending
+Gate 3A capability map + trust boundaries: complete
+Gate 3 intelligence artifacts: in progress
 Gate 4 frontend redesign: pending
 Gate 5 DAP Security Reviewer v2: pending
 Gate 6 release diff and stabilization: pending
@@ -409,3 +414,31 @@ Next planned backend gate:
 - Gate 3B: Trust boundary map.
 - Gate 3C: Guardrail coverage matrix.
 - Gate 3D: Policy packs and remedy plan.
+
+
+## Gate 3A — Capability Map + Trust Boundary Map
+
+Implemented in the current patch:
+
+- `capability_map` report artifact
+- static function capability extraction for Python, JavaScript, TypeScript, JSX, and TSX
+- API endpoint capabilities derived from `api_surface`
+- security-sensitive sink capabilities derived from `appsec_risks`
+- memory/context capabilities derived from `context_poisoning_risks`
+- capability risk levels: low, medium, high, critical
+- capability types including read, write, external, code execution, file, memory, API endpoint, database, auth boundary, and context-to-tool flow
+- data touched detection for sensitive terms such as customer, email, token, payment, profile, and PII
+- control gap detection for missing approval, missing audit logging, missing allowlist/scope, and sensitive data without visible masking
+- `trust_boundaries` report artifact
+- boundary generation for unauthenticated API input, missing abuse throttling, privileged actions without approval, external effects without audit logs, sensitive data without masking, context poisoning, and high-impact AppSec sinks
+
+Architecture decision:
+
+- Capability mapping is a product intelligence layer, not a vulnerability scanner by itself. It explains what the project appears able to do and which controls are visible around those abilities.
+- Trust boundaries are derived from existing deterministic artifacts. This avoids adding another independent heuristic layer that can drift from evidence.
+- The old v2 scoring is still not changed. v3 scoring and policy evaluation should be added only after guardrail matrix and policy packs exist.
+
+Next planned backend gate:
+
+- Gate 3B: Guardrail coverage matrix.
+- Gate 3C: Policy packs and remedy plan.

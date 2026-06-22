@@ -335,6 +335,70 @@ class AppSecRiskReportSchema(BaseModel):
     scanner_version: str = ""
     notes: list[str] = Field(default_factory=list)
 
+
+
+class CapabilitySchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    id: str
+    name: str
+    label: str = ""
+    capability_type: str
+    source: str = ""
+    risk_level: str = "low"
+    file: str = ""
+    line: int = 1
+    language: str = "unknown"
+    evidence: str = ""
+    data_touched: list[str] = Field(default_factory=list)
+    external_effect: bool = False
+    requires_approval: bool = False
+    approval_found: bool = False
+    audit_logging_found: bool = False
+    allowlist_found: bool = False
+    control_gaps: list[str] = Field(default_factory=list)
+    related_findings: list[str] = Field(default_factory=list)
+    related_api_endpoints: list[str] = Field(default_factory=list)
+    related_appsec_risks: list[str] = Field(default_factory=list)
+    related_context_risks: list[str] = Field(default_factory=list)
+    confidence: str = "medium"
+    recommended_review: str = ""
+
+
+class CapabilityMapSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    summary: dict[str, Any] = Field(default_factory=dict)
+    capabilities: list[CapabilitySchema] = Field(default_factory=list)
+    scanner_version: str = ""
+    notes: list[str] = Field(default_factory=list)
+
+
+class TrustBoundarySchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    id: str
+    source: str
+    target: str
+    risk_type: str
+    status: str = "review"
+    severity: str = "Medium"
+    file: str = ""
+    line: int = 1
+    evidence: str = ""
+    related_capabilities: list[str] = Field(default_factory=list)
+    related_risks: list[str] = Field(default_factory=list)
+    recommended_control: str = ""
+
+
+class TrustBoundaryReportSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    summary: dict[str, Any] = Field(default_factory=dict)
+    boundaries: list[TrustBoundarySchema] = Field(default_factory=list)
+    scanner_version: str = ""
+    notes: list[str] = Field(default_factory=list)
+
 class ScanResultSchema(BaseModel):
     model_config = ConfigDict(extra="allow")
 
@@ -346,6 +410,8 @@ class ScanResultSchema(BaseModel):
     api_surface: ApiSurfaceReportSchema | None = None
     context_poisoning_risks: ContextPoisoningReportSchema | None = None
     appsec_risks: AppSecRiskReportSchema | None = None
+    capability_map: CapabilityMapSchema | None = None
+    trust_boundaries: TrustBoundaryReportSchema | None = None
 
     project_name:          str
     scan_type:             str
