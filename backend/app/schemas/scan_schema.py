@@ -306,6 +306,35 @@ class ContextPoisoningReportSchema(BaseModel):
     notes: list[str] = Field(default_factory=list)
 
 
+
+
+class AppSecRiskSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    id: str
+    title: str
+    severity: str
+    risk_type: str
+    cwe: str = ""
+    file: str
+    line: int
+    evidence: str = ""
+    source: str = ""
+    sink: str = ""
+    missing_control: str = ""
+    confidence: str = "medium"
+    why_it_matters: str
+    recommended_fix: str
+
+
+class AppSecRiskReportSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    summary: dict[str, Any] = Field(default_factory=dict)
+    risks: list[AppSecRiskSchema] = Field(default_factory=list)
+    scanner_version: str = ""
+    notes: list[str] = Field(default_factory=list)
+
 class ScanResultSchema(BaseModel):
     model_config = ConfigDict(extra="allow")
 
@@ -316,6 +345,7 @@ class ScanResultSchema(BaseModel):
     dependency_risks: DependencyRiskReportSchema | None = None
     api_surface: ApiSurfaceReportSchema | None = None
     context_poisoning_risks: ContextPoisoningReportSchema | None = None
+    appsec_risks: AppSecRiskReportSchema | None = None
 
     project_name:          str
     scan_type:             str

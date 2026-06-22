@@ -96,8 +96,7 @@ These fields will be added after the foundation stabilizes:
 
 - `dependency_risks`
 - `api_surface`
-- `appsec_findings`
-- `memory_context_risks`
+- `appsec_risks`
 - `capability_map`
 - `trust_boundaries`
 - `guardrail_matrix`
@@ -195,3 +194,42 @@ Initial context risk types:
 - `persistent_memory_without_sanitization`
 - `vector_ingestion_without_source_controls`
 - `retrieved_context_can_influence_tool_use`
+
+
+## `appsec_risks`
+
+Gate 2C adds the first traditional application-security scanner subset. It checks supported Python, JavaScript, TypeScript, JSX, and TSX files as text and reports evidence-based sink patterns. It does not execute code and does not claim full exploitability.
+
+```json
+{
+  "appsec_risks": {
+    "summary": {
+      "risk_count": 4,
+      "severity_counts": {"Critical": 1, "High": 2, "Medium": 1, "Low": 0},
+      "risk_types": {
+        "rce_or_command_execution": 1,
+        "path_traversal": 1,
+        "ssrf": 1,
+        "sql_injection": 1
+      },
+      "cwe_counts": {"CWE-78/CWE-94": 1, "CWE-22": 1}
+    },
+    "risks": [],
+    "scanner_version": "v3-appsec-patterns-1",
+    "notes": []
+  }
+}
+```
+
+Initial risk types:
+
+- `path_traversal`
+- `ssrf`
+- `rce_or_command_execution`
+- `sql_injection`
+- `xss`
+- `weak_jwt_or_auth_config`
+- `unsafe_deserialization`
+- `unsafe_archive_extraction`
+
+The scanner includes conservative edge-case handling: it skips comment-only lines, checks nearby code windows for visible controls, bounds all evidence snippets, deduplicates repeated hits, and reports confidence instead of pretending every pattern is a confirmed runtime exploit.

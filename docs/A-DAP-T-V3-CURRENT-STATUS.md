@@ -345,16 +345,16 @@ Planned DAP upgrades:
 Gate 0: complete
 Gate 1: complete
 Gate 2A dependency foundation: complete
-Gate 2B API surface scanner: next
-Gate 2C AppSec subset: pending
-Gate 2D memory/context poisoning scanner: pending
+Gate 2B API surface + context poisoning scanner: complete
+Gate 2C AppSec subset: complete
+Gate 3 intelligence artifacts: next
 Gate 3 intelligence artifacts: pending
 Gate 4 frontend redesign: pending
 Gate 5 DAP Security Reviewer v2: pending
 Gate 6 release diff and stabilization: pending
 ```
 
-A-DAP-T v3 currently has the backend foundation needed to understand the scanned project structure and dependency posture. The next major step is to add API surface and rate-limit scanning.
+A-DAP-T v3 currently has the backend foundation needed to understand the scanned project structure, dependency posture, API surface, context/memory poisoning risks, and core application-security sink patterns.
 
 ---
 
@@ -383,6 +383,29 @@ Architecture decision:
 - They intentionally report missing visible controls, not runtime-proof vulnerabilities.
 - They are attached as separate v3 artifacts rather than being forced into the old v2 score model.
 
+## Gate 2C — Application Security Scanner Subset
+
+Implemented in the current patch:
+
+- `appsec_risks` report artifact
+- Path traversal / unsafe file path detection
+- SSRF sink detection for user-controlled outbound URLs
+- Shell/code execution sink detection
+- Dynamic SQL construction detection
+- Raw HTML/XSS sink detection
+- Weak JWT/auth verification configuration detection
+- Unsafe deserialization detection
+- Unsafe archive extraction detection
+
+Architecture decision:
+
+- AppSec checks are kept separate from `api_surface` because endpoint exposure and code sink analysis answer different questions.
+- The scanner is pattern-based and evidence-first. It flags risky code paths for review rather than claiming full exploit proof.
+- Edge cases are handled conservatively: comments are skipped, nearby control terms suppress obvious false positives, evidence is bounded, and duplicate hits are deduped.
+
 Next planned backend gate:
 
-- Gate 2C: AppSec scanner subset for missing auth, path traversal, unsafe file upload, SSRF, shell/RCE, JWT/auth config, SQLi patterns, and basic XSS patterns.
+- Gate 3A: Agent/app capability map.
+- Gate 3B: Trust boundary map.
+- Gate 3C: Guardrail coverage matrix.
+- Gate 3D: Policy packs and remedy plan.

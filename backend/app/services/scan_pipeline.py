@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 
 from app.api_security.api_surface_scanner import build_api_surface
+from app.appsec.appsec_scanner import build_appsec_risks
 from app.context_security.context_poisoning_scanner import build_context_poisoning_risks
 import app.scanners.approval_scanner as approval_scanner
 import app.scanners.audit_scanner as audit_scanner
@@ -232,6 +233,7 @@ def attach_v3_project_context(
     dependency_risks = build_dependency_risks(files)
     api_surface = build_api_surface(files)
     context_poisoning_risks = build_context_poisoning_risks(files)
+    appsec_risks = build_appsec_risks(files)
     project_metadata = build_project_metadata(
         project_name=project_name,
         scan_type=scan_type,
@@ -248,6 +250,7 @@ def attach_v3_project_context(
     updated["dependency_risks"] = dependency_risks
     updated["api_surface"] = api_surface
     updated["context_poisoning_risks"] = context_poisoning_risks
+    updated["appsec_risks"] = appsec_risks
     return updated
 
 
