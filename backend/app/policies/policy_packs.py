@@ -263,7 +263,8 @@ def _find_matching_risk_types(report: dict[str, Any], policy: dict[str, Any]) ->
 def evaluate_policy_pack(report: dict[str, Any], policy_id: str | None = None) -> dict[str, Any]:
     policy = get_policy_pack(policy_id or report.get("policy_id"))
     controls = _control_map(_safe_dict(report.get("guardrail_matrix")))
-    safety_score = int(report.get("safety_score") or 0)
+    legacy_safety_score = int(report.get("safety_score") or 0)
+    safety_score = int(report.get("v3_security_score") or legacy_safety_score)
     minimum = int(policy.get("minimum_safety_score") or 75)
 
     passed_controls: list[str] = []
@@ -349,6 +350,8 @@ def evaluate_policy_pack(report: dict[str, Any], policy_id: str | None = None) -
         "summary": summary,
         "minimum_safety_score": minimum,
         "safety_score": safety_score,
+        "legacy_safety_score": legacy_safety_score,
+        "score_basis": "v3_security_score" if report.get("v3_security_score") is not None else "legacy_safety_score",
         "score_passed": score_passed,
         "v3_gate_score": v3_gate_score,
         "required_controls_total": required,

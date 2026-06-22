@@ -183,6 +183,9 @@ Controls currently covered:
 
 Implemented in the current patch:
 
+- `v3_security_score`
+- `v3_status`
+- `v3_score_breakdown`
 - `policy_evaluation`
 - `remedy_plan`
 - policy pack catalog
@@ -207,7 +210,9 @@ Architecture decision:
 
 - Policy packs consume deterministic v3 artifacts. AI does not decide release posture.
 - The old v2 deployment gate remains unchanged for frontend compatibility.
-- `policy_evaluation` is the v3 release-policy signal.
+- `v3_security_score` is the new v3 score that combines legacy AI-agent findings with dependency, API, AppSec, context, capability, trust-boundary, and guardrail signals.
+- The old `safety_score` remains unchanged for frontend/backward compatibility.
+- `policy_evaluation` is the v3 release-policy signal and uses `v3_security_score` when present.
 - `remedy_plan` is the v3 fix-sequencing artifact and should become the main fix UI in the frontend redesign.
 
 
@@ -415,6 +420,7 @@ Gate 2C AppSec subset: complete
 Gate 3A capability map + trust boundaries: complete
 Gate 3B guardrail coverage matrix: complete
 Gate 3C policy packs and remedy plan: complete
+Gate 3D scoring/backend handoff: complete
 Gate 4 frontend redesign: pending
 Gate 5 DAP Security Reviewer v2: pending
 Gate 6 release diff and stabilization: pending

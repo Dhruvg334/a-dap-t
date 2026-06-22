@@ -438,6 +438,8 @@ class PolicyEvaluationSchema(BaseModel):
     summary: str = ""
     minimum_safety_score: int = 75
     safety_score: int = 0
+    legacy_safety_score: int = 0
+    score_basis: str = "legacy_safety_score"
     score_passed: bool = False
     v3_gate_score: int = 0
     required_controls_total: int = 0
@@ -489,6 +491,9 @@ class ScanResultSchema(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     schema_version: str = "2.0"
+    v3_security_score: int | None = None
+    v3_status: str | None = None
+    v3_score_breakdown: dict[str, Any] | None = None
     project_metadata: ProjectMetadataSchema | None = None
     file_inventory: FileInventorySchema | None = None
     framework_detection: FrameworkDetectionSchema | None = None

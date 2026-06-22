@@ -491,3 +491,29 @@ The secured demo should keep a comparable app shape while showing safer controls
 - safe file path handling and safe archive extraction
 
 Demo scores should be scanner-driven. Do not hardcode demo safety scores unless a future test explicitly requires a fixed fixture snapshot.
+
+
+## v3 Security Score
+
+A-DAP-T v3 adds a separate score instead of replacing the legacy `safety_score`.
+
+```json
+{
+  "v3_security_score": 84,
+  "v3_status": "Low Risk",
+  "v3_score_breakdown": {
+    "legacy_safety_score": 96,
+    "total_penalty": 16,
+    "top_penalties": [],
+    "scanner_version": "v3-security-posture-score-1"
+  }
+}
+```
+
+Rules:
+
+- `safety_score` remains the legacy v2 AI-agent score.
+- `v3_security_score` is the v3 score that combines legacy findings with dependency, API, AppSec, context, capability, trust-boundary, and guardrail signals.
+- `policy_evaluation.safety_score` uses `v3_security_score` when available.
+- Frontend should display both scores clearly during the transition.
+- Do not overwrite or reinterpret old saved reports without checking `schema_version`.

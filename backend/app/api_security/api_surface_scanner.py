@@ -54,7 +54,7 @@ _PY_FUNC_RE = re.compile(r"\s*(?:async\s+)?def\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*
 _JS_FUNC_RE = re.compile(r"\s*(?:export\s+)?(?:async\s+)?function\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*\(")
 
 _MUTATING_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
-_UPLOAD_TERMS = ("upload", "file", "multipart", "formdata", "uploadfile")
+_UPLOAD_TERMS = ("upload", "multipart", "formdata", "uploadfile", "file:", "file=", "File(", "UploadFile")
 _LLM_TERMS = ("openai", "gemini", "anthropic", "chat.completions", "generate_content", "assistant", "llm", "model")
 _AUTH_TERMS = (
     "verify_token", "authorization", "bearer", "firebase", "current_user", "depends(get_current", "depends(verify",
@@ -63,7 +63,7 @@ _AUTH_TERMS = (
 _RATE_LIMIT_TERMS = (
     "limiter", "ratelimit", "rate_limit", "slowapi", "throttle", "too many requests", "429", "upstash/ratelimit",
 )
-_VALIDATION_TERMS = ("pydantic", "basemodel", "zod", "joi", "yup", "schema.parse", "request.json", "bodyparser")
+_VALIDATION_TERMS = ("pydantic", "basemodel", "zod", "joi", "yup", "schema.parse", "request.json", "bodyparser", "validate_upload_size", "secure_filename", "safe_extract", "max_upload", "allowed_file", "file_size")
 _CORS_WEAK_TERMS = ("allow_origins=[\"*\"]", "origin: '*'", "origin: \"*\"", "access-control-allow-origin", "alloworigin: '*'", "cors({")
 
 
@@ -75,8 +75,22 @@ def _normalize_endpoint_path(path: str) -> str:
 
 
 def _line_after(lines: list[str], start: int, max_lines: int = 24) -> str:
-    """Return a small handler window. We keep this bounded because scanned code is untrusted text."""
-    return "\n".join(lines[start:min(len(lines), start + max_lines)])
+    """Return a bounded route/handler window without bleeding into the next route.
+
+    Earlier versions used a fixed 32-line window, which made one upload route mark
+    every previous FastAPI route as upload-like. Stop at the next decorator/export
+    boundary so each endpoint is judged mostly on its own handler.
+    """
+    end = min(len(lines), start + max_lines)
+    for index in range(start + 1, end):
+        stripped = lines[index].strip()
+        if stripped.startswith("@") and index > start + 1:
+            end = index
+            break
+        if re.match(r"export\s+(?:async\s+)?function\s+(GET|POST|PUT|PATCH|DELETE|OPTIONS|HEAD)\s*\(", stripped):
+            end = index
+            break
+    return "\n".join(lines[start:end])
 
 
 def _next_path_from_file(path: str) -> str:
@@ -123,12 +137,20 @@ def _request_body_status(method: str, window: str) -> str:
 
 
 def _endpoint_tags(method: str, path: str, window: str) -> tuple[str, ...]:
-    joined = f"{path}\n{window}".lower()
+    joined_original = f"{path}\n{window}"
+    joined = joined_original.lower()
+    path_lower = path.lower()
     tags: list[str] = []
     if method in _MUTATING_METHODS:
         tags.append("mutation")
-    if any(term in joined for term in _UPLOAD_TERMS):
+
+    # Do not tag every POST with a Pydantic field as a file upload. We only flag
+    # upload-like routes when the route name or handler text shows upload/multipart/file inputs.
+    upload_route_hint = any(term in path_lower for term in ("upload", "file", "archive", "import"))
+    upload_code_hint = bool(re.search(r"\b(UploadFile|File\s*\(|FormData|multipart|request\.files|multer)\b", joined_original, re.IGNORECASE))
+    if upload_route_hint or upload_code_hint:
         tags.append("file_upload")
+
     if any(term in joined for term in _LLM_TERMS):
         tags.append("llm_call")
     if any(term in joined for term in ("delete", "admin", "refund", "payment", "transfer", "write")):

@@ -22,6 +22,7 @@ from app.inventory.framework_detector import detect_frameworks
 from app.patches.patch_generator import build_patch_previews
 from app.policies import evaluate_policy_pack
 from app.remedy import build_remedy_plan
+from app.risk.v3_scoring import compute_v3_security_posture
 from app.risk.scoring import (
     CATEGORY_TO_SCHEMA_KEY,
     compute_category_score,
@@ -262,7 +263,24 @@ def attach_v3_project_context(
         capability_map=capability_map,
         trust_boundaries=trust_boundaries,
     )
-    policy_evaluation = evaluate_policy_pack({**result, "guardrail_matrix": guardrail_matrix, "appsec_risks": appsec_risks, "context_poisoning_risks": context_poisoning_risks, "dependency_risks": dependency_risks})
+    v3_score_breakdown = compute_v3_security_posture({
+        **result,
+        "dependency_risks": dependency_risks,
+        "api_surface": api_surface,
+        "context_poisoning_risks": context_poisoning_risks,
+        "appsec_risks": appsec_risks,
+        "capability_map": capability_map,
+        "trust_boundaries": trust_boundaries,
+        "guardrail_matrix": guardrail_matrix,
+    })
+    policy_evaluation = evaluate_policy_pack({
+        **result,
+        "v3_security_score": v3_score_breakdown.get("v3_security_score"),
+        "guardrail_matrix": guardrail_matrix,
+        "appsec_risks": appsec_risks,
+        "context_poisoning_risks": context_poisoning_risks,
+        "dependency_risks": dependency_risks,
+    })
     remedy_plan = build_remedy_plan({**result, "guardrail_matrix": guardrail_matrix, "capability_map": capability_map}, policy_evaluation)
     project_metadata = build_project_metadata(
         project_name=project_name,
@@ -284,6 +302,9 @@ def attach_v3_project_context(
     updated["capability_map"] = capability_map
     updated["trust_boundaries"] = trust_boundaries
     updated["guardrail_matrix"] = guardrail_matrix
+    updated["v3_security_score"] = v3_score_breakdown.get("v3_security_score")
+    updated["v3_status"] = v3_score_breakdown.get("v3_status")
+    updated["v3_score_breakdown"] = v3_score_breakdown
     updated["policy_evaluation"] = policy_evaluation
     updated["remedy_plan"] = remedy_plan
     return updated

@@ -23,20 +23,20 @@ WRITE_KEYWORDS = {
     "update", "create", "delete", "remove", "write", "save", "set", "insert", "modify", "patch", "upload", "import"
 }
 EXTERNAL_KEYWORDS = {
-    "email", "message", "slack", "webhook", "http", "request", "fetch_url", "api", "payment", "refund", "transfer", "stripe", "send"
+    "email", "slack", "webhook", "http", "fetch_url", "api", "payment", "refund", "transfer", "stripe", "send"
 }
 CODE_EXEC_KEYWORDS = {
     "shell", "command", "execute", "exec", "subprocess", "run_code", "eval", "compile", "python_repl", "terminal"
 }
 FILE_KEYWORDS = {
-    "file", "path", "upload", "download", "archive", "extract", "read_file", "write_file"
+    "path", "upload", "download", "archive", "extract", "read_file", "write_file"
 }
 MEMORY_KEYWORDS = {
     "memory", "history", "chat_history", "messages", "vector", "retriever", "context", "embedding", "store"
 }
 SENSITIVE_DATA_KEYWORDS = {
-    "customer", "user", "email", "phone", "address", "password", "token", "secret", "payment", "card", "ssn",
-    "profile", "order", "invoice", "health", "medical", "pii", "credential", "account"
+    "customer", "email", "phone", "address", "password", "token", "secret", "payment", "card", "ssn",
+    "health", "medical", "pii", "credential", "account"
 }
 APPROVAL_KEYWORDS = {
     "approval", "approve", "human_review", "manual_review", "reviewer", "confirm", "confirmation", "authorize",
@@ -46,6 +46,18 @@ AUDIT_KEYWORDS = {
     "audit", "audit_log", "log_event", "logger", "trace", "trace_id", "tool_call_id", "event_log", "telemetry"
 }
 ALLOWLIST_KEYWORDS = {"allowlist", "allowed", "denylist", "permission", "scope", "policy", "guardrail"}
+
+SECURITY_HELPER_KEYWORDS = {
+    "require_auth", "verify_token", "require_approval", "rate_limit", "sanitize", "mask", "redact",
+    "validate_url", "safe_join", "safe_extract", "secure_filename", "validate_upload", "audit_log",
+    "allowed", "allowlist", "cors", "jwt", "token", "approval", "review", "policy"
+}
+
+CONTROL_HELPER_TERMS = {
+    "validate_url", "safe_join", "safe_extract", "secure_filename", "validate_upload_size",
+    "mask_pii", "sanitize_prompt", "require_approval", "require_auth", "verify_token",
+    "audit_log", "TOOL_ALLOWLIST", "ALLOWED_WEBHOOK_HOSTS", "ALLOWED_FILE_EXTENSIONS"
+}
 
 # Scanner reports often use their own labels. Keeping the mapping here makes the capability layer stable
 # even when upstream scanners add more specific risk names later.
@@ -73,8 +85,19 @@ def _stable_id(prefix: str, *parts: object) -> str:
 
 
 def _line_window(lines: list[str], line_number: int, radius: int = 12) -> str:
-    start = max(0, line_number - 1 - radius)
-    end = min(len(lines), line_number + radius)
+    """Return a bounded function window without leaking heavily into the next handler.
+
+    A fixed before/after window made small demo handlers inherit keywords from the next
+    route, which inflated capability risk. We keep a little context above the function,
+    then stop once another function/decorator boundary is reached.
+    """
+    start = max(0, line_number - 1 - min(radius, 4))
+    end = min(len(lines), line_number - 1 + radius + 1)
+    for index in range(line_number, end):
+        stripped = lines[index].strip()
+        if index > line_number - 1 and (stripped.startswith("@") or re.match(r"(?:async\s+)?def\s+", stripped) or re.match(r"(?:export\s+)?(?:async\s+)?function\s+", stripped)):
+            end = index
+            break
     return "\n".join(lines[start:end])
 
 
@@ -127,8 +150,18 @@ def _extract_function_candidates(path: str, text: str) -> list[dict[str, Any]]:
                 "language": _language_for_path(path),
                 "evidence": stripped[:220],
                 "window": window,
+                "file_text": text,
             })
     return candidates
+
+
+def _is_security_helper(name: str, combined: str) -> bool:
+    name_norm = _norm(name)
+    if any(term in name_norm for term in SECURITY_HELPER_KEYWORDS):
+        return True
+    # Some helper names are project-specific, but their bodies are clearly defensive.
+    helper_hits = sum(1 for term in CONTROL_HELPER_TERMS if term.lower() in combined.lower())
+    return helper_hits >= 3 and not any(term in name_norm for term in WRITE_KEYWORDS | EXTERNAL_KEYWORDS | CODE_EXEC_KEYWORDS)
 
 
 def _classify_function_capability(candidate: dict[str, Any]) -> dict[str, Any] | None:
@@ -136,6 +169,10 @@ def _classify_function_capability(candidate: dict[str, Any]) -> dict[str, Any] |
     combined = f"{name}\n{candidate.get('window', '')}"
     name_norm = _norm(name).replace("_", "")
     lower = combined.lower()
+    file_text = str(candidate.get("file_text") or "")
+
+    if _is_security_helper(name, combined):
+        return None
 
     cap_type = "utility_function"
     risk_level = "low"
@@ -145,6 +182,15 @@ def _classify_function_capability(candidate: dict[str, Any]) -> dict[str, Any] |
     if any(_norm(keyword).replace("_", "") in name_norm for keyword in CODE_EXEC_KEYWORDS) or _has_any(lower, {"subprocess", "os.system", "shell=true", "exec(", "eval("}):
         cap_type = "code_execution"
         risk_level = "critical"
+        external_effect = True
+        requires_approval = True
+    elif any(_norm(keyword).replace("_", "") in name_norm for keyword in MEMORY_KEYWORDS) or _has_any(lower, {"chat_history", "vectorstore", "retriever", "messages.append"}):
+        cap_type = "memory_operation"
+        risk_level = "medium"
+        requires_approval = False
+    elif any(_norm(keyword).replace("_", "") in name_norm for keyword in FILE_KEYWORDS) or _has_any(lower, {"open(", "readfile", "writefile", "uploadfile", "extractall"}):
+        cap_type = "file_operation"
+        risk_level = "medium"
         external_effect = True
         requires_approval = True
     elif any(_norm(keyword).replace("_", "") in name_norm for keyword in EXTERNAL_KEYWORDS) or _has_any(lower, {"requests.", "fetch(", "axios", "sendgrid", "stripe", "webhook"}):
@@ -157,15 +203,6 @@ def _classify_function_capability(candidate: dict[str, Any]) -> dict[str, Any] |
         risk_level = "high"
         external_effect = True
         requires_approval = True
-    elif any(_norm(keyword).replace("_", "") in name_norm for keyword in FILE_KEYWORDS) or _has_any(lower, {"open(", "readfile", "writefile", "uploadfile", "extractall"}):
-        cap_type = "file_operation"
-        risk_level = "medium"
-        external_effect = True
-        requires_approval = True
-    elif any(_norm(keyword).replace("_", "") in name_norm for keyword in MEMORY_KEYWORDS) or _has_any(lower, {"chat_history", "vectorstore", "retriever", "messages.append"}):
-        cap_type = "memory_operation"
-        risk_level = "medium"
-        requires_approval = False
     elif any(_norm(keyword).replace("_", "") in name_norm for keyword in READ_KEYWORDS):
         cap_type = "read_action"
         risk_level = "low"
@@ -175,7 +212,12 @@ def _classify_function_capability(candidate: dict[str, Any]) -> dict[str, Any] |
     data_touched = _matched_keywords(combined, SENSITIVE_DATA_KEYWORDS)
     approval_found = _has_any(combined, APPROVAL_KEYWORDS)
     audit_logging_found = _has_any(combined, AUDIT_KEYWORDS)
-    allowlist_found = _has_any(combined, ALLOWLIST_KEYWORDS)
+    allowlist_found = (
+        _has_any(combined, ALLOWLIST_KEYWORDS)
+        or _has_any(combined, {"validate_url", "safe_join", "safe_extract", "secure_filename", "tool_allowlist"})
+        or ("TOOL_ALLOWLIST" in file_text and name in file_text)
+    )
+    pii_control_found = _has_any(combined, {"mask", "redact", "sanitize", "safe_prompt", "masked"})
 
     if data_touched and risk_level == "low":
         risk_level = "medium"
@@ -191,7 +233,7 @@ def _classify_function_capability(candidate: dict[str, Any]) -> dict[str, Any] |
         control_gaps.append("missing_audit_logging")
     if cap_type in {"external_action", "code_execution"} and not allowlist_found:
         control_gaps.append("missing_allowlist_or_scope")
-    if data_touched and "mask" not in combined.lower() and "redact" not in combined.lower():
+    if data_touched and not pii_control_found:
         control_gaps.append("sensitive_data_without_visible_masking")
 
     return {
@@ -240,7 +282,9 @@ def _capability_from_endpoint(endpoint: dict[str, Any]) -> dict[str, Any]:
     mutation = method in {"POST", "PUT", "PATCH", "DELETE"} or "mutation" in tags
     sensitive = "sensitive_action" in tags or any(word in path.lower() for word in ["delete", "admin", "refund", "payment", "upload", "assistant", "scan"])
     external_effect = mutation or "llm_call" in tags
-    requires_approval = method in {"DELETE", "PUT", "PATCH"} or sensitive
+    # API endpoints are release surfaces, not proof of human-approval gaps by themselves.
+    # Approval is evaluated on the underlying tool/capability implementations.
+    requires_approval = False
 
     risk_level = "low"
     if endpoint.get("auth_status") == "missing" and (mutation or sensitive):
