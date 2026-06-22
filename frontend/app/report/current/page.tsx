@@ -26,7 +26,7 @@ export default function CurrentReportPage() {
   if (!checked) {
     return (
       <main className="page-shell">
-        <div className="container"><div className="form-success">Loading report workspace...</div></div>
+        <div className="container"><div className="form-success">Loading v3 report workspace...</div></div>
       </main>
     );
   }
@@ -37,8 +37,8 @@ export default function CurrentReportPage() {
         <div className="container">
           <section className="glass-card panel shimmer" style={{ textAlign: 'center', padding: '64px 24px' }}>
             <div className="tech-label" style={{ justifyContent: 'center' }}><span className="pulse-dot" /> NO ACTIVE REPORT</div>
-            <h1 className="section-title" style={{ margin: '18px auto', maxWidth: 720 }}>Run a scan to open the V2 report workspace.</h1>
-            <p className="page-desc" style={{ margin: '0 auto 26px' }}>The current report page reads the latest scan from local session storage. Start with the vulnerable demo for the strongest walkthrough.</p>
+            <h1 className="section-title" style={{ margin: '18px auto', maxWidth: 720 }}>Run a scan to open the v3 report workspace.</h1>
+            <p className="page-desc" style={{ margin: '0 auto 26px' }}>The current report page reads the latest scan from local session storage. Start with the vulnerable demo to see dependency, API, AppSec, context, guardrail, policy, and remedy artifacts.</p>
             <Link className="btn btn-primary" href="/scanner">Go to scanner</Link>
           </section>
         </div>

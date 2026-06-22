@@ -35,7 +35,7 @@ export function Navbar() {
 
   function logout() {
     clearAuthState();
-    pendo.clearSession();
+    if (typeof pendo !== 'undefined') pendo.clearSession();
     setIsAuthed(false);
     window.location.href = '/';
   }

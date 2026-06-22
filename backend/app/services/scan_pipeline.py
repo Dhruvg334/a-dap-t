@@ -228,6 +228,7 @@ def attach_v3_project_context(
     files: dict[str, str],
     project_name: str,
     scan_type: str,
+    policy_id: str | None = None,
 ) -> dict:
     """Attach the v3 project-understanding layer without changing scanner verdicts.
 
@@ -275,12 +276,13 @@ def attach_v3_project_context(
     })
     policy_evaluation = evaluate_policy_pack({
         **result,
+        "policy_id": policy_id or result.get("policy_id"),
         "v3_security_score": v3_score_breakdown.get("v3_security_score"),
         "guardrail_matrix": guardrail_matrix,
         "appsec_risks": appsec_risks,
         "context_poisoning_risks": context_poisoning_risks,
         "dependency_risks": dependency_risks,
-    })
+    }, policy_id=policy_id or result.get("policy_id"))
     remedy_plan = build_remedy_plan({**result, "guardrail_matrix": guardrail_matrix, "capability_map": capability_map}, policy_evaluation)
     project_metadata = build_project_metadata(
         project_name=project_name,
@@ -292,6 +294,7 @@ def attach_v3_project_context(
 
     updated = dict(result)
     updated["schema_version"] = "3.0"
+    updated["policy_id"] = policy_evaluation.get("selected_policy", {}).get("policy_id", policy_id or result.get("policy_id") or "general_ai_app")
     updated["project_metadata"] = project_metadata
     updated["file_inventory"] = file_inventory
     updated["framework_detection"] = framework_detection
@@ -347,16 +350,19 @@ def build_scan_result(
         "remediation_checklist": build_remediation_checklist(findings),
     }
 
+    if extra_metadata:
+        # Merge caller metadata before the v3 layer runs. Policy selection and source metadata
+        # need to be visible to scoring, policy evaluation, and saved report summaries.
+        result.update(extra_metadata)
+
     result = attach_v3_project_context(
         result,
         files=files,
         project_name=project_name,
         scan_type=scan_type,
+        policy_id=result.get("policy_id"),
     )
     result = attach_v2_report_artifacts(result)
-
-    if extra_metadata:
-        result.update(extra_metadata)
 
     if not enrich:
         return result

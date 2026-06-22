@@ -1,131 +1,63 @@
 'use client';
 
 import { BrandWord } from '@/components/ui/BrandWord';
-import { Users, Target, Zap, PlayCircle, ShieldCheck } from 'lucide-react';
+import { PlayCircle, ShieldCheck } from 'lucide-react';
 
 const people = [
-  {
-    name: 'Dhruv Gupta',
-    role: 'Product direction · backend integration · AI safety workflow',
-    body: 'Led A-DAP-T’s product direction, V2 backend upgrades, report artifacts, DAP behavior, deployment gate flow, and final integration quality.'
-  },
-  {
-    name: 'Pavit Agrawal',
-    role: 'Score delta · report comparison · project engineering',
-    body: 'Owns the report comparison and re-scan improvement flow so users can measure how safety changes after fixes.'
-  },
-  {
-    name: 'Akshhaya Isa',
-    role: 'Frontend development · UI implementation support',
-    body: 'Supports the frontend migration and page implementation work for the upgraded A-DAP-T experience.'
-  }
+  ['Dhruv Gupta', 'Product direction · backend architecture · frontend integration · security workflow', 'Leading the v3 shift from an AI-agent scanner to a broader AI application security assessment platform.'],
+  ['Pavit Agrawal', 'Backend modules · comparison logic · scanner support', 'Supports scanner modules, release-diff direction, and backend feature work with clear contracts.'],
+  ['Akshhaya Isa', 'Frontend implementation · UI polish support', 'Supports frontend page implementation, responsive UI, and section-level product polish.'],
+];
+
+const principles = [
+  ['Evidence over claims', 'A-DAP-T reports static evidence, file paths, line numbers, control gaps, and recommended actions instead of claiming runtime certainty.'],
+  ['AI is controlled', 'AI helps explain reports and guide review, while deterministic scanners own findings, scores, and policy decisions.'],
+  ['Release workflow', 'The goal is not only to find issues; it is to help teams decide what to fix before shipping.'],
 ];
 
 export default function AboutPage() {
-  // Hardcoded YouTube ID for the A-DAP-T Website Demo as per user instruction
-  const videoId = "1r-QIjQmbbo";
+  const videoId = '1r-QIjQmbbo';
 
   return (
-    <main className="page-shell">
+    <main className="page-shell about-v3-page">
       <div className="container">
         <div className="page-head centered">
           <div>
             <div className="tech-label page-kicker"><span className="pulse-dot" /> ABOUT</div>
-            <h1 className="page-title">Built for agents that can act.</h1>
+            <h1 className="page-title">Security review for AI apps that can act.</h1>
           </div>
-          <p className="page-desc"><BrandWord /> started as an AI-agent risk scanner and is now moving toward a deployment safety gate: scan, prove, patch, re-scan, and gate unsafe releases before they ship.</p>
+          <p className="page-desc"><BrandWord /> started as an AI-agent deployment scanner. v3 expands it into a security assessment platform for AI-powered projects: code, APIs, dependencies, capabilities, memory/context risk, guardrails, policy, and remedy planning.</p>
         </div>
 
-        {/* Hardcoded YouTube Video Section - Platform Guide */}
-        <section className="glass-card panel shimmer" style={{ marginBottom: 48, padding: '40px' }}>
+        <section className="glass-card panel shimmer" style={{ marginBottom: 28 }}>
           <div className="panel-head" style={{ marginBottom: 24 }}>
-            <div>
-              <div className="panel-label">PLATFORM GUIDE</div>
-              <h2 className="panel-title">A-DAP-T Website Demo</h2>
-            </div>
-            <div className="pill safe" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <PlayCircle size={12} /> VIDEO GUIDE
-            </div>
+            <div><div className="panel-label">Platform guide</div><h2 className="panel-title">A-DAP-T walkthrough</h2></div>
+            <div className="pill safe" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><PlayCircle size={12} /> VIDEO GUIDE</div>
           </div>
+          <div className="video-frame-wrap">
+            <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`} title="A-DAP-T Website Demo" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+          </div>
+          <div style={{ marginTop: 22, display: 'flex', justifyContent: 'center' }}><div className="notice"><ShieldCheck size={16} /> <span>Current demo explains the v2 workflow; v3 expands the backend and report model.</span></div></div>
+        </section>
 
-          <div style={{ maxWidth: '960px', margin: '0 auto' }}>
-            <div style={{
-              background: '#000',
-              borderRadius: 24,
-              overflow: 'hidden',
-              aspectRatio: '16/9',
-              border: '1px solid var(--border)',
-              boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
-              position: 'relative'
-            }}>
-              <iframe
-                width="100%"
-                height="100%"
-                src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`}
-                title="A-DAP-T Website Demo"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-              ></iframe>
-            </div>
-            <div style={{ marginTop: 28, display: 'flex', justifyContent: 'center' }}>
-               <div className="notice" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', borderRadius: '99px' }}>
-                 <ShieldCheck size={16} className="text-emerald" />
-                 <span style={{ fontSize: '13px' }}>Watch this guide to master the pre-deployment security workflow.</span>
-               </div>
-            </div>
+        <section className="grid grid-3" style={{ marginBottom: 28 }}>
+          {principles.map(([title, body]) => <article className="glass-card panel" key={title}><div className="panel-label">Principle</div><h2 className="panel-title">{title}</h2><p className="muted">{body}</p></article>)}
+        </section>
+
+        <section className="glass-card panel" style={{ marginBottom: 28 }}>
+          <div className="panel-head"><div><div className="panel-label">What v3 changes</div><h2 className="panel-title">From scanner dashboard to release review system.</h2></div><span className="pill neutral">V3 direction</span></div>
+          <div className="v3-about-grid">
+            {['Dependency scanner', 'API surface scanner', 'AppSec sink scanner', 'Memory/context risk scanner', 'Capability map', 'Trust boundary map', 'Guardrail matrix', 'Policy packs', 'Remedy plan'].map((item) => <span className="pill neutral" key={item}>{item}</span>)}
           </div>
         </section>
 
-        <section className="grid grid-3" style={{ marginBottom: 32 }}>
-          <article className="glass-card panel">
-            <div className="panel-label"><Target size={12} style={{marginRight: 6}} /> Mission</div>
-            <h2 className="panel-title">Make agent risk visible.</h2>
-            <p className="muted">AI agents now call tools, touch records, and trigger workflow actions. <BrandWord /> helps teams see risky paths before deployment.</p>
-          </article>
-          <article className="glass-card panel">
-            <div className="panel-label"><Zap size={12} style={{marginRight: 6}} /> Approach</div>
-            <h2 className="panel-title">Deterministic first.</h2>
-            <p className="muted">The scanner owns findings, scoring, patches, and gate decisions. AI only explains the report and helps users understand what to fix.</p>
-          </article>
-          <article className="glass-card panel">
-            <div className="panel-label"><Users size={12} style={{marginRight: 6}} /> Scalability</div>
-            <h2 className="panel-title">Enterprise Ready.</h2>
-            <p className="muted">Built to handle complex monorepos, multiple project directories, and integrated CI/CD workflows for automated safety gating.</p>
-          </article>
-        </section>
-
-        <section className="glass-card panel" style={{ marginBottom: 32 }}>
-          <div className="panel-head">
-            <div>
-              <div className="panel-label">Developer introductions</div>
-              <h2 className="panel-title">Team behind the build.</h2>
-            </div>
-            <span className="pill neutral"><BrandWord /> V2</span>
-          </div>
+        <section className="glass-card panel">
+          <div className="panel-head"><div><div className="panel-label">Team</div><h2 className="panel-title">Built as a real product iteration.</h2></div></div>
           <div className="grid grid-3">
-            {people.map((person) => (
-              <article className="solid-card panel" key={person.name}>
-                <div className="profile-avatar" style={{ marginBottom: 14 }}>{person.name.split(' ').map((part) => part[0]).join('')}</div>
-                <h3 className="panel-title">{person.name}</h3>
-                <p className="faint" style={{ margin: '8px 0 12px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{person.role}</p>
-                <p className="muted" style={{ fontSize: '13px' }}>{person.body}</p>
-              </article>
-            ))}
+            {people.map(([name, role, body]) => <article className="glass-card panel team-card" key={name}><h3 className="panel-title">{name}</h3><p className="faint">{role}</p><p className="muted">{body}</p></article>)}
           </div>
-        </section>
-
-        <section className="glass-card panel centered" style={{ padding: '48px 22px' }}>
-          <div className="tech-label"><span className="pulse-dot" /> PRODUCT LOOP</div>
-          <h2 className="section-title" style={{ margin: '14px auto 16px' }}>Scan. Prove. Patch. Gate.</h2>
-          <p className="page-desc" style={{ margin: '0 auto', maxWidth: '700px' }}>The goal is not to replace security audits. The goal is to catch common AI-agent deployment risks earlier and make the first review sharper.</p>
         </section>
       </div>
-
-      <style jsx>{`
-        h3 { font-family: Newsreader, serif; }
-        .text-emerald { color: var(--emerald); }
-      `}</style>
     </main>
   );
 }

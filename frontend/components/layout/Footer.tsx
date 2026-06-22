@@ -9,7 +9,7 @@ export function Footer() {
           <div>
             <h2 className="footer-brand"><BrandWord /></h2>
             <p className="muted" style={{ maxWidth: 420 }}>
-              Deployment safety gate for AI agents. Scan risky behavior, prove attack paths, generate fix previews, and block unsafe releases.
+              AI application security assessment platform for code, APIs, dependencies, agent capabilities, memory risks, guardrails, policy, and remedy planning.
             </p>
           </div>
           <div>
@@ -28,8 +28,8 @@ export function Footer() {
           </div>
         </div>
         <div className="footer-bottom">
-          <span>Scan → Prove → Patch → Gate</span>
-          <span>Rule-based verdict. AI explains only.</span>
+          <span>Scan → Map → Guardrails → Remedy → Policy</span>
+          <span>Deterministic verdict. AI explains only.</span>
         </div>
       </div>
     </footer>

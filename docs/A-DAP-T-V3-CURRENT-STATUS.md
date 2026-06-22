@@ -427,3 +427,29 @@ Gate 6 release diff and stabilization: pending
 ```
 
 A-DAP-T v3 now has the backend foundation needed to understand project structure, dependency posture, API surface, context/memory poisoning risks, application-security sink patterns, capabilities, trust boundaries, guardrail coverage, selected policy posture, and prioritized remedy actions.
+
+
+## Gate 4A — Frontend v3 report architecture (first iteration)
+
+Status: implemented in first frontend pass.
+
+Updated frontend areas:
+
+- `/` landing page copy now reflects v3 positioning around AI application security, not only AI-agent deployment.
+- `/scanner` now includes a policy-pack selector and sends `policy_id` to demo, GitHub, and ZIP scan flows.
+- `/report/current` now renders a v3 report workspace with section navigation.
+- Report workspace sections now cover Overview, Surfaces, Dependencies, API Surface, Capabilities, Trust Boundaries, Guardrails, Policy, Remedy, Evidence, and legacy v2 artifacts.
+- `/methodology` now explains v3 security scoring, policy packs, deterministic scanning, and AI explanation boundaries.
+- `/about` now describes the v3 product direction and the move from scanner dashboard to AI application security review system.
+- DAP quick actions were updated toward release-review questions instead of generic report chat.
+
+Backend support added for frontend policy selection:
+
+- demo scan endpoints accept `policy_id` query parameter.
+- upload scan accepts `policy_id` query parameter.
+- GitHub scan request accepts `policy_id` in the JSON body.
+- scan summaries now include v3 score, v3 status, policy ID, and policy decision for profile/compare use.
+
+Architecture note:
+
+The frontend still keeps landing, compare, and profile available for separate polish passes. This gate primarily upgrades the report information architecture and scanner contract so teammate-specific visual work can happen on a stable v3 data model.

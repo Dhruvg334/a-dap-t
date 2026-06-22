@@ -7,17 +7,17 @@ import { apiFetch, formatApiError } from '@/lib/api';
 type Message = { role: 'user' | 'bot'; text: string };
 
 const quickQuestions = [
+  'Explain the v3 policy decision.',
   'What should I fix first?',
-  'Can I deploy this?',
-  'Prove the highest risk path.',
-  'Which patch should I use?'
+  'Which guardrails are weakest?',
+  'Summarize the release risk.'
 ];
 
 export function DapPanel({ report }: { report: ScanReport }) {
   const [question, setQuestion] = useState('');
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'bot', text: 'Ask DAP about this report. I can use findings, Prove Mode, patch previews, and the deployment gate.' }
+    { role: 'bot', text: 'Ask DAP about this report. I can use v3 score, policy blockers, guardrails, capabilities, remedy steps, and legacy proof artifacts.' }
   ]);
   const [loading, setLoading] = useState(false);
 
@@ -82,8 +82,8 @@ export function DapPanel({ report }: { report: ScanReport }) {
         <div className="glass-card panel dap-box">
           <div className="panel-head dap-drawer-head">
             <div>
-              <div className="panel-label">DAP assistant</div>
-              <h2 className="panel-title">Ask the report.</h2>
+              <div className="panel-label">DAP security reviewer</div>
+              <h2 className="panel-title">Ask the release review.</h2>
             </div>
             <button className="btn btn-secondary btn-small" type="button" onClick={() => setOpen(false)}>Close</button>
           </div>
@@ -98,7 +98,7 @@ export function DapPanel({ report }: { report: ScanReport }) {
             ))}
           </div>
           <form className="form-stack dap-form" onSubmit={onSubmit}>
-            <input className="input" value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="Ask about this scan..." />
+            <input className="input" value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="Ask about policy, guardrails, remedy, or evidence..." />
             <button className="btn btn-primary" type="submit" disabled={loading}>{loading ? 'Asking DAP...' : 'Ask DAP'}</button>
           </form>
         </div>
