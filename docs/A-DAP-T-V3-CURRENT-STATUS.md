@@ -210,6 +210,25 @@ Architecture decision:
 - `policy_evaluation` is the v3 release-policy signal.
 - `remedy_plan` is the v3 fix-sequencing artifact and should become the main fix UI in the frontend redesign.
 
+
+### Demo fixtures refresh — v3-aligned vulnerable and secured agents
+
+Implemented after Gate 3C:
+
+- upgraded `sample_agents/vulnerable-support-agent` from a tiny toy agent into a realistic insecure AI support-agent project
+- upgraded `sample_agents/secured-support-agent` into a safer companion project with the same product shape
+- added dependency manifests so dependency scanning is visible in demo scans
+- added FastAPI routes so API surface, auth, rate-limit, upload, and CORS checks are exercised
+- added memory/RAG-style files so context poisoning checks are exercised
+- added vulnerable AppSec sinks: SSRF, path traversal, unsafe archive extraction, dynamic SQL, command execution, unsafe deserialization, and weak JWT verification
+- added safer controls in the secured agent: environment secrets, pinned dependencies, lockfile, authentication, rate-limit hook, typed requests, CORS restriction, approval IDs, audit logs, URL allowlist, safe path handling, safe archive extraction, and source metadata
+- removed fixed demo score overrides so demo scores now come from the scanner output instead of hardcoded values
+
+Architecture decision:
+
+- demo agents should exercise the same v3 artifacts as real scans; otherwise the demo becomes misleading as the scanner grows.
+- old v2 demo graph/replay text remains for frontend compatibility, but score/status now stay scanner-driven.
+
 ---
 
 ## Current architecture decisions

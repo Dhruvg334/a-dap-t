@@ -85,10 +85,21 @@ def _contains_any(text: str, patterns: tuple[str, ...]) -> str:
     return ""
 
 
-def _has_control_nearby(lines: list[str], index: int) -> bool:
+def _is_comment_only(line: str, path: str) -> bool:
+    stripped = line.strip()
+    if not stripped:
+        return True
+    if path.endswith(".py"):
+        return stripped.startswith("#")
+    return stripped.startswith("//") or stripped.startswith("/*") or stripped.startswith("*")
+
+
+def _has_control_nearby(lines: list[str], index: int, path: str) -> bool:
     start = max(0, index - 8)
     end = min(len(lines), index + 10)
-    window = "\n".join(lines[start:end]).lower()
+    # Ignore comments while looking for controls. Comments that say “no source metadata”
+    # should not accidentally count as a source-metadata guardrail.
+    window = "\n".join(line for line in lines[start:end] if not _is_comment_only(line, path)).lower()
     return any(term in window for term in _SANITIZATION_TERMS)
 
 
@@ -103,10 +114,12 @@ def _scan_file(path: str, text: str) -> list[ContextRisk]:
     full_lower = text.lower()
 
     for index, line in enumerate(lines):
+        if _is_comment_only(line, path):
+            continue
         line_lower = line.lower()
 
         memory_pattern = next((p for p in _MEMORY_WRITE_PATTERNS if p.lower() in line_lower), "")
-        if memory_pattern and not _has_control_nearby(lines, index):
+        if memory_pattern and not _has_control_nearby(lines, index, path):
             risks.append(ContextRisk(
                 id=_risk_id(path, index + 1, "persistent_memory_without_sanitization"),
                 title="Persistent memory write lacks nearby sanitization/source controls",
@@ -125,7 +138,7 @@ def _scan_file(path: str, text: str) -> list[ContextRisk]:
             ))
 
         vector_pattern = next((p for p in _VECTOR_INGEST_PATTERNS if p.lower() in line_lower), "")
-        if vector_pattern and not _has_control_nearby(lines, index):
+        if vector_pattern and not _has_control_nearby(lines, index, path):
             risks.append(ContextRisk(
                 id=_risk_id(path, index + 1, "vector_ingestion_without_source_controls"),
                 title="Vector/RAG ingestion lacks clear source trust controls",
@@ -143,9 +156,10 @@ def _scan_file(path: str, text: str) -> list[ContextRisk]:
                 recommended_fix="Track source trust, document origin, ingestion time, and validation status before adding content to retrieval memory.",
             ))
 
-    retrieval_pattern = _contains_any(text, _RETRIEVAL_TO_PROMPT_PATTERNS)
-    has_tool_calls = _contains_any(text, _TOOL_CALL_TERMS)
-    has_sanitization = _contains_any(text, _SANITIZATION_TERMS)
+    non_comment_text = "\n".join(line for line in lines if not _is_comment_only(line, path))
+    retrieval_pattern = _contains_any(non_comment_text, _RETRIEVAL_TO_PROMPT_PATTERNS)
+    has_tool_calls = _contains_any(non_comment_text, _TOOL_CALL_TERMS)
+    has_sanitization = _contains_any(non_comment_text, _SANITIZATION_TERMS)
     if retrieval_pattern and has_tool_calls and not has_sanitization:
         line = _line_number(text, retrieval_pattern)
         risks.append(ContextRisk(

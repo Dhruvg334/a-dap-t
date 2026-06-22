@@ -175,12 +175,13 @@ def _scan_path_traversal(path: str, lines: list[str]) -> list[AppSecRisk]:
 
 def _scan_ssrf(path: str, lines: list[str]) -> list[AppSecRisk]:
     risks: list[AppSecRisk] = []
-    sinks = ("requests.get", "requests.post", "httpx.get", "httpx.post", "urllib.request", "fetch(", "axios.get", "axios.post", "got(", "request(")
+    sinks = ("requests.get", "requests.post", "requests.request", "httpx.get", "httpx.post", "httpx.request", "urllib.request", "fetch(", "axios.get", "axios.post", "got(", "request.get", "request.post")
     for index, line in enumerate(lines):
         if _is_comment_only(line, path):
             continue
         line_lower = line.lower()
-        if not any(sink in line_lower for sink in sinks):
+        matched_sink = _first_any(line_lower, sinks)
+        if not matched_sink:
             continue
         window = _window(lines, index, before=10, after=12)
         if not _looks_user_controlled(window, _URL_INPUT_TERMS) and not _has_any(line, _URL_INPUT_TERMS):
@@ -196,7 +197,7 @@ def _scan_ssrf(path: str, lines: list[str]) -> list[AppSecRisk]:
             cwe="CWE-918",
             evidence=line,
             source="request-controlled URL or webhook target",
-            sink="server-side outbound HTTP request",
+            sink=matched_sink,
             missing_control="URL allowlist and internal-network blocking",
             confidence="medium",
             why_it_matters="Server-side fetches to user-controlled URLs can be abused to reach internal services, cloud metadata endpoints, or private APIs.",

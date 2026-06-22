@@ -453,3 +453,41 @@ Remedy priority is deterministic:
 5. medium-risk hygiene improvements
 
 The remedy plan does not auto-apply code. It creates a clear release-fix sequence with validation steps so the user can fix, re-scan, and compare.
+
+
+## Demo scan fixture expectations
+
+The built-in demo scans are expected to exercise the v3 artifact set, not only the legacy v2 finding categories.
+
+The vulnerable demo should include visible examples across:
+
+- exposed secrets
+- dependency hygiene risk
+- unauthenticated/unthrottled API endpoints
+- weak CORS
+- unsafe file upload/path handling
+- SSRF
+- command execution
+- dynamic SQL construction
+- unsafe deserialization/archive extraction
+- persistent memory/context poisoning risk
+- broad tool capabilities without approval/audit controls
+- weak guardrail coverage
+- BLOCK policy outcome
+
+The secured demo should keep a comparable app shape while showing safer controls:
+
+- environment-based secrets
+- pinned dependencies and lockfile
+- authenticated/rate-limited endpoints
+- typed request models
+- restricted CORS
+- prompt screening
+- approval IDs and reviewer flow
+- structured audit logging
+- PII masking
+- source metadata for memory/RAG
+- URL allowlisting and private-network blocking
+- safe file path handling and safe archive extraction
+
+Demo scores should be scanner-driven. Do not hardcode demo safety scores unless a future test explicitly requires a fixed fixture snapshot.

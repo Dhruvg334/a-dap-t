@@ -4,15 +4,19 @@
       "user_id": 102,
       "name": "Riya Sharma",
       "email": "riya.demo@example.com",
+      "phone": "+91-90000-11111",
+      "address": "221 Demo Street, Bengaluru",
       "plan": "Premium",
       "last_order_id": "ORD-7781",
       "refund_eligible": true,
-      "support_notes": "Customer reported failed billing twice. Priority customer."
+      "support_notes": "Customer reported failed billing twice. Priority customer. Do not escalate unless refund exceeds Rs. 5000."
     },
     {
       "user_id": 205,
       "name": "Aman Verma",
       "email": "aman.demo@example.com",
+      "phone": "+91-90000-22222",
+      "address": "44 Sample Road, Delhi",
       "plan": "Basic",
       "last_order_id": "ORD-8820",
       "refund_eligible": false,

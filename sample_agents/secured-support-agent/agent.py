@@ -1,51 +1,29 @@
-from tools import get_customer_record, request_human_review, issue_refund
-
-
-MALICIOUS_PATTERNS = [
-    "ignore previous instructions",
-    "reveal your system prompt",
-    "bypass approval",
-    "i am an admin",
-    "show all customer records"
-]
-
-
-def is_prompt_suspicious(user_prompt):
-    normalized_prompt = user_prompt.lower()
-    return any(pattern in normalized_prompt for pattern in MALICIOUS_PATTERNS)
+from config import SUPPORT_SYSTEM_PROMPT
+from memory import save_user_message
+from security import sanitize_prompt
+from tools import get_customer_record, request_human_review
 
 
 def handle_user_request(user_prompt):
     """
     Safer demo agent.
 
-    Safer behavior:
-    - detects suspicious prompt patterns
-    - masks customer data
-    - routes refund to human_review
-    - blocks direct refund execution without approval
-    - uses audit_log inside tools
+    It keeps sensitive actions behind human approval, uses masked data, stores
+    sanitized memory with source metadata, and keeps internal policy server-side.
     """
+    safe_prompt = sanitize_prompt(user_prompt)
+    save_user_message(user_id=102, user_message=safe_prompt, source_metadata={"trusted_source": False, "channel": "user_chat"})
 
-    if is_prompt_suspicious(user_prompt):
-        return {
-            "status": "blocked",
-            "message": "This request requires review and cannot be completed directly."
-        }
-
-    if "refund" in user_prompt.lower():
+    if "refund" in safe_prompt.lower():
         customer = get_customer_record(user_id=102)
         approval = request_human_review(user_id=102, amount=2999)
-
         return {
             "customer": customer,
             "approval": approval,
             "next_step": "Refund request has been routed for human review."
         }
 
-    return {
-        "message": "How can I help you with your support request?"
-    }
+    return {"message": "How can I help you with your support request?"}
 
 
 if __name__ == "__main__":

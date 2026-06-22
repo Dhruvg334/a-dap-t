@@ -1,30 +1,22 @@
-\# Secured Support Agent
+# Secured Support Agent
 
+This is the safer companion project for the A-DAP-T demo scan.
 
+It keeps the same product shape as the vulnerable agent — FastAPI backend, tool-calling support agent, memory, customer data, dependency manifests, and file/webhook helpers — but adds visible security controls:
 
-This is a safer version of the demo AI support/refund agent.
+- secrets loaded from environment variables
+- typed request models and authenticated API dependencies
+- visible rate-limit checks
+- restricted CORS origins
+- prompt-injection screening before tool use
+- human approval IDs for refund/profile/email actions
+- tool allowlist and scoped action policy
+- structured audit logging with trace IDs
+- PII masking before agent responses
+- source metadata and sanitization before memory/RAG ingestion
+- URL allowlist and private-network blocking for webhooks
+- safe file path containment and safe archive extraction
+- pinned dependencies and npm lockfile
+- JWT verification with algorithm, issuer, audience, and expiration checks
 
-
-
-It demonstrates improved AI-agent design patterns:
-
-
-
-\- secrets loaded from environment variables
-
-\- suspicious prompt detection
-
-\- masked customer data
-
-\- refund routed to human review
-
-\- direct refund execution blocked without approval
-
-\- audit logging for risky actions
-
-\- safer handling of external email actions
-
-
-
-This folder is used by A-DAP-T to show before/after risk reduction.
-
+This is still a demo fixture, not a production system, but it gives A-DAP-T realistic secure patterns to recognize.

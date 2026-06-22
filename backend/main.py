@@ -159,9 +159,7 @@ async def scan_vulnerable_demo(
         "Keep system prompts server-side",
     ]
 
-    # Demo scores are fixed before AI enrichment so Gemini summaries match the displayed report.
-    result["safety_score"] = 32
-    result["status"] = compute_status(32)
+    # Keep demo scoring scanner-driven now that v3 artifacts cover API, dependency, AppSec, and context risks.
     result = attach_v2_report_artifacts(result)
     result = enrich_scan_result_with_ai(result)
     result = await _save_if_requested(result, user, save_report)
@@ -201,9 +199,7 @@ async def scan_secured_demo(
         "Review approval logs periodically",
     ]
 
-    # Demo scores are fixed before AI enrichment so Gemini summaries match the displayed report.
-    result["safety_score"] = 94
-    result["status"] = compute_status(94)
+    # Keep demo scoring scanner-driven now that v3 artifacts cover API, dependency, AppSec, and context risks.
     result = attach_v2_report_artifacts(result)
     result = enrich_scan_result_with_ai(result)
     result = await _save_if_requested(result, user, save_report)
