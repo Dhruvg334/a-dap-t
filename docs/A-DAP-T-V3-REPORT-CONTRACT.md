@@ -353,3 +353,103 @@ Initial controls:
 Each control includes coverage percentage, relevant instance count, protected instance count, risk instance count, evidence, related artifact IDs, and recommended action.
 
 Important: coverage is static evidence coverage, not runtime proof. A control is marked `not_applicable` when A-DAP-T does not find relevant instances for that control, so projects are not penalized for controls that are not relevant to their detected surface.
+
+## `policy_evaluation`
+
+Gate 3C adds policy-pack evaluation. Policy evaluation converts the guardrail matrix and v3 risk artifacts into a selected release policy decision.
+
+```json
+{
+  "policy_evaluation": {
+    "selected_policy": {
+      "policy_id": "agent_with_tools",
+      "label": "AI Agent with Tools",
+      "minimum_safety_score": 80,
+      "required_controls": ["authentication", "authorization", "tool_allowlist", "human_approval"]
+    },
+    "available_policies": [],
+    "decision": "BLOCK",
+    "summary": "Release is blocked under the selected v3 policy. Fix hard blockers and re-scan.",
+    "minimum_safety_score": 80,
+    "safety_score": 72,
+    "score_passed": false,
+    "v3_gate_score": 58,
+    "required_controls_total": 8,
+    "required_controls_passed": 4,
+    "required_controls_missing": 4,
+    "passed_controls": [],
+    "review_controls": [],
+    "missing_required_controls": [],
+    "hard_blockers": [],
+    "blocker_count": 2,
+    "review_count": 3,
+    "scanner_version": "v3-policy-packs-1",
+    "notes": []
+  }
+}
+```
+
+Initial policy packs:
+
+- `general_ai_app`
+- `agent_with_tools`
+- `ai_coding_agent`
+- `customer_support_agent`
+- `data_sensitive_app`
+- `public_saas_api`
+
+Policy packs are deterministic. They do not ask AI to decide release posture. They read `guardrail_matrix`, `appsec_risks`, `context_poisoning_risks`, `dependency_risks`, and the existing safety score.
+
+## `remedy_plan`
+
+Gate 3C also adds a comprehensive remedy plan. This is the main v3 fix-sequencing artifact.
+
+```json
+{
+  "remedy_plan": {
+    "summary": {
+      "total_steps": 4,
+      "critical_steps": 1,
+      "high_steps": 2,
+      "medium_steps": 1,
+      "policy_decision": "BLOCK",
+      "top_priority": "Add human approval gates for high-impact actions"
+    },
+    "steps": [
+      {
+        "id": "remedy_abc123",
+        "priority": 1,
+        "priority_score": 106,
+        "source": "guardrail_matrix",
+        "title": "Add human approval gates for high-impact actions",
+        "severity": "Critical",
+        "control_id": "human_approval",
+        "affected_capabilities": [],
+        "related_artifacts": [],
+        "risk_instances": 3,
+        "recommended_fix": "Require approval IDs, reviewer identity, and explicit confirmation before write or external actions.",
+        "why_it_matters": "Human approval is weak across 3 visible risk instances.",
+        "estimated_effort": "medium",
+        "expected_gate_impact": "Can remove a hard policy blocker and may move the release from BLOCK to REVIEW.",
+        "validation_steps": [],
+        "evidence": [],
+        "manual_review_required": true
+      }
+    ],
+    "release_path": [],
+    "summary_text": "Generated prioritized remedy actions.",
+    "scanner_version": "v3-remedy-plan-1",
+    "notes": []
+  }
+}
+```
+
+Remedy priority is deterministic:
+
+1. v3 policy hard blockers
+2. critical/high guardrail gaps
+3. high-risk capability control gaps
+4. remaining required controls
+5. medium-risk hygiene improvements
+
+The remedy plan does not auto-apply code. It creates a clear release-fix sequence with validation steps so the user can fix, re-scan, and compare.

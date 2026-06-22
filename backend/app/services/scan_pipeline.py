@@ -20,6 +20,8 @@ from app.guardrails import build_guardrail_matrix
 from app.inventory.file_inventory import build_file_inventory, build_project_metadata
 from app.inventory.framework_detector import detect_frameworks
 from app.patches.patch_generator import build_patch_previews
+from app.policies import evaluate_policy_pack
+from app.remedy import build_remedy_plan
 from app.risk.scoring import (
     CATEGORY_TO_SCHEMA_KEY,
     compute_category_score,
@@ -258,6 +260,8 @@ def attach_v3_project_context(
         capability_map=capability_map,
         trust_boundaries=trust_boundaries,
     )
+    policy_evaluation = evaluate_policy_pack({**result, "guardrail_matrix": guardrail_matrix, "appsec_risks": appsec_risks, "context_poisoning_risks": context_poisoning_risks, "dependency_risks": dependency_risks})
+    remedy_plan = build_remedy_plan({**result, "guardrail_matrix": guardrail_matrix, "capability_map": capability_map}, policy_evaluation)
     project_metadata = build_project_metadata(
         project_name=project_name,
         scan_type=scan_type,
@@ -278,6 +282,8 @@ def attach_v3_project_context(
     updated["capability_map"] = capability_map
     updated["trust_boundaries"] = trust_boundaries
     updated["guardrail_matrix"] = guardrail_matrix
+    updated["policy_evaluation"] = policy_evaluation
+    updated["remedy_plan"] = remedy_plan
     return updated
 
 

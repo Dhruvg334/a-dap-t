@@ -427,6 +427,64 @@ class GuardrailMatrixReportSchema(BaseModel):
     scanner_version: str = ""
     notes: list[str] = Field(default_factory=list)
 
+
+
+class PolicyEvaluationSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    selected_policy: dict[str, Any] = Field(default_factory=dict)
+    available_policies: list[dict[str, Any]] = Field(default_factory=list)
+    decision: str = "REVIEW"
+    summary: str = ""
+    minimum_safety_score: int = 75
+    safety_score: int = 0
+    score_passed: bool = False
+    v3_gate_score: int = 0
+    required_controls_total: int = 0
+    required_controls_passed: int = 0
+    required_controls_missing: int = 0
+    passed_controls: list[str] = Field(default_factory=list)
+    review_controls: list[str] = Field(default_factory=list)
+    missing_required_controls: list[dict[str, Any]] = Field(default_factory=list)
+    hard_blockers: list[dict[str, Any]] = Field(default_factory=list)
+    blocker_count: int = 0
+    review_count: int = 0
+    scanner_version: str = ""
+    notes: list[str] = Field(default_factory=list)
+
+
+class RemedyPlanStepSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    id: str
+    priority: int = 0
+    priority_score: int = 0
+    source: str = ""
+    title: str
+    severity: str = "Medium"
+    control_id: str = ""
+    affected_capabilities: list[str] = Field(default_factory=list)
+    related_artifacts: list[str] = Field(default_factory=list)
+    risk_instances: int = 0
+    recommended_fix: str = ""
+    why_it_matters: str = ""
+    estimated_effort: str = "medium"
+    expected_gate_impact: str = ""
+    validation_steps: list[str] = Field(default_factory=list)
+    evidence: list[dict[str, Any]] = Field(default_factory=list)
+    manual_review_required: bool = True
+
+
+class RemedyPlanReportSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    summary: dict[str, Any] = Field(default_factory=dict)
+    steps: list[RemedyPlanStepSchema] = Field(default_factory=list)
+    release_path: list[str] = Field(default_factory=list)
+    summary_text: str = ""
+    scanner_version: str = ""
+    notes: list[str] = Field(default_factory=list)
+
 class ScanResultSchema(BaseModel):
     model_config = ConfigDict(extra="allow")
 
@@ -441,6 +499,8 @@ class ScanResultSchema(BaseModel):
     capability_map: CapabilityMapSchema | None = None
     trust_boundaries: TrustBoundaryReportSchema | None = None
     guardrail_matrix: GuardrailMatrixReportSchema | None = None
+    policy_evaluation: PolicyEvaluationSchema | None = None
+    remedy_plan: RemedyPlanReportSchema | None = None
 
     project_name:          str
     scan_type:             str
