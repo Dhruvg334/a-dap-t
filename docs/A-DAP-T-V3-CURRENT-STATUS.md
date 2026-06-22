@@ -355,3 +355,34 @@ Gate 6 release diff and stabilization: pending
 ```
 
 A-DAP-T v3 currently has the backend foundation needed to understand the scanned project structure and dependency posture. The next major step is to add API surface and rate-limit scanning.
+
+---
+
+## Gate 2B — API Surface + Memory/Context Poisoning Foundation
+
+Implemented in the current patch:
+
+- `api_surface` report artifact
+- FastAPI route extraction
+- Express route extraction
+- Next.js API route detection
+- Missing authentication heuristic
+- Missing rate-limit heuristic
+- Wildcard/weak CORS heuristic
+- Upload endpoint validation heuristic
+- LLM/API-cost endpoint tagging
+- `context_poisoning_risks` report artifact
+- Persistent memory write risk detection
+- Vector/RAG ingestion source-control detection
+- Retrieved-context-to-tool-decision risk detection
+
+Architecture decision:
+
+- These scanners remain deterministic and evidence-based.
+- They do not execute code or call endpoints.
+- They intentionally report missing visible controls, not runtime-proof vulnerabilities.
+- They are attached as separate v3 artifacts rather than being forced into the old v2 score model.
+
+Next planned backend gate:
+
+- Gate 2C: AppSec scanner subset for missing auth, path traversal, unsafe file upload, SSRF, shell/RCE, JWT/auth config, SQLi patterns, and basic XSS patterns.

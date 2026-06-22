@@ -228,6 +228,84 @@ class DependencyRiskReportSchema(BaseModel):
     notes: list[str] = Field(default_factory=list)
 
 
+
+
+class ApiEndpointSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    id: str
+    method: str
+    path: str
+    framework: str
+    file: str
+    line: int
+    handler: str = ""
+    auth_status: str = "unknown"
+    rate_limit_status: str = "unknown"
+    cors_status: str = "unknown"
+    request_body_status: str = "unknown"
+    risk_level: str = "low"
+    tags: list[str] | tuple[str, ...] = Field(default_factory=list)
+    evidence: str = ""
+
+
+class ApiRiskSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    id: str
+    title: str
+    severity: str
+    risk_type: str
+    endpoint_id: str
+    method: str
+    path: str
+    framework: str
+    file: str
+    line: int
+    evidence: str = ""
+    why_it_matters: str
+    recommended_fix: str
+    related_control: str = ""
+
+
+class ApiSurfaceReportSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    summary: dict[str, Any] = Field(default_factory=dict)
+    endpoints: list[ApiEndpointSchema] = Field(default_factory=list)
+    risks: list[ApiRiskSchema] = Field(default_factory=list)
+    scanner_version: str = ""
+    notes: list[str] = Field(default_factory=list)
+
+
+
+
+class ContextPoisoningRiskSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    id: str
+    title: str
+    severity: str
+    risk_type: str
+    file: str
+    line: int
+    evidence: str = ""
+    source: str = ""
+    sink: str = ""
+    missing_control: str = ""
+    why_it_matters: str
+    recommended_fix: str
+
+
+class ContextPoisoningReportSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    summary: dict[str, Any] = Field(default_factory=dict)
+    risks: list[ContextPoisoningRiskSchema] = Field(default_factory=list)
+    scanner_version: str = ""
+    notes: list[str] = Field(default_factory=list)
+
+
 class ScanResultSchema(BaseModel):
     model_config = ConfigDict(extra="allow")
 
@@ -236,6 +314,8 @@ class ScanResultSchema(BaseModel):
     file_inventory: FileInventorySchema | None = None
     framework_detection: FrameworkDetectionSchema | None = None
     dependency_risks: DependencyRiskReportSchema | None = None
+    api_surface: ApiSurfaceReportSchema | None = None
+    context_poisoning_risks: ContextPoisoningReportSchema | None = None
 
     project_name:          str
     scan_type:             str

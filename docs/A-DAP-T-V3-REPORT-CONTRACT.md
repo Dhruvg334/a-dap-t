@@ -134,3 +134,64 @@ v3 adds a local dependency posture artifact:
 The first dependency pass is intentionally local-first. It does not perform network CVE lookup yet. It detects dependency hygiene and supply-chain signals such as unpinned versions, direct source dependencies, invalid manifests, missing npm lockfiles, and suspicious package names.
 
 Planned later enhancement: OSV.dev vulnerability lookup once the local parser is stable.
+
+## `api_surface`
+
+Gate 2B adds a deterministic API surface scanner. It currently extracts supported route patterns from FastAPI, Express, and Next.js API routes. It does not execute code or call the endpoints.
+
+```json
+{
+  "api_surface": {
+    "summary": {
+      "total_endpoints": 3,
+      "frameworks": ["fastapi", "nextjs_api_route"],
+      "methods": {"POST": 2, "GET": 1},
+      "auth_missing": 1,
+      "rate_limit_missing": 2,
+      "risky_mutations": 1,
+      "risk_count": 2
+    },
+    "endpoints": [],
+    "risks": [],
+    "scanner_version": "v3-api-surface-1",
+    "notes": []
+  }
+}
+```
+
+Initial API risk types:
+
+- `missing_auth`
+- `missing_rate_limit`
+- `weak_cors`
+- `unsafe_file_upload`
+
+The scanner is conservative. It looks for explicit nearby control hints and reports uncertainty as a review signal instead of pretending to fully prove runtime behavior.
+
+## `context_poisoning_risks`
+
+Gate 2B also adds the first memory/context poisoning scanner. This checks for common persistent memory and RAG patterns where untrusted content can be saved or retrieved into future agent context without visible source/sanitization controls.
+
+```json
+{
+  "context_poisoning_risks": {
+    "summary": {
+      "risk_count": 2,
+      "severity_counts": {"High": 1, "Medium": 1},
+      "risk_types": {
+        "persistent_memory_without_sanitization": 1,
+        "retrieved_context_can_influence_tool_use": 1
+      }
+    },
+    "risks": [],
+    "scanner_version": "v3-context-poisoning-1",
+    "notes": []
+  }
+}
+```
+
+Initial context risk types:
+
+- `persistent_memory_without_sanitization`
+- `vector_ingestion_without_source_controls`
+- `retrieved_context_can_influence_tool_use`
