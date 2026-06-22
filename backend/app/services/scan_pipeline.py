@@ -10,6 +10,7 @@ import app.scanners.tool_scanner as tool_scanner
 from app.ai.ai_enrichment import enrich_scan_result_with_ai
 from app.attack_simulator.simulator import build_attack_simulations
 from app.deployment_gate.gate_policy import build_deployment_gate
+from app.dependencies.dependency_scanner import build_dependency_risks
 from app.graph import build_upload_graph
 from app.inventory.file_inventory import build_file_inventory, build_project_metadata
 from app.inventory.framework_detector import detect_frameworks
@@ -226,6 +227,7 @@ def attach_v3_project_context(
     """
     file_inventory = build_file_inventory(files, project_name=project_name)
     framework_detection = detect_frameworks(files)
+    dependency_risks = build_dependency_risks(files)
     project_metadata = build_project_metadata(
         project_name=project_name,
         scan_type=scan_type,
@@ -239,6 +241,7 @@ def attach_v3_project_context(
     updated["project_metadata"] = project_metadata
     updated["file_inventory"] = file_inventory
     updated["framework_detection"] = framework_detection
+    updated["dependency_risks"] = dependency_risks
     return updated
 
 

@@ -103,3 +103,34 @@ These fields will be added after the foundation stabilizes:
 - `guardrail_matrix`
 - `policy_pack`
 - `remedy_plan`
+
+---
+
+## Gate 2A: Dependency risk artifact
+
+v3 adds a local dependency posture artifact:
+
+```json
+{
+  "dependency_risks": {
+    "summary": {
+      "manifests_found": 2,
+      "total_dependencies": 42,
+      "risky_dependencies": 3,
+      "exactly_pinned_dependencies": 30,
+      "ecosystems": ["npm", "pip"],
+      "has_lockfiles": true
+    },
+    "manifests": [],
+    "dependencies": [],
+    "risks": [],
+    "truncated": false,
+    "scanner_version": "v3-local-dependency-hygiene-1",
+    "notes": []
+  }
+}
+```
+
+The first dependency pass is intentionally local-first. It does not perform network CVE lookup yet. It detects dependency hygiene and supply-chain signals such as unpinned versions, direct source dependencies, invalid manifests, missing npm lockfiles, and suspicious package names.
+
+Planned later enhancement: OSV.dev vulnerability lookup once the local parser is stable.
