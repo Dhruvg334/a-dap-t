@@ -399,6 +399,34 @@ class TrustBoundaryReportSchema(BaseModel):
     scanner_version: str = ""
     notes: list[str] = Field(default_factory=list)
 
+
+
+class GuardrailControlSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    control_id: str
+    label: str
+    category: str = "security"
+    status: str = "unknown"
+    coverage_percent: int | None = None
+    relevant_instances: int = 0
+    protected_instances: int = 0
+    risk_instances: int = 0
+    risk_level: str = "info"
+    evidence: list[dict[str, Any]] = Field(default_factory=list)
+    recommended_action: str = ""
+    related_artifacts: list[str] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)
+
+
+class GuardrailMatrixReportSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    summary: dict[str, Any] = Field(default_factory=dict)
+    controls: list[GuardrailControlSchema] = Field(default_factory=list)
+    scanner_version: str = ""
+    notes: list[str] = Field(default_factory=list)
+
 class ScanResultSchema(BaseModel):
     model_config = ConfigDict(extra="allow")
 
@@ -412,6 +440,7 @@ class ScanResultSchema(BaseModel):
     appsec_risks: AppSecRiskReportSchema | None = None
     capability_map: CapabilityMapSchema | None = None
     trust_boundaries: TrustBoundaryReportSchema | None = None
+    guardrail_matrix: GuardrailMatrixReportSchema | None = None
 
     project_name:          str
     scan_type:             str

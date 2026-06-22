@@ -306,3 +306,50 @@ Initial boundary types include:
 - high-impact AppSec sink types such as SSRF, command execution, path traversal, unsafe archive extraction, and SQL injection
 
 The trust boundary map is intentionally derived from existing deterministic artifacts. It should be treated as a security review map, not runtime exploit proof.
+
+## `guardrail_matrix`
+
+Gate 3B adds the guardrail coverage matrix. This artifact converts individual risks and capabilities into a control-coverage view.
+
+```json
+{
+  "guardrail_matrix": {
+    "summary": {
+      "total_controls": 16,
+      "strong_controls": 3,
+      "partial_controls": 4,
+      "weak_controls": 5,
+      "not_applicable_controls": 4,
+      "risky_controls": 7,
+      "critical_control_gaps": 2,
+      "weak_trust_boundaries": 3
+    },
+    "controls": [],
+    "scanner_version": "v3-guardrail-matrix-1",
+    "notes": []
+  }
+}
+```
+
+Initial controls:
+
+- `authentication`
+- `authorization`
+- `rate_limiting`
+- `cors_policy`
+- `file_upload_safety`
+- `input_validation`
+- `output_encoding`
+- `prompt_injection_defense`
+- `tool_allowlist`
+- `human_approval`
+- `audit_logging`
+- `secrets_management`
+- `dependency_security`
+- `memory_context_isolation`
+- `pii_masking`
+- `command_execution_sandboxing`
+
+Each control includes coverage percentage, relevant instance count, protected instance count, risk instance count, evidence, related artifact IDs, and recommended action.
+
+Important: coverage is static evidence coverage, not runtime proof. A control is marked `not_applicable` when A-DAP-T does not find relevant instances for that control, so projects are not penalized for controls that are not relevant to their detected surface.

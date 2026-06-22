@@ -353,7 +353,8 @@ Gate 2A dependency foundation: complete
 Gate 2B API surface + context poisoning scanner: complete
 Gate 2C AppSec subset: complete
 Gate 3A capability map + trust boundaries: complete
-Gate 3 intelligence artifacts: in progress
+Gate 3B guardrail coverage matrix: complete
+Gate 3C policy packs and remedy plan: pending
 Gate 4 frontend redesign: pending
 Gate 5 DAP Security Reviewer v2: pending
 Gate 6 release diff and stabilization: pending
@@ -440,5 +441,46 @@ Architecture decision:
 
 Next planned backend gate:
 
-- Gate 3B: Guardrail coverage matrix.
-- Gate 3C: Policy packs and remedy plan.
+- Gate 3C: Policy packs and comprehensive remedy plan.
+
+## Gate 3B — Guardrail Coverage Matrix
+
+Implemented in the current patch:
+
+- `guardrail_matrix` report artifact
+- control coverage calculation across API security, access control, input handling, output handling, AI security, agent controls, observability, secrets, supply chain, data protection, and execution safety
+- relevant/protected/risk instance counts per control
+- coverage status values: `strong`, `partial`, `weak`, `not_applicable`, and `unknown`
+- evidence snippets and related artifact IDs per control
+- recommended action per guardrail
+- critical control gap counting for authentication, authorization, human approval, tool allowlisting, memory/context isolation, and command execution sandboxing
+
+Controls currently covered:
+
+- authentication
+- authorization
+- rate limiting
+- CORS policy
+- file upload safety
+- input validation
+- output encoding
+- prompt injection defense
+- tool allowlist/scope restriction
+- human approval
+- audit logging
+- secrets management
+- dependency security
+- memory/context isolation
+- PII masking
+- command execution sandboxing
+
+Architecture decision:
+
+- The guardrail matrix is a synthesis layer over existing deterministic artifacts. It should not independently invent risks.
+- Coverage means visible static evidence coverage, not runtime assurance.
+- Controls with no relevant detected instances are marked `not_applicable`, not weak. This avoids making A-DAP-T noisy on projects where a control is irrelevant.
+- v3 scoring and policy packs should consume this matrix later; the old v2 scoring model remains unchanged for now.
+
+Next planned backend gate:
+
+- Gate 3C: Policy packs and comprehensive remedy plan.

@@ -16,6 +16,7 @@ from app.attack_simulator.simulator import build_attack_simulations
 from app.deployment_gate.gate_policy import build_deployment_gate
 from app.dependencies.dependency_scanner import build_dependency_risks
 from app.graph import build_upload_graph
+from app.guardrails import build_guardrail_matrix
 from app.inventory.file_inventory import build_file_inventory, build_project_metadata
 from app.inventory.framework_detector import detect_frameworks
 from app.patches.patch_generator import build_patch_previews
@@ -248,6 +249,15 @@ def attach_v3_project_context(
         appsec_risks=appsec_risks,
         context_poisoning_risks=context_poisoning_risks,
     )
+    guardrail_matrix = build_guardrail_matrix(
+        findings=result.get("findings", []),
+        dependency_risks=dependency_risks,
+        api_surface=api_surface,
+        context_poisoning_risks=context_poisoning_risks,
+        appsec_risks=appsec_risks,
+        capability_map=capability_map,
+        trust_boundaries=trust_boundaries,
+    )
     project_metadata = build_project_metadata(
         project_name=project_name,
         scan_type=scan_type,
@@ -267,6 +277,7 @@ def attach_v3_project_context(
     updated["appsec_risks"] = appsec_risks
     updated["capability_map"] = capability_map
     updated["trust_boundaries"] = trust_boundaries
+    updated["guardrail_matrix"] = guardrail_matrix
     return updated
 
 
