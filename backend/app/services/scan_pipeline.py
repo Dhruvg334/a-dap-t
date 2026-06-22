@@ -11,6 +11,8 @@ from app.ai.ai_enrichment import enrich_scan_result_with_ai
 from app.attack_simulator.simulator import build_attack_simulations
 from app.deployment_gate.gate_policy import build_deployment_gate
 from app.graph import build_upload_graph
+from app.inventory.file_inventory import build_file_inventory, build_project_metadata
+from app.inventory.framework_detector import detect_frameworks
 from app.patches.patch_generator import build_patch_previews
 from app.risk.scoring import (
     CATEGORY_TO_SCHEMA_KEY,
@@ -199,6 +201,47 @@ def build_attack_replay(findings: list[Finding]) -> list[str]:
     return replay
 
 
+def _source_type_for_scan(scan_type: str) -> str:
+    if scan_type.startswith("demo"):
+        return "demo"
+    if scan_type == "github_repo":
+        return "github"
+    if scan_type == "upload":
+        return "zip_upload"
+    return scan_type or "unknown"
+
+
+def attach_v3_project_context(
+    result: dict,
+    *,
+    files: dict[str, str],
+    project_name: str,
+    scan_type: str,
+) -> dict:
+    """Attach the v3 project-understanding layer without changing scanner verdicts.
+
+    v3 starts by making A-DAP-T understand the project shape before deeper
+    checks run. This layer is deterministic and cheap, so it is safe to include
+    in every scan response and saved report.
+    """
+    file_inventory = build_file_inventory(files, project_name=project_name)
+    framework_detection = detect_frameworks(files)
+    project_metadata = build_project_metadata(
+        project_name=project_name,
+        scan_type=scan_type,
+        source_type=_source_type_for_scan(scan_type),
+        file_inventory=file_inventory,
+        framework_detection=framework_detection,
+    )
+
+    updated = dict(result)
+    updated["schema_version"] = "3.0"
+    updated["project_metadata"] = project_metadata
+    updated["file_inventory"] = file_inventory
+    updated["framework_detection"] = framework_detection
+    return updated
+
+
 def attach_v2_report_artifacts(result: dict) -> dict:
     """Attach V2 proof, patch, and gate fields derived from deterministic findings."""
     updated = dict(result)
@@ -236,6 +279,12 @@ def build_scan_result(
         "remediation_checklist": build_remediation_checklist(findings),
     }
 
+    result = attach_v3_project_context(
+        result,
+        files=files,
+        project_name=project_name,
+        scan_type=scan_type,
+    )
     result = attach_v2_report_artifacts(result)
 
     if extra_metadata:

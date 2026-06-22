@@ -131,8 +131,65 @@ class DeploymentGateSchema(BaseModel):
     severity_counts: dict[str, int] = Field(default_factory=dict)
 
 
+class ProjectMetadataSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    project_name: str = ""
+    scan_type: str = ""
+    source_type: str = "unknown"
+    detected_languages: list[str] = Field(default_factory=list)
+    detected_frameworks: list[str] = Field(default_factory=list)
+    package_managers: list[str] = Field(default_factory=list)
+    total_files_scanned: int = 0
+    total_lines_scanned: int = 0
+
+
+class FileInventoryItemSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    path: str
+    extension: str = ""
+    language: str = "unknown"
+    size_bytes: int = 0
+    line_count: int = 0
+    role: str = "application_code"
+
+
+class FileInventorySchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    project_name: str = ""
+    total_files: int = 0
+    supported_files: int = 0
+    ignored_files: int = 0
+    total_lines: int = 0
+    total_size_bytes: int = 0
+    languages: dict[str, int] = Field(default_factory=dict)
+    roles: dict[str, int] = Field(default_factory=dict)
+    extensions: dict[str, int] = Field(default_factory=dict)
+    package_managers: list[str] = Field(default_factory=list)
+    files: list[FileInventoryItemSchema] = Field(default_factory=list)
+    truncated: bool = False
+
+
+class FrameworkDetectionSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    frontend: list[str] = Field(default_factory=list)
+    backend: list[str] = Field(default_factory=list)
+    agent_frameworks: list[str] = Field(default_factory=list)
+    package_managers: list[str] = Field(default_factory=list)
+    deployment: list[str] = Field(default_factory=list)
+    evidence: list[dict[str, str]] = Field(default_factory=list)
+
+
 class ScanResultSchema(BaseModel):
     model_config = ConfigDict(extra="allow")
+
+    schema_version: str = "2.0"
+    project_metadata: ProjectMetadataSchema | None = None
+    file_inventory: FileInventorySchema | None = None
+    framework_detection: FrameworkDetectionSchema | None = None
 
     project_name:          str
     scan_type:             str
