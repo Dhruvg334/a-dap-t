@@ -7,8 +7,8 @@ import { Footer } from '@/components/layout/Footer';
 import { PendoInitializer } from '@/components/pendo/PendoInitializer';
 
 export const metadata: Metadata = {
-  title: 'A-DAP-T | AI Agent Deployment Safety Gate',
-  description: 'Scan, prove, patch, re-scan, and gate unsafe AI-agent deployments.',
+  title: 'A-DAP-T V3 | AI Application Security Review',
+  description: 'Review AI applications before production across code, dependencies, APIs, capabilities, guardrails, policy, and remedies.',
   icons: { icon: '/favicon.svg' },
 };
 
