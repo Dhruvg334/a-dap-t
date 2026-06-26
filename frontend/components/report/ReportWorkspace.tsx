@@ -113,10 +113,11 @@ export function ReportWorkspace({ report }: { report: ScanReport }) {
             <h1>{projectName}</h1>
             <p>Policy: {text(report.policy_evaluation?.selected_policy?.label || report.policy_id, 'General AI App')} · Source: {text(report.scan_type)} · Static text scan</p>
           </div>
-          <div className="report-score-stack">
-            <AdaptBadge tone={statusTone(currentDecision)}>{String(currentDecision).toUpperCase()}</AdaptBadge>
+          <div className="report-score-card">
+            <span className="report-score-label">Overall score</span>
             <strong>{score}</strong>
-            <span>Security score</span>
+            <small>Security score</small>
+            <AdaptBadge tone={statusTone(currentDecision)}>{String(currentDecision).toUpperCase()}</AdaptBadge>
           </div>
           <div className="report-hero-actions">
             <AdaptButton tone="secondary" onClick={() => downloadText(`${projectName}-adapt-report.json`, JSON.stringify(report, null, 2), 'application/json')}><Download size={14} />Export</AdaptButton>
