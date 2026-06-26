@@ -7,7 +7,7 @@ import { apiFetch, formatApiError } from '@/lib/api';
 type Message = { role: 'user' | 'bot'; text: string };
 
 const quickQuestions = [
-  'Explain the v3 policy decision.',
+  'Explain the policy decision.',
   'What should I fix first?',
   'Which guardrails are weakest?',
   'Summarize the release risk.'
@@ -17,7 +17,7 @@ export function DapPanel({ report }: { report: ScanReport }) {
   const [question, setQuestion] = useState('');
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'bot', text: 'Ask DAP about this report. I can use v3 score, policy blockers, guardrails, capabilities, remedy steps, and legacy proof artifacts.' }
+    { role: 'bot', text: 'Ask DAP about this report. I can use the security score, policy blockers, guardrails, capabilities, remedy steps, and proof artifacts.' }
   ]);
   const [loading, setLoading] = useState(false);
 

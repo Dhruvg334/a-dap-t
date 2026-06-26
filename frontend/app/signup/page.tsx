@@ -10,8 +10,8 @@ import { BrandWord } from '@/components/ui/BrandWord';
 type LoginResponse = { idToken?: string; refreshToken?: string; expiresIn?: string; localId?: string; email?: string; displayName?: string };
 
 const accessReasons = [
-  ['Run scans', 'Use protected demo, GitHub, and ZIP scan endpoints with v3 policy packs.'],
-  ['Save history', 'Reopen previous v3 reports and continue review later.'],
+  ['Run scans', 'Use protected demo, GitHub, and ZIP scan endpoints with policy packs.'],
+  ['Save history', 'Reopen previous reports and continue review later.'],
   ['Ask DAP', 'Use the current report context for release-review guidance.'],
   ['Gate deploys', 'Review policy decisions, guardrail gaps, and remedy steps.'],
 ];
@@ -96,7 +96,7 @@ export default function SignUpPage() {
         <div className="glass-card auth-card shimmer">
           <div className="tech-label"><span className="pulse-dot" /> CREATE ACCESS</div>
           <h1>Start scanning.</h1>
-          <p className="muted">Create an account to run protected scans, save reports, and review v3 security artifacts.</p>
+          <p className="muted">Create an account to run protected scans, save reports, and review security artifacts.</p>
           <form className="form-stack" onSubmit={submit} style={{ marginTop: 22 }}>
             {error && <div className="form-error">{error}</div>}
             <label className="form-row">

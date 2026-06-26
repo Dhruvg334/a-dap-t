@@ -80,7 +80,7 @@ export default function SignInPage() {
         <div className="glass-card auth-card shimmer">
           <div className="tech-label"><span className="pulse-dot" /> SECURE SESSION</div>
           <h1>Log in.</h1>
-          <p className="muted">Access scanner, saved v3 reports, DAP, policy evaluation, and remedy planning.</p>
+          <p className="muted">Access scanner, saved reports, DAP, policy evaluation, and remedy planning.</p>
           <form className="form-stack" onSubmit={submit} style={{ marginTop: 22 }}>
             {error && <div className="form-error">{error}</div>}
             {message && <div className="form-success">{message}</div>}
