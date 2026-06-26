@@ -22,12 +22,12 @@ const scanOptions: Array<{ id: ScanMode; title: string; label: string; body: str
 ];
 
 const policyOptions: Array<{ id: PolicyId; title: string; body: string; tag: string }> = [
-  { id: 'general_ai_app', title: 'General AI App', body: 'Balanced policy for AI apps with APIs, dependencies, and baseline guardrails.', tag: 'Default' },
-  { id: 'agent_with_tools', title: 'Agent with Tools', body: 'Stricter checks for tool allowlists, approvals, logs, and external-effect actions.', tag: 'Agent' },
-  { id: 'ai_coding_agent', title: 'AI Coding Agent', body: 'Focuses on code execution, repository changes, dependency drift, and sandboxing.', tag: 'Coding' },
-  { id: 'customer_support_agent', title: 'Customer Support Agent', body: 'Focuses on PII, refund/customer-update flows, masking, approval, and audit trails.', tag: 'Support' },
-  { id: 'data_sensitive_app', title: 'Data-Sensitive App', body: 'Higher standard for memory isolation, PII masking, auditability, and data access.', tag: 'PII' },
-  { id: 'public_saas_api', title: 'Public SaaS API', body: 'Emphasizes endpoint auth, rate limits, CORS, uploads, and request validation.', tag: 'API' },
+  { id: 'general_ai_app', title: 'General AI App', body: 'Use for normal AI features with APIs, dependencies, and basic security controls.', tag: 'Default' },
+  { id: 'agent_with_tools', title: 'Agent with Tools', body: 'Use when the app can call tools, update data, trigger workflows, or affect external systems.', tag: 'Agent' },
+  { id: 'ai_coding_agent', title: 'AI Coding Agent', body: 'Use when the app reads or changes code, runs commands, manages repos, or touches dependencies.', tag: 'Coding' },
+  { id: 'customer_support_agent', title: 'Customer Support Agent', body: 'Use for support flows with PII, refunds, account updates, or customer-facing actions.', tag: 'Support' },
+  { id: 'data_sensitive_app', title: 'Data-Sensitive App', body: 'Use when memory, files, prompts, or APIs may contain PII, secrets, financial, or regulated data.', tag: 'PII' },
+  { id: 'public_saas_api', title: 'Public SaaS API', body: 'Use for public endpoints where auth, rate limits, CORS, uploads, and validation matter most.', tag: 'API' },
 ];
 
 function ScannerContent() {

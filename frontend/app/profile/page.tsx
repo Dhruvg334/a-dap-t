@@ -121,10 +121,19 @@ function ProfileContent() {
           <StatTile label="Average score" value={summary.average || '—'} tone={scoreTone(summary.average) as any} />
         </section>
 
-        <section className="report-controls-bar">
+        <section className="report-controls-bar profile-search-card">
           <label className="adapt-search"><Search size={15} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search reports…" /></label>
           <div className="filter-chip-row">{(['all', 'block', 'review', 'allow', 'demo', 'github', 'zip'] as Filter[]).map((item) => <button key={item} className={filter === item ? 'active' : ''} onClick={() => setFilter(item)}>{item.toUpperCase()}</button>)}</div>
-          <select value={sort} onChange={(e) => setSort(e.target.value as SortMode)}><option value="newest">Newest first</option><option value="lowest">Lowest score first</option><option value="highest">Highest score first</option></select>
+        </section>
+
+        <section className="profile-list-toolbar">
+          <div>
+            <span>Saved reports</span>
+            <strong>{filteredReports.length} shown</strong>
+          </div>
+          <label>Sort
+            <select value={sort} onChange={(e) => setSort(e.target.value as SortMode)}><option value="newest">Newest first</option><option value="lowest">Lowest score first</option><option value="highest">Highest score first</option></select>
+          </label>
         </section>
 
         {loading ? <div className="adapt-panel">Loading saved reports…</div> : null}

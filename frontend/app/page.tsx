@@ -39,39 +39,45 @@ const proofCards = [
 const surfaces = [
   {
     key: 'Dependencies',
-    title: 'Dependencies',
-    copy: 'Find unpinned packages, missing lockfiles, direct-source dependencies, and supply-chain drift.',
-    signals: ['Missing lockfile', 'Unpinned versions', 'Direct git dependency'],
+    title: 'Dependency intelligence',
+    copy: 'Goes beyond package-alert lists by checking lockfile presence, unpinned specs, direct-source dependencies, and supply-chain hygiene in the project structure.',
+    signals: ['Lockfile posture', 'Version discipline', 'Direct source drift'],
+    differentiator: 'Complements GitHub-style dependency alerts with release-readiness context and policy impact.',
   },
   {
     key: 'API Surface',
-    title: 'API Surface',
-    copy: 'Review endpoints for visible auth, rate limits, CORS posture, uploads, and costly AI routes.',
-    signals: ['Missing auth', 'No rate limit', 'Unsafe upload'],
+    title: 'API release surface',
+    copy: 'Maps routes and checks visible auth, rate limits, CORS posture, uploads, and costly AI endpoints instead of treating APIs as isolated paths.',
+    signals: ['Auth visibility', 'Rate-limit coverage', 'Upload boundaries'],
+    differentiator: 'Connects endpoint exposure to AI cost, file handling, and release gating.',
   },
   {
     key: 'AppSec',
-    title: 'AppSec Sinks',
-    copy: 'Find static evidence of risky sinks such as path traversal, SSRF, SQL patterns, shell execution, and unsafe extraction.',
-    signals: ['Path traversal', 'SSRF', 'Command sink'],
+    title: 'Static AppSec signals',
+    copy: 'Looks for risky sinks such as path traversal, SSRF, command execution, SQL patterns, and unsafe extraction with file-level evidence.',
+    signals: ['SSRF patterns', 'Command sinks', 'Unsafe extraction'],
+    differentiator: 'Keeps findings tied to proof and remedy instead of dumping generic scanner noise.',
   },
   {
     key: 'Capabilities',
-    title: 'Capabilities',
-    copy: 'Map what the app or agent can do across tools, files, memory, APIs, and external systems.',
-    signals: ['Tool action', 'External effect', 'Sensitive data'],
+    title: 'Agent capability map',
+    copy: 'Maps what the app can actually do through tools, memory, files, APIs, databases, and external services.',
+    signals: ['External effect', 'Sensitive data', 'Tool action'],
+    differentiator: 'Most scanners see code; A-DAP-T connects code paths to agent actions.',
   },
   {
     key: 'Guardrails',
-    title: 'Guardrails',
-    copy: 'Measure coverage for auth, approvals, audit logs, rate limits, masking, and allowlists.',
-    signals: ['Approval gate', 'Audit log', 'Tool allowlist'],
+    title: 'Guardrail matrix',
+    copy: 'Measures whether detected capabilities are protected by approvals, audit logs, allowlists, masking, rate limits, and isolation.',
+    signals: ['Approval gates', 'Audit trails', 'Context isolation'],
+    differentiator: 'Turns scattered controls into a readable matrix of what protects release-critical behavior.',
   },
   {
     key: 'Policy & Remedy',
-    title: 'Policy & Remedy',
-    copy: 'Evaluate release policy and turn findings into ordered fix steps with validation guidance.',
-    signals: ['BLOCK / REVIEW / ALLOW', 'Priority fixes', 'Validation steps'],
+    title: 'Policy and fix sequence',
+    copy: 'Evaluates BLOCK, REVIEW, or ALLOW using score, hard blockers, required controls, and a prioritized remedy queue.',
+    signals: ['Release decision', 'Hard blockers', 'Fix-first steps'],
+    differentiator: 'Bridges scanner output with what a team must fix before shipping.',
   },
 ];
 
@@ -91,8 +97,6 @@ export default function HomePage() {
 
   return (
     <main className="landing-shell">
-      <div className="landing-progress" aria-hidden="true" />
-
       <header className="landing-hero" id="overview">
         <video className="landing-video" autoPlay muted loop playsInline aria-hidden="true">
           <source src="/hero-bg.mp4" type="video/mp4" />
@@ -188,8 +192,8 @@ export default function HomePage() {
               {selectedSurface.signals.map((signal) => <span key={signal}>{signal}</span>)}
             </div>
             <div className="surface-preview">
-              <span>report artifact</span>
-              <strong>{selectedSurface.title.toLowerCase().replaceAll(' ', '_')} → evidence-led review</strong>
+              <span>why this matters</span>
+              <strong>{selectedSurface.differentiator}</strong>
             </div>
           </article>
         </div>

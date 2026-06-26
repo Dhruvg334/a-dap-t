@@ -15,25 +15,38 @@ const people = [
   ['Akshhaya Isa', 'Frontend implementation · UI support · responsive polish', 'Supported frontend page implementation, component styling, and visual polish.'],
 ];
 
+const evolution = [
+  ['1.0', 'Agent safety scanner', 'Started as a focused scanner for risky AI-agent behavior, proof paths, and basic report artifacts.'],
+  ['2.0', 'Release evidence workspace', 'Added saved reports, comparison, proof mode, patch previews, deployment gates, and report-aware DAP review.'],
+  ['3.0', 'AI application security review', 'Expanded into code, dependencies, APIs, AppSec risks, capabilities, trust boundaries, guardrails, policy packs, and remedy planning.'],
+];
+
 export default function AboutPage() {
   return (
-    <main className="adapt-page about-workspace">
+    <main className="adapt-page about-workspace about-refined">
       <div className="adapt-container">
         <PageHeader label="About A-DAP-T" title="Built for AI apps that can act">
           AI applications now call tools, read memory, expose APIs, touch data, and make decisions. A-DAP-T exists to review that release surface before deployment.
         </PageHeader>
 
-        <section className="about-manifesto-grid">
+        <section className="about-manifesto-grid refined">
           <h2>AI apps are no longer just prompts.</h2>
           <div><p>Modern AI apps combine prompts, tools, APIs, databases, memory, and approval workflows. Traditional scanners can miss how these pieces interact. A-DAP-T maps the release surface and turns scattered signals into a security review.</p><ul><li>Apps can act through tools and APIs</li><li>Memory and context can influence behavior</li><li>Release decisions need evidence, not vibes</li></ul></div>
         </section>
 
-        <section className="adapt-panel about-section">
-          <SectionTitle label="Differentiation" title="From findings to release decision" />
-          <div className="about-feature-grid">{features.map(([title, body]) => <article key={title}><h3>{title}</h3><p>{body}</p></article>)}</div>
+        <section className="adapt-panel about-section evolution-section">
+          <SectionTitle label="Product evolution" title="From agent scanner to release review platform" />
+          <div className="evolution-grid">
+            {evolution.map(([version, title, body]) => <article key={version}><span>{version}</span><h3>{title}</h3><p>{body}</p></article>)}
+          </div>
         </section>
 
-        <section className="about-principles-grid">
+        <section className="adapt-panel about-section">
+          <SectionTitle label="Differentiation" title="From findings to release decision" />
+          <div className="about-feature-grid refined">{features.map(([title, body]) => <article key={title}><h3>{title}</h3><p>{body}</p></article>)}</div>
+        </section>
+
+        <section className="about-principles-grid refined">
           {[
             ['Evidence over claims', 'A-DAP-T reports file paths, signals, weak controls, and recommended actions instead of pretending static scans are runtime proof.'],
             ['AI explains, policy decides', 'AI can explain report evidence, but deterministic artifacts and policy checks drive the release decision.'],
@@ -43,12 +56,11 @@ export default function AboutPage() {
 
         <section className="adapt-panel about-section">
           <SectionTitle label="Team" title="Built by the DAP team" />
-          <div className="team-grid">{people.map(([name, role, body]) => <article key={name}><span>{name.split(' ').map((p) => p[0]).join('')}</span><h3>{name}</h3><em>{role}</em><p>{body}</p></article>)}</div>
+          <div className="team-grid refined">{people.map(([name, role, body]) => <article key={name}><span>{name.split(' ').map((p) => p[0]).join('')}</span><h3>{name}</h3><em>{role}</em><p>{body}</p></article>)}</div>
         </section>
 
-        <section className="about-journey-panel">
-          <div><SectionTitle label="Try it" title="What you can review" /><ol><li>Run Vulnerable Demo</li><li>Review blocked release</li><li>Run Secured Demo</li><li>Compare reports</li><li>Inspect remedy plan</li></ol></div>
-          <div className="demo-video-placeholder"><span>Demo video placeholder</span></div>
+        <section className="about-journey-panel refined">
+          <div><SectionTitle label="Try it" title="What you can review" /><ol><li>Run vulnerable demo</li><li>Review blocked release</li><li>Run secured demo</li><li>Compare reports</li><li>Inspect remedy plan</li></ol></div>
           <AdaptButton tone="primary" href="/scanner">Start Scan</AdaptButton>
         </section>
       </div>

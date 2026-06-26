@@ -4,49 +4,49 @@ import { useState } from 'react';
 import { AdaptBadge, AdaptButton, PageHeader, SectionTitle } from '@/components/ui/AdaptUI';
 
 const pipeline = [
-  ['01', 'Inventory', 'Detect project structure, frameworks, package files, and supported source files.'],
-  ['02', 'Surface map', 'Read dependencies, APIs, risky sinks, context flows, capabilities, and trust boundaries.'],
-  ['03', 'Controls', 'Check visible auth, rate limits, approvals, audit logs, allowlists, masking, and isolation.'],
-  ['04', 'Decision', 'Apply policy gates using score, required controls, hard blockers, and evidence.'],
-  ['05', 'Remedy', 'Convert findings into a fix-first sequence with validation steps.'],
+  ['01', 'Inventory', 'Read source files as text, detect frameworks, package managers, config files, and project shape.'],
+  ['02', 'Map surface', 'Build dependency, API, AppSec, context, capability, and trust-boundary artifacts.'],
+  ['03', 'Check controls', 'Look for visible auth, rate limits, approval gates, audit logs, allowlists, masking, and isolation.'],
+  ['04', 'Apply policy', 'Combine score, hard blockers, and required controls into BLOCK, REVIEW, or ALLOW.'],
+  ['05', 'Plan remedy', 'Turn evidence into a fix-first sequence with expected gate impact and validation steps.'],
 ];
 
 const surfaces = [
-  ['Dependencies', 'Unpinned packages, missing lockfiles, direct-source specs.', 'missing lockfile'],
-  ['API Surface', 'Routes, visible auth, rate limits, CORS, uploads, costly endpoints.', 'missing rate limit'],
-  ['AppSec Sinks', 'Path traversal, SSRF, command sinks, SQL patterns, unsafe extraction.', 'static sink evidence'],
-  ['Capabilities', 'Actions the app can perform across tools, files, APIs, memory, and services.', 'external effect'],
-  ['Guardrails', 'Approval, audit, auth, masking, sandboxing, allowlists, and isolation.', 'weak approval'],
-  ['Policy & Remedy', 'Release decision, hard blockers, required controls, and ordered fixes.', 'BLOCK / REVIEW / ALLOW'],
+  ['Dependencies', 'Package hygiene and supply-chain drift.', 'Missing lockfile · unpinned spec · direct git dependency'],
+  ['API Surface', 'Routes and endpoint controls.', 'Auth · rate limit · CORS · upload boundary'],
+  ['AppSec Sinks', 'Risky static code paths.', 'SSRF · path traversal · command sink · unsafe extraction'],
+  ['Capabilities', 'What the app can actually do.', 'Tool action · external effect · sensitive data'],
+  ['Guardrails', 'Whether risky behavior is protected.', 'Approval · audit · allowlist · masking · isolation'],
+  ['Policy & Remedy', 'Whether the release can move forward.', 'Decision · blockers · fix sequence · validation'],
 ];
 
 const limitations = [
-  ['Static review is not runtime proof', 'A-DAP-T reads source and configuration. It does not execute uploaded projects.'],
-  ['Some controls may live outside the repo', 'Missing visible evidence means the scan did not find proof in the submitted project.'],
-  ['Manual review still matters', 'Production-critical systems still need human security review beyond static signals.'],
+  ['Static review is not runtime proof', 'A-DAP-T reads project files and configuration. It does not execute uploaded projects or confirm live exploits.'],
+  ['Missing evidence is not always absence', 'Some controls may live outside the scanned repository. The report says what was visible in the submitted project.'],
+  ['AI explains, policy decides', 'The assistant helps interpret report evidence. It does not invent the verdict or replace manual security review.'],
 ];
 
 export default function MethodologyPage() {
   const [openLimit, setOpenLimit] = useState(0);
 
   return (
-    <main className="adapt-page methodology-workspace methodology-clean">
+    <main className="adapt-page methodology-workspace methodology-clean methodology-refined">
       <div className="adapt-container">
         <PageHeader label="Methodology" title="How A-DAP-T reviews AI application security">
           A-DAP-T performs a static, evidence-led review of project files to map release risk, weak controls, policy blockers, and fix-first actions before deployment.
         </PageHeader>
 
         <nav className="methodology-mini-nav" aria-label="Methodology sections">
-          {['Pipeline', 'Surfaces', 'Decision logic', 'AI role', 'Limitations'].map((item) => (
+          {['Pipeline', 'Surfaces', 'Decision logic', 'AI boundaries', 'Limitations'].map((item) => (
             <a key={item} href={`#${item.toLowerCase().replaceAll(' ', '-')}`}>{item}</a>
           ))}
         </nav>
 
-        <section id="pipeline" className="adapt-panel method-compact-section">
+        <section id="pipeline" className="adapt-panel method-compact-section method-hero-explain">
           <SectionTitle label="Review pipeline" title="From project files to release decision">
-            Five steps. No project code execution.
+            The scanner turns project evidence into a release decision. Each step creates an artifact used by the report workspace.
           </SectionTitle>
-          <div className="method-step-row">
+          <div className="method-step-row refined">
             {pipeline.map(([num, title, body]) => (
               <article key={title}>
                 <span>{num}</span>
@@ -58,8 +58,8 @@ export default function MethodologyPage() {
         </section>
 
         <section id="surfaces" className="adapt-panel method-compact-section">
-          <SectionTitle label="Security surfaces" title="What the scanner actually reviews" />
-          <div className="surface-method-table compact">
+          <SectionTitle label="Security surfaces" title="What gets reviewed" />
+          <div className="surface-method-table compact refined">
             {surfaces.map(([title, body, signal]) => (
               <div key={title}>
                 <strong>{title}</strong>
@@ -70,12 +70,12 @@ export default function MethodologyPage() {
           </div>
         </section>
 
-        <section id="decision-logic" className="methodology-decision-card">
+        <section id="decision-logic" className="methodology-decision-card refined">
           <div className="adapt-panel">
             <SectionTitle label="Scoring and policy" title="Score is not the whole decision" />
-            <p>A-DAP-T produces a security score, but the release decision also depends on required controls and hard blockers.</p>
+            <p>A-DAP-T produces a security score, but release status also depends on required controls and hard blockers. A high score can still need review if a critical guardrail is missing.</p>
           </div>
-          <div className="adapt-panel decision-chain-panel">
+          <div className="adapt-panel decision-chain-panel refined">
             <span>Score check</span>
             <span>Required controls</span>
             <span>Hard blockers</span>
@@ -83,7 +83,7 @@ export default function MethodologyPage() {
           </div>
         </section>
 
-        <section id="ai-role" className="methodology-two-col compact-two-col">
+        <section id="ai-boundaries" className="methodology-two-col compact-two-col refined">
           <div className="adapt-panel">
             <SectionTitle label="AI role" title="AI explains report evidence" />
             <ul>
@@ -98,8 +98,8 @@ export default function MethodologyPage() {
             <ul>
               <li>Does not execute project code</li>
               <li>Does not confirm live exploits</li>
+              <li>Does not guarantee production safety</li>
               <li>Does not replace manual review</li>
-              <li>Does not decide release verdicts alone</li>
             </ul>
           </div>
         </section>
@@ -119,7 +119,7 @@ export default function MethodologyPage() {
         <section className="final-method-cta compact-final-cta">
           <h2>Ready to review a project?</h2>
           <p>Start with the built-in demo, then scan your own GitHub repository or ZIP project.</p>
-          <div><AdaptButton tone="primary" href="/scanner">Start Scan</AdaptButton><AdaptButton tone="secondary" href="/report/current">View Sample Report</AdaptButton></div>
+          <div><AdaptButton tone="primary" href="/scanner">Start Scan</AdaptButton><AdaptButton tone="secondary" href="/report/current">View Report</AdaptButton></div>
         </section>
       </div>
     </main>

@@ -7,6 +7,7 @@ import type { ScanReport } from '@/types/scan';
 import { getAuthState } from '@/lib/auth';
 import { loadCurrentReport } from '@/lib/report-storage';
 import { ReportWorkspace } from '@/components/report/ReportWorkspace';
+import { DapPanel } from '@/components/dap/DapPanel';
 
 export default function CurrentReportPage() {
   const router = useRouter();
@@ -46,5 +47,8 @@ export default function CurrentReportPage() {
     );
   }
 
-  return <ReportWorkspace report={report} />;
+  return <>
+    <ReportWorkspace report={report} />
+    <DapPanel report={report} />
+  </>;
 }
