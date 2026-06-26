@@ -78,7 +78,7 @@ function HeroSignal() {
         <span>PRE DEPLOYMENT REVIEW • STATIC EVIDENCE • POLICY GATE • </span>
       </div>
       <div className="signal-core">
-        <span className="signal-core-kicker">V3</span>
+        <span className="signal-core-kicker">A</span>
         <strong>ADAPT</strong>
       </div>
     </div>
@@ -106,7 +106,7 @@ export default function HomePage() {
           <HeroSignal />
         </div>
         <div className="editorial-container hero-bottom-strip" aria-label="A-DAP-T release review signals">
-          <span>V3 Security Score</span>
+          <span>Security Score</span>
           <strong>Policy-aware</strong>
           <span>Guardrail Matrix</span>
           <strong>Evidence-led</strong>
@@ -181,7 +181,7 @@ export default function HomePage() {
               </div>
               <h3>Vulnerable Support Agent</h3>
               <dl className="demo-stats">
-                <div><dt>V3 score</dt><dd>15</dd></div>
+                <div><dt>Security score</dt><dd>15</dd></div>
                 <div><dt>Status</dt><dd>Critical Risk</dd></div>
                 <div><dt>Main risks</dt><dd>Unapproved tools, weak API controls, memory poisoning, unsafe file handling</dd></div>
               </dl>
@@ -193,7 +193,7 @@ export default function HomePage() {
               </div>
               <h3>Secured Support Agent</h3>
               <dl className="demo-stats">
-                <div><dt>V3 score</dt><dd>84</dd></div>
+                <div><dt>Security score</dt><dd>84</dd></div>
                 <div><dt>Status</dt><dd>Low Risk</dd></div>
                 <div><dt>Controls</dt><dd>Auth, rate limits, approval gates, audit logs, source metadata, allowlists</dd></div>
               </dl>

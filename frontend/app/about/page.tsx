@@ -1,61 +1,55 @@
-'use client';
+import { AdaptButton, PageHeader, SectionTitle } from '@/components/ui/AdaptUI';
 
-import { BrandWord } from '@/components/ui/BrandWord';
-import { PlayCircle, ShieldCheck } from 'lucide-react';
-
-const people = [
-  ['Dhruv Gupta', 'Product direction · backend architecture · frontend integration · security workflow', 'Leading the v3 shift from an AI-agent scanner to a broader AI application security assessment platform.'],
-  ['Pavit Agrawal', 'Backend modules · comparison logic · scanner support', 'Supports scanner modules, release-diff direction, and backend feature work with clear contracts.'],
-  ['Akshhaya Isa', 'Frontend implementation · UI polish support', 'Supports frontend page implementation, responsive UI, and section-level product polish.'],
+const features = [
+  ['Security score', 'A compact release posture signal supported by richer report artifacts.'],
+  ['Policy evaluation', 'Explains whether a scan is blocked, needs review, or can move forward.'],
+  ['Guardrail matrix', 'Measures auth, approval, audit, masking, rate limits, allowlists, and safety controls.'],
+  ['Capability map', 'Shows what the app or agent can actually do across tools, files, APIs, memory, and services.'],
+  ['Remedy plan', 'Turns findings into a fix-first sequence with validation steps.'],
+  ['DAP reviewer', 'Explains report context and helps developers understand what to fix first.'],
 ];
 
-const principles = [
-  ['Evidence over claims', 'A-DAP-T reports static evidence, file paths, line numbers, control gaps, and recommended actions instead of claiming runtime certainty.'],
-  ['AI is controlled', 'AI helps explain reports and guide review, while deterministic scanners own findings, scores, and policy decisions.'],
-  ['Release workflow', 'The goal is not only to find issues; it is to help teams decide what to fix before shipping.'],
+const people = [
+  ['Dhruv Gupta', 'Product direction · backend architecture · frontend integration · testing · deployment', 'Led the shift from an AI-agent scanner to a broader AI application security review platform.'],
+  ['Pavit Agrawal', 'Backend modules · scanner support · comparison logic', 'Supported scanner modules, report comparison direction, and backend feature work.'],
+  ['Akshhaya Isa', 'Frontend implementation · UI support · responsive polish', 'Supported frontend page implementation, component styling, and visual polish.'],
 ];
 
 export default function AboutPage() {
-  const videoId = '1r-QIjQmbbo';
-
   return (
-    <main className="page-shell about-v3-page">
-      <div className="container">
-        <div className="page-head centered">
-          <div>
-            <div className="tech-label page-kicker"><span className="pulse-dot" /> ABOUT</div>
-            <h1 className="page-title">Security review for AI apps that can act.</h1>
-          </div>
-          <p className="page-desc"><BrandWord /> started as an AI-agent deployment scanner. v3 expands it into a security assessment platform for AI-powered projects: code, APIs, dependencies, capabilities, memory/context risk, guardrails, policy, and remedy planning.</p>
-        </div>
+    <main className="adapt-page about-workspace">
+      <div className="adapt-container">
+        <PageHeader label="About A-DAP-T" title="Built for AI apps that can act">
+          AI applications now call tools, read memory, expose APIs, touch data, and make decisions. A-DAP-T exists to review that release surface before deployment.
+        </PageHeader>
 
-        <section className="glass-card panel shimmer" style={{ marginBottom: 28 }}>
-          <div className="panel-head" style={{ marginBottom: 24 }}>
-            <div><div className="panel-label">Platform guide</div><h2 className="panel-title">A-DAP-T walkthrough</h2></div>
-            <div className="pill safe" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><PlayCircle size={12} /> VIDEO GUIDE</div>
-          </div>
-          <div className="video-frame-wrap">
-            <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`} title="A-DAP-T Website Demo" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
-          </div>
-          <div style={{ marginTop: 22, display: 'flex', justifyContent: 'center' }}><div className="notice"><ShieldCheck size={16} /> <span>Current demo explains the v2 workflow; v3 expands the backend and report model.</span></div></div>
+        <section className="about-manifesto-grid">
+          <h2>AI apps are no longer just prompts.</h2>
+          <div><p>Modern AI apps combine prompts, tools, APIs, databases, memory, and approval workflows. Traditional scanners can miss how these pieces interact. A-DAP-T maps the release surface and turns scattered signals into a security review.</p><ul><li>Apps can act through tools and APIs</li><li>Memory and context can influence behavior</li><li>Release decisions need evidence, not vibes</li></ul></div>
         </section>
 
-        <section className="grid grid-3" style={{ marginBottom: 28 }}>
-          {principles.map(([title, body]) => <article className="glass-card panel" key={title}><div className="panel-label">Principle</div><h2 className="panel-title">{title}</h2><p className="muted">{body}</p></article>)}
+        <section className="adapt-panel about-section">
+          <SectionTitle label="Differentiation" title="From findings to release decision" />
+          <div className="about-feature-grid">{features.map(([title, body]) => <article key={title}><h3>{title}</h3><p>{body}</p></article>)}</div>
         </section>
 
-        <section className="glass-card panel" style={{ marginBottom: 28 }}>
-          <div className="panel-head"><div><div className="panel-label">What v3 changes</div><h2 className="panel-title">From scanner dashboard to release review system.</h2></div><span className="pill neutral">V3 direction</span></div>
-          <div className="v3-about-grid">
-            {['Dependency scanner', 'API surface scanner', 'AppSec sink scanner', 'Memory/context risk scanner', 'Capability map', 'Trust boundary map', 'Guardrail matrix', 'Policy packs', 'Remedy plan'].map((item) => <span className="pill neutral" key={item}>{item}</span>)}
-          </div>
+        <section className="about-principles-grid">
+          {[
+            ['Evidence over claims', 'A-DAP-T reports file paths, signals, weak controls, and recommended actions instead of pretending static scans are runtime proof.'],
+            ['AI explains, policy decides', 'AI can explain report evidence, but deterministic artifacts and policy checks drive the release decision.'],
+            ['Fix sequence matters', 'The product does not stop at findings. It helps teams decide what to fix first before deployment.'],
+          ].map(([title, body]) => <article className="adapt-panel" key={title}><SectionTitle label="Principle" title={title} /><p>{body}</p></article>)}
         </section>
 
-        <section className="glass-card panel">
-          <div className="panel-head"><div><div className="panel-label">Team</div><h2 className="panel-title">Built as a real product iteration.</h2></div></div>
-          <div className="grid grid-3">
-            {people.map(([name, role, body]) => <article className="glass-card panel team-card" key={name}><h3 className="panel-title">{name}</h3><p className="faint">{role}</p><p className="muted">{body}</p></article>)}
-          </div>
+        <section className="adapt-panel about-section">
+          <SectionTitle label="Team" title="Built by the DAP team" />
+          <div className="team-grid">{people.map(([name, role, body]) => <article key={name}><span>{name.split(' ').map((p) => p[0]).join('')}</span><h3>{name}</h3><em>{role}</em><p>{body}</p></article>)}</div>
+        </section>
+
+        <section className="about-journey-panel">
+          <div><SectionTitle label="Try it" title="What you can review" /><ol><li>Run Vulnerable Demo</li><li>Review blocked release</li><li>Run Secured Demo</li><li>Compare reports</li><li>Inspect remedy plan</li></ol></div>
+          <div className="demo-video-placeholder"><span>Demo video placeholder</span></div>
+          <AdaptButton tone="primary" href="/scanner">Start Scan</AdaptButton>
         </section>
       </div>
     </main>

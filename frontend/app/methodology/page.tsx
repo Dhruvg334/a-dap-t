@@ -1,70 +1,73 @@
-import { BrandWord } from '@/components/ui/BrandWord';
+'use client';
 
-const surfaces = [
-  ['Dependencies', 'package.json, package-lock.json, requirements.txt, lockfile gaps, unpinned ranges, direct-source dependencies.'],
-  ['API Surface', 'FastAPI, Express, and Next.js routes with auth, rate-limit, CORS, upload, mutation, and LLM-cost signals.'],
-  ['AppSec Sinks', 'Path traversal, SSRF, command execution, SQL injection, XSS, weak JWT config, unsafe deserialization, archive extraction.'],
-  ['Context Risk', 'Persistent memory, vector/RAG ingestion, retrieved context influencing tool use, missing source trust controls.'],
-  ['Capabilities', 'What the app or agent can actually do: write actions, external calls, memory, file operations, databases, and execution sinks.'],
-  ['Guardrails', 'Authentication, authorization, rate limits, approval gates, audit logs, PII masking, tool allowlists, sandboxing, safe uploads.'],
+import { useState } from 'react';
+import { AdaptBadge, AdaptButton, PageHeader, SectionTitle } from '@/components/ui/AdaptUI';
+
+const pipeline = [
+  ['Inventory', 'Build file inventory, detect frameworks, package managers, and project structure.'],
+  ['Surface mapping', 'Review dependencies, APIs, AppSec sinks, context flows, capabilities, and trust boundaries.'],
+  ['Guardrail coverage', 'Measure visible controls such as auth, rate limits, approval gates, audit logs, allowlists, and masking.'],
+  ['Policy evaluation', 'Apply the selected release policy to score, blockers, required controls, and review conditions.'],
+  ['Remedy planning', 'Convert findings into an ordered fix sequence with expected gate impact and validation steps.'],
+  ['Report review', 'Use DAP to explain report evidence, weak guardrails, policy decisions, and fix priorities.'],
 ];
 
-const flow = [
-  ['01', 'Inventory', 'Build project metadata, file inventory, framework detection, and package manager context.'],
-  ['02', 'Security surfaces', 'Run deterministic scanners across dependencies, APIs, AppSec sinks, and AI context/memory risk.'],
-  ['03', 'Capability model', 'Map what the project can do and where trust boundaries are crossed.'],
-  ['04', 'Guardrail coverage', 'Calculate relevant controls, protected instances, risk instances, and recommended actions.'],
-  ['05', 'Policy + remedy', 'Evaluate selected policy pack and build a prioritized remedy plan.'],
-  ['06', 'AI explanation', 'DAP and Gemini explain report evidence. They do not decide raw findings or policy verdicts.'],
+const surfaces = [
+  ['File Inventory', 'Project structure, supported files, languages, roles, and line counts.', 'source role map'],
+  ['Dependency Risks', 'Unpinned packages, missing lockfiles, direct-source specs, and supply-chain drift.', 'missing lockfile'],
+  ['API Surface', 'Routes, visible auth, rate limits, CORS, upload paths, and costly endpoints.', 'missing rate limit'],
+  ['AppSec Sinks', 'Static evidence for risky file, network, command, SQL, archive, and HTML sinks.', 'SSRF sink'],
+  ['Capabilities', 'Actions the app or agent can perform across tools, files, memory, APIs, and services.', 'external effect'],
+  ['Guardrail Matrix', 'Coverage for approval, audit, auth, masking, sandboxing, allowlists, and dependency security.', 'weak approval'],
+];
+
+const limitations = [
+  ['Static review is not runtime proof', 'A-DAP-T reads source and configuration. It does not execute uploaded projects.'],
+  ['Controls can exist outside the repo', 'A missing visible control means the scan did not find proof inside the submitted project.'],
+  ['AI explanations can be unavailable', 'If model limits are reached, deterministic report artifacts may still be available.'],
+  ['Manual review still matters', 'Production-critical systems need human security review beyond static signals.'],
 ];
 
 export default function MethodologyPage() {
+  const [openLimit, setOpenLimit] = useState(0);
   return (
-    <main className="page-shell methodology-v3-page">
-      <div className="container">
-        <div className="page-head centered">
-          <div>
-            <div className="tech-label page-kicker"><span className="pulse-dot" /> V3 METHODOLOGY</div>
-            <h1 className="page-title">How A-DAP-T reviews AI app security.</h1>
-          </div>
-          <p className="page-desc"><BrandWord /> uses deterministic static analysis first, then AI only explains the evidence. The v3 model separates legacy agent scoring from a broader security score covering dependencies, APIs, capabilities, guardrails, and release policy.</p>
+    <main className="adapt-page methodology-workspace">
+      <div className="adapt-container methodology-grid">
+        <aside className="methodology-rail">
+          {['Pipeline', 'Surfaces', 'Scoring', 'AI Role', 'Limitations'].map((item) => <a href={`#${item.toLowerCase().replace(' ', '-')}`} key={item}>{item}</a>)}
+        </aside>
+        <div>
+          <PageHeader label="Methodology" title="How A-DAP-T reviews AI application security">
+            A-DAP-T performs a static review of project code and configuration to map release risks, weak controls, policy blockers, and fix-first actions before deployment.
+          </PageHeader>
+
+          <section id="pipeline" className="adapt-panel methodology-section">
+            <SectionTitle label="Review pipeline" title="From project files to release decision" />
+            <div className="method-process-grid">{pipeline.map(([title, body], index) => <article key={title}><span>{String(index + 1).padStart(2, '0')}</span><h3>{title}</h3><p>{body}</p></article>)}</div>
+          </section>
+
+          <section id="surfaces" className="adapt-panel methodology-section">
+            <SectionTitle label="Security surfaces" title="What A-DAP-T reviews" />
+            <div className="surface-method-table">{surfaces.map(([title, body, signal]) => <div key={title}><strong>{title}</strong><p>{body}</p><AdaptBadge tone="neutral">{signal}</AdaptBadge></div>)}</div>
+          </section>
+
+          <section id="scoring" className="adapt-panel methodology-section scoring-explain-grid">
+            <div><SectionTitle label="Scoring and policy" title="Score is not the whole decision" /><p>A-DAP-T produces a security score, but release decisions also depend on required controls and hard blockers.</p></div>
+            <div className="decision-chain"><span>Score check</span><i /> <span>Required controls</span><i /> <span>Hard blockers</span><i /> <strong>Final decision</strong></div>
+          </section>
+
+          <section id="ai-role" className="methodology-two-col">
+            <div className="adapt-panel"><SectionTitle label="AI role" title="AI explains report evidence" /><ul><li>explain the policy decision</li><li>summarize release risk</li><li>prioritize fix-first actions</li><li>write developer handoff briefs</li></ul></div>
+            <div className="adapt-panel"><SectionTitle label="Boundaries" title="AI does not invent the verdict" /><ul><li>does not execute project code</li><li>does not confirm live exploits</li><li>does not replace manual review</li><li>does not decide release verdicts alone</li></ul></div>
+          </section>
+
+          <section id="limitations" className="adapt-panel methodology-section">
+            <SectionTitle label="Limitations" title="What A-DAP-T does not claim" />
+            <div className="limit-accordion">{limitations.map(([title, body], index) => <details key={title} open={openLimit === index} onToggle={(event) => { if ((event.target as HTMLDetailsElement).open) setOpenLimit(index); }}><summary>{title}</summary><p>{body}</p></details>)}</div>
+          </section>
+
+          <section className="final-method-cta"><h2>Ready to review a project?</h2><p>Start with the built-in demo, then scan your own GitHub repository or ZIP project.</p><div><AdaptButton tone="primary" href="/scanner">Start Scan</AdaptButton><AdaptButton tone="secondary" href="/report/current">View Sample Report</AdaptButton></div></section>
         </div>
-
-        <section className="glass-card panel" style={{ marginBottom: 18 }}>
-          <div className="panel-head"><div><div className="panel-label">Pipeline</div><h2 className="panel-title">Text-only analysis, no project execution.</h2></div><span className="pill safe">Deterministic first</span></div>
-          <div className="v3-method-flow">
-            {flow.map(([num, title, body]) => <div className="glass-card v3-method-step" key={num}><span>{num}</span><strong>{title}</strong><p>{body}</p></div>)}
-          </div>
-        </section>
-
-        <section className="glass-card panel" style={{ marginBottom: 18 }}>
-          <div className="panel-head"><div><div className="panel-label">Security surfaces</div><h2 className="panel-title">What v3 inspects.</h2></div><span className="pill neutral">Static evidence</span></div>
-          <div className="method-table">
-            <div className="method-row method-head"><div className="method-cell">Surface</div><div className="method-cell">Checks</div></div>
-            {surfaces.map(([surface, checks]) => <div className="method-row" key={surface}><div className="method-cell"><strong>{surface}</strong></div><div className="method-cell">{checks}</div></div>)}
-          </div>
-        </section>
-
-        <section className="grid grid-3" style={{ marginBottom: 18 }}>
-          {[
-            ['Legacy safety score', 'The original v2 score remains visible for compatibility with old reports and agent-specific categories.'],
-            ['V3 security score', 'The new score includes dependency, API, AppSec, context, capability, trust-boundary, and guardrail signals.'],
-            ['Policy evaluation', 'Policy packs decide BLOCK, REVIEW, or ALLOW using v3 score, required controls, and hard blockers.'],
-          ].map(([title, body]) => <article className="glass-card panel shimmer" key={title}><div className="panel-label">SCORING</div><h2 className="panel-title">{title}</h2><p className="muted">{body}</p></article>)}
-        </section>
-
-        <section className="grid grid-2">
-          <article className="glass-card panel">
-            <div className="panel-label">AI usage</div>
-            <h2 className="panel-title">AI explains. It does not decide.</h2>
-            <p className="muted">Gemini and DAP are used for report explanation, prioritization support, and guided review. Scanner evidence, severity signals, v3 score, policy blockers, and remedy ordering remain deterministic.</p>
-          </article>
-          <article className="glass-card panel">
-            <div className="panel-label">Limitations</div>
-            <h2 className="panel-title">Static review is not runtime proof.</h2>
-            <p className="muted">A-DAP-T does not execute uploaded projects and does not replace a professional security audit. It identifies visible static evidence, missing controls, and release-readiness risks before deployment.</p>
-          </article>
-        </section>
       </div>
     </main>
   );

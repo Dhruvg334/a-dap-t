@@ -2,371 +2,161 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle, GitCompareArrows, TrendingUp } from 'lucide-react';
+import { ArrowRight, GitCompareArrows, RefreshCcw } from 'lucide-react';
 import { AuthGate } from '@/components/auth/AuthGate';
-import { apiFetch, formatApiError } from '@/lib/api';
-import type { Finding, ScanReport } from '@/types/scan';
+import { apiFetch, downloadText, formatApiError } from '@/lib/api';
+import { saveCurrentReport } from '@/lib/report-storage';
+import type { ScanReport } from '@/types/scan';
+import { AdaptBadge, AdaptButton, EmptyState, PageHeader, SectionTitle, StatTile } from '@/components/ui/AdaptUI';
+import { categoryName, displayNumber, gateClass, scoreTone } from '@/lib/score';
 
-const CAT_LABELS: Record<string, string> = {
-  prompt_injection: 'Prompt Injection',
-  secret_exposure: 'Secret Exposure',
-  tool_permission: 'Tool Permission',
-  human_approval: 'Human Approval',
-  data_exposure: 'Data Exposure',
-  auditability: 'Auditability',
-};
+type Summary = ScanReport & { id?: string; report_id?: string; created_at?: string; timestamp?: string; policy_decision?: string; v3_security_score?: number | null };
 
-type ReportSummary = ScanReport & { id?: string; created_at?: string; timestamp?: string };
+type SurfaceDelta = { label: string; before: number | string; after: number | string; change: string; status: 'Improved' | 'Regressed' | 'Still risky' | 'No change' };
 
-function reportId(report: ReportSummary) {
-  return report.report_id || report.id || '';
+function idOf(report: Summary) { return report.report_id || report.id || `${report.project_name}-${report.created_at || report.timestamp}`; }
+function dateOf(report: Summary) { const date = new Date(report.created_at || report.timestamp || ''); return Number.isNaN(date.getTime()) ? 'Saved report' : date.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+function scoreOf(report?: ScanReport | null) { return displayNumber(report?.v3_security_score ?? report?.safety_score, 0); }
+function decisionOf(report?: ScanReport | null) { return report?.policy_evaluation?.decision || report?.deployment_gate?.decision || 'REVIEW'; }
+function riskCount(report: ScanReport | null | undefined, key: string) {
+  if (!report) return 0;
+  const map: Record<string, number> = {
+    Dependencies: report.dependency_risks?.risks?.length || 0,
+    'API Surface': report.api_surface?.risks?.length || 0,
+    AppSec: report.appsec_risks?.risks?.length || 0,
+    'Context Risk': report.context_poisoning_risks?.risks?.length || 0,
+    Capabilities: report.capability_map?.summary?.high_risk_count || report.capability_map?.capabilities?.filter((c) => ['critical', 'high'].includes(String(c.risk_level).toLowerCase())).length || 0,
+    Guardrails: displayNumber(report.guardrail_matrix?.summary?.risky_controls, 0),
+    Remedy: report.remedy_plan?.steps?.length || 0,
+  };
+  return map[key] || 0;
 }
-
-function reportLabel(report: ReportSummary) {
-  const dateValue = report.created_at || report.timestamp;
-  const date = dateValue ? new Date(dateValue) : null;
-  const labelDate = date && !Number.isNaN(date.getTime()) ? date.toLocaleDateString() : 'saved report';
-  return `${report.project_name || 'A-DAP-T scan'} · ${labelDate} · score ${report.safety_score ?? '—'}`;
-}
-
-function findingKey(finding: Finding) {
-  return [finding.id, finding.category, finding.title, finding.file, finding.line].filter(Boolean).join('::') || finding.title;
-}
-
-function severityCount(findings: Finding[], severity: string) {
-  return findings.filter((f) => String(f.severity || '').toLowerCase() === severity).length;
-}
-
-function deltaClass(value: number) {
-  if (value > 0) return 'safe';
-  if (value < 0) return 'danger';
-  return 'neutral';
-}
-
-const trackedComparisonPairs = new Set<string>();
 
 function CompareContent() {
-  const [reports, setReports] = useState<ReportSummary[]>([]);
+  const [reports, setReports] = useState<Summary[]>([]);
   const [beforeId, setBeforeId] = useState('');
   const [afterId, setAfterId] = useState('');
   const [beforeReport, setBeforeReport] = useState<ScanReport | null>(null);
   const [afterReport, setAfterReport] = useState<ScanReport | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [filter, setFilter] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [loadingPair, setLoadingPair] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    apiFetch<ReportSummary[]>('/reports')
-      .then((data) => setReports(Array.isArray(data) ? data : []))
-      .catch((err) => setError(formatApiError(err, 'Could not load saved reports.')));
+    apiFetch<Summary[]>('/reports')
+      .then((data) => {
+        const safe = Array.isArray(data) ? data : [];
+        setReports(safe);
+        if (safe[0]) setBeforeId(idOf(safe[1] || safe[0]));
+        if (safe[1]) setAfterId(idOf(safe[0]));
+      })
+      .catch((err) => setError(formatApiError(err, 'Could not load reports.')))
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
-    if (!beforeId || !afterId || beforeId === afterId) {
-      setBeforeReport(null);
-      setAfterReport(null);
-      return;
+    async function loadPair() {
+      if (!beforeId || !afterId || beforeId === afterId) return;
+      setLoadingPair(true);
+      setError('');
+      try {
+        const [before, after] = await Promise.all([apiFetch<ScanReport>(`/reports/${encodeURIComponent(beforeId)}`), apiFetch<ScanReport>(`/reports/${encodeURIComponent(afterId)}`)]);
+        setBeforeReport(before); setAfterReport(after);
+      } catch (err) {
+        setError(formatApiError(err, 'Could not load selected reports.'));
+      } finally {
+        setLoadingPair(false);
+      }
     }
-
-    let cancelled = false;
-    setLoading(true);
-    setError('');
-
-    Promise.all([
-      apiFetch<ScanReport>(`/reports/${encodeURIComponent(beforeId)}`),
-      apiFetch<ScanReport>(`/reports/${encodeURIComponent(afterId)}`),
-    ])
-      .then(([before, after]) => {
-        if (cancelled) return;
-        setBeforeReport(before);
-        setAfterReport(after);
-
-        const pairKey = `${beforeId}::${afterId}`;
-        if (typeof pendo !== 'undefined' && !trackedComparisonPairs.has(pairKey)) {
-          trackedComparisonPairs.add(pairKey);
-          const beforeScore = Number(before.safety_score || 0);
-          const afterScore = Number(after.safety_score || 0);
-          const scoreDelta = afterScore - beforeScore;
-          const beforeFindings = before.findings || [];
-          const afterFindings = after.findings || [];
-          const afterKeys = new Set(afterFindings.map((f) => findingKey(f)));
-          const beforeKeys = new Set(beforeFindings.map((f) => findingKey(f)));
-          const fixed = beforeFindings.filter((f) => !afterKeys.has(findingKey(f)));
-          const added = afterFindings.filter((f) => !beforeKeys.has(findingKey(f)));
-
-          let verdict = 'No material score change';
-          if (scoreDelta > 0) verdict = 'Security posture improved';
-          if (scoreDelta < 0) verdict = 'Security posture regressed';
-
-          const catDeltas = Object.keys(CAT_LABELS).map((key) => ({
-            key,
-            reduction: Number(before.category_scores?.[key] || 0) - Number(after.category_scores?.[key] || 0),
-          }));
-          const strongest = catDeltas.sort((a, b) => b.reduction - a.reduction)[0];
-
-          pendo.track('report_comparison_completed', {
-            before_report_id: beforeId,
-            after_report_id: afterId,
-            before_score: beforeScore,
-            after_score: afterScore,
-            score_delta: scoreDelta,
-            verdict,
-            fixed_findings_count: fixed.length,
-            new_findings_count: added.length,
-            critical_fixed: severityCount(fixed, 'critical'),
-            high_fixed: severityCount(fixed, 'high'),
-            critical_added: severityCount(added, 'critical'),
-            high_added: severityCount(added, 'high'),
-            strongest_reduction_category: strongest?.key || '',
-          });
-        }
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        setError(formatApiError(err, 'Could not compare these reports.'));
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => { cancelled = true; };
+    loadPair();
   }, [beforeId, afterId]);
 
-  const comparison = useMemo(() => {
-    if (!beforeReport || !afterReport) return null;
-
-    const beforeScore = Number(beforeReport.safety_score || 0);
-    const afterScore = Number(afterReport.safety_score || 0);
-    const scoreDelta = afterScore - beforeScore;
-    const beforeFindings = beforeReport.findings || [];
-    const afterFindings = afterReport.findings || [];
-    const afterMap = new Map(afterFindings.map((f) => [findingKey(f), f]));
-    const beforeMap = new Map(beforeFindings.map((f) => [findingKey(f), f]));
-    const fixed = beforeFindings.filter((f) => !afterMap.has(findingKey(f)));
-    const added = afterFindings.filter((f) => !beforeMap.has(findingKey(f)));
-
-    const categoryDeltas = Object.keys(CAT_LABELS).map((key) => {
-      const beforeRisk = Number(beforeReport.category_scores?.[key] || 0);
-      const afterRisk = Number(afterReport.category_scores?.[key] || 0);
-      return {
-        key,
-        label: CAT_LABELS[key],
-        beforeRisk,
-        afterRisk,
-        riskReduction: beforeRisk - afterRisk,
-      };
+  const deltas = useMemo<SurfaceDelta[]>(() => {
+    if (!beforeReport || !afterReport) return [];
+    const surfaces = ['Dependencies', 'API Surface', 'AppSec', 'Context Risk', 'Capabilities', 'Guardrails', 'Remedy'];
+    return surfaces.map((label) => {
+      const before = riskCount(beforeReport, label);
+      const after = riskCount(afterReport, label);
+      const diff = after - before;
+      const status = diff < 0 ? 'Improved' : diff > 0 ? 'Regressed' : after > 0 ? 'Still risky' : 'No change';
+      return { label, before, after, change: diff === 0 ? '0' : `${diff > 0 ? '+' : ''}${diff}`, status };
     });
-
-    const strongestReduction = [...categoryDeltas].sort((a, b) => b.riskReduction - a.riskReduction)[0];
-    const criticalFixed = severityCount(fixed, 'critical');
-    const highFixed = severityCount(fixed, 'high');
-    const criticalAdded = severityCount(added, 'critical');
-    const highAdded = severityCount(added, 'high');
-
-    let verdict = 'No material score change';
-    if (scoreDelta > 0) verdict = 'Security posture improved';
-    if (scoreDelta < 0) verdict = 'Security posture regressed';
-
-    return {
-      beforeScore,
-      afterScore,
-      scoreDelta,
-      fixed,
-      added,
-      criticalFixed,
-      highFixed,
-      criticalAdded,
-      highAdded,
-      categoryDeltas,
-      strongestReduction,
-      verdict,
-    };
   }, [beforeReport, afterReport]);
 
-  const hasEnoughReports = reports.length >= 2;
-  const sameReportSelected = beforeId && afterId && beforeId === afterId;
+  const visibleDeltas = deltas.filter((row) => filter === 'all' || row.status.toLowerCase().replace(' ', '-') === filter);
+  const scoreDelta = scoreOf(afterReport) - scoreOf(beforeReport);
+
+  function openTarget() {
+    if (!afterReport) return;
+    saveCurrentReport(afterReport);
+    window.location.href = '/report/current';
+  }
 
   return (
-    <main className="page-shell compare-page">
-      <div className="container">
-        <div className="page-head centered narrow-head">
-          <div className="tech-label page-kicker"><span className="pulse-dot" /> RE-SCAN / SCORE DELTA</div>
-          <h1 className="page-title">Compare Reports</h1>
-          <p className="page-desc">Measure how much safer an agent became after fixes. A higher safety score is better; a lower category risk score is better.</p>
-        </div>
+    <main className="adapt-page compare-workspace">
+      <div className="adapt-container">
+        <PageHeader label="Release diff" title="Compare two security reviews" actions={<><AdaptButton tone="secondary" href="/scanner">Open Scanner</AdaptButton><AdaptButton tone="primary" onClick={openTarget} disabled={!afterReport}>Open Target Report</AdaptButton></>}>
+          Select a baseline and target report to see whether the release surface improved across score, policy, guardrails, capabilities, and remedy progress.
+        </PageHeader>
 
-        {!hasEnoughReports && (
-          <section className="solid-card panel empty-history-card">
-            <GitCompareArrows size={34} className="text-emerald" />
-            <h2 className="panel-title">Run at least two scans first.</h2>
-            <p className="muted">Compare needs a baseline report and a later report. Run the vulnerable and secured demo scans for the cleanest walkthrough.</p>
-            <Link className="btn btn-primary" href="/scanner">Run Scans</Link>
-          </section>
-        )}
+        {error ? <div className="adapt-alert danger">{error}</div> : null}
+        {loading ? <div className="adapt-panel">Loading saved reports…</div> : null}
+        {!loading && reports.length < 2 ? <EmptyState title="Run at least two scans first">Compare needs a baseline report and a target report. Run the vulnerable and secured demos for the cleanest walkthrough.<AdaptButton tone="primary" href="/scanner">Run scans</AdaptButton></EmptyState> : null}
 
-        {hasEnoughReports && (
-          <section className="solid-card panel compare-selector-card">
-            <div className="compare-selector-head">
-              <div>
-                <div className="panel-label">Report Pair</div>
-                <h2 className="panel-title">Choose a baseline and a target.</h2>
-              </div>
-              <div className="compare-help">Tip: baseline = before fixes, target = after fixes.</div>
+        {reports.length >= 2 ? <section className="compare-selector-panel">
+          <ReportSelect label="Baseline report" value={beforeId} onChange={setBeforeId} reports={reports} disabledId={afterId} />
+          <div className="compare-arrow"><ArrowRight size={20} /></div>
+          <ReportSelect label="Target report" value={afterId} onChange={setAfterId} reports={reports} disabledId={beforeId} />
+        </section> : null}
+
+        {loadingPair ? <div className="adapt-panel">Loading full reports for comparison…</div> : null}
+        {beforeReport && afterReport ? <>
+          <section className="compare-executive-card">
+            <div>
+              <div className="adapt-kicker"><span />Release posture</div>
+              <h2>{scoreDelta > 0 ? 'Security posture improved' : scoreDelta < 0 ? 'Security posture regressed' : 'No material score change'}</h2>
+              <p>The target report {scoreDelta >= 0 ? 'reduces or maintains' : 'increases'} release risk across the selected scan pair. Review remaining guardrails before deployment.</p>
             </div>
+            <div className="compare-score-pair"><span>{scoreOf(beforeReport)}</span><ArrowRight size={18} /><strong>{scoreOf(afterReport)}</strong><em>{scoreDelta >= 0 ? '+' : ''}{scoreDelta}</em></div>
+            <div className="compare-decision-pair"><AdaptBadge tone={gateClass(decisionOf(beforeReport)) as any}>{decisionOf(beforeReport)}</AdaptBadge><ArrowRight size={14} /><AdaptBadge tone={gateClass(decisionOf(afterReport)) as any}>{decisionOf(afterReport)}</AdaptBadge></div>
+          </section>
 
-            <div className="grid grid-2">
-              <label className="form-row">
-                <span className="form-label">Before Report</span>
-                <select className="input" value={beforeId} onChange={(e) => setBeforeId(e.target.value)}>
-                  <option value="">Select baseline...</option>
-                  {reports.map((report) => {
-                    const id = reportId(report);
-                    return <option key={id} value={id} disabled={id === afterId}>{reportLabel(report)}</option>;
-                  })}
-                </select>
-              </label>
+          <section className="surface-delta-section">
+            <SectionTitle label="Surface changes" title="What changed across the release surface" action={<div className="filter-chip-row">{['all', 'improved', 'regressed', 'still-risky'].map((item) => <button key={item} className={filter === item ? 'active' : ''} onClick={() => setFilter(item)}>{categoryName(item)}</button>)}</div>} />
+            <div className="release-diff-table"><div className="release-diff-row head"><span>Surface</span><span>Baseline</span><span>Target</span><span>Change</span><span>Status</span></div>{visibleDeltas.map((row) => <div className="release-diff-row" key={row.label}><strong>{row.label}</strong><span>{row.before}</span><span>{row.after}</span><span>{row.change}</span><AdaptBadge tone={row.status === 'Improved' ? 'safe' : row.status === 'Regressed' ? 'danger' : row.status === 'Still risky' ? 'warning' : 'neutral'}>{row.status}</AdaptBadge></div>)}</div>
+          </section>
 
-              <label className="form-row">
-                <span className="form-label">After Report</span>
-                <select className="input" value={afterId} onChange={(e) => setAfterId(e.target.value)}>
-                  <option value="">Select target...</option>
-                  {reports.map((report) => {
-                    const id = reportId(report);
-                    return <option key={id} value={id} disabled={id === beforeId}>{reportLabel(report)}</option>;
-                  })}
-                </select>
-              </label>
+          <section className="compare-bottom-grid">
+            <div className="adapt-panel">
+              <SectionTitle label="Remedy progress" title="Fix progress" />
+              <ThreeColumnProgress before={beforeReport} after={afterReport} />
+            </div>
+            <div className="adapt-panel">
+              <SectionTitle label="Remaining release risk" title="What still needs review" />
+              <p>The target report decision is <strong>{decisionOf(afterReport)}</strong>. Focus on remaining partial guardrails, dependency hygiene, and any capabilities that still have external effects without full evidence.</p>
+              <div className="compare-actions"><AdaptButton tone="primary" onClick={openTarget}>Open Target Report</AdaptButton><AdaptButton tone="secondary" onClick={() => downloadText('adapt-release-diff.json', JSON.stringify({ beforeReport, afterReport, deltas }, null, 2), 'application/json')}>Export Diff</AdaptButton></div>
             </div>
           </section>
-        )}
-
-        {sameReportSelected && <div className="form-error">Select two different reports to compare score movement.</div>}
-        {loading && <div className="form-success">Loading full reports for comparison...</div>}
-        {error && <div className="form-error">{error}</div>}
-
-        {comparison && beforeReport && afterReport && (
-          <div className="compare-results animate-in">
-            <section className={`solid-card panel compare-verdict ${deltaClass(comparison.scoreDelta)}`}>
-              <div>
-                <div className="panel-label">Verdict</div>
-                <h2 className="panel-title">{comparison.verdict}</h2>
-                <p className="muted">
-                  {comparison.scoreDelta > 0 && `Safety score improved by ${comparison.scoreDelta} points. ${comparison.fixed.length} previous findings are no longer present.`}
-                  {comparison.scoreDelta < 0 && `Safety score dropped by ${Math.abs(comparison.scoreDelta)} points. Review the newly introduced findings before deploying.`}
-                  {comparison.scoreDelta === 0 && 'The safety score did not move. Check fixed and new findings to see what changed under the same score.'}
-                </p>
-              </div>
-              <div className="delta-orb">
-                <span>{comparison.scoreDelta >= 0 ? '+' : ''}{comparison.scoreDelta}</span>
-                <small>score delta</small>
-              </div>
-            </section>
-
-            <section className="compare-score-grid">
-              <div className="solid-card stat">
-                <div className="stat-label">Baseline Score</div>
-                <div className="stat-value">{comparison.beforeScore}</div>
-              </div>
-              <div className="solid-card stat">
-                <div className="stat-label">Target Score</div>
-                <div className="stat-value">{comparison.afterScore}</div>
-              </div>
-              <div className="solid-card stat">
-                <div className="stat-label">Critical Fixed</div>
-                <div className="stat-value text-emerald">{comparison.criticalFixed}</div>
-              </div>
-              <div className="solid-card stat">
-                <div className="stat-label">High Fixed</div>
-                <div className="stat-value text-emerald">{comparison.highFixed}</div>
-              </div>
-            </section>
-
-            {comparison.strongestReduction?.riskReduction > 0 && (
-              <section className="solid-card panel compare-highlight">
-                <TrendingUp size={20} className="text-emerald" />
-                <div>
-                  <div className="panel-label">Largest Risk Reduction</div>
-                  <strong>{comparison.strongestReduction.label}</strong>
-                  <p className="muted">Risk decreased by {comparison.strongestReduction.riskReduction} points in this category.</p>
-                </div>
-              </section>
-            )}
-
-            <section className="solid-card panel compare-category-panel">
-              <div className="panel-head">
-                <div>
-                  <div className="panel-label">Category Movement</div>
-                  <h2 className="panel-title">Risk score deltas</h2>
-                </div>
-                <p className="muted">Positive reduction is good because category scores measure risk.</p>
-              </div>
-              <div className="compare-category-list">
-                {comparison.categoryDeltas.map((item) => (
-                  <div className="compare-category-row" key={item.key}>
-                    <div>
-                      <strong>{item.label}</strong>
-                      <span>{item.beforeRisk} → {item.afterRisk}</span>
-                    </div>
-                    <div className="compare-risk-track" aria-hidden="true">
-                      <span style={{ width: `${Math.min(100, Math.max(0, item.beforeRisk))}%` }} />
-                      <em style={{ width: `${Math.min(100, Math.max(0, item.afterRisk))}%` }} />
-                    </div>
-                    <div className={`pill ${item.riskReduction >= 0 ? 'safe' : 'danger'}`}>{item.riskReduction >= 0 ? '-' : '+'}{Math.abs(item.riskReduction)} risk</div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="grid grid-2 compare-findings-grid">
-              <div className="solid-card panel">
-                <div className="panel-head compact">
-                  <div>
-                    <div className="panel-label">Resolved</div>
-                    <h2 className="panel-title">Fixed findings</h2>
-                  </div>
-                  <CheckCircle size={20} className="text-emerald" />
-                </div>
-                <FindingList findings={comparison.fixed} empty="No previous findings disappeared between these reports." />
-              </div>
-              <div className="solid-card panel">
-                <div className="panel-head compact">
-                  <div>
-                    <div className="panel-label">Introduced</div>
-                    <h2 className="panel-title">New findings</h2>
-                  </div>
-                  <AlertTriangle size={20} className="text-red" />
-                </div>
-                <FindingList findings={comparison.added} empty="No new findings were introduced in the target report." />
-              </div>
-            </section>
-          </div>
-        )}
+        </> : null}
       </div>
     </main>
   );
 }
 
-function FindingList({ findings, empty }: { findings: Finding[]; empty: string }) {
-  if (!findings.length) return <p className="muted empty-list-copy">{empty}</p>;
-  return (
-    <div className="compare-finding-list">
-      {findings.slice(0, 8).map((finding, index) => (
-        <div className="compare-finding-card" key={`${findingKey(finding)}-${index}`}>
-          <div>
-            <strong>{finding.title || 'Untitled finding'}</strong>
-            <span>{finding.category || 'Uncategorized'}</span>
-          </div>
-          <div className="pill neutral">{String(finding.severity || 'info').toUpperCase()}</div>
-        </div>
-      ))}
-      {findings.length > 8 && <p className="muted">+{findings.length - 8} more findings not shown here.</p>}
-    </div>
-  );
+function ReportSelect({ label, value, onChange, reports, disabledId }: { label: string; value: string; onChange: (value: string) => void; reports: Summary[]; disabledId?: string }) {
+  const selected = reports.find((report) => idOf(report) === value);
+  return <label className="report-select-card"><span>{label}</span><select value={value} onChange={(e) => onChange(e.target.value)}><option value="">Select report…</option>{reports.map((report) => { const id = idOf(report); return <option key={id} value={id} disabled={id === disabledId}>{report.project_name || report.upload_name || 'Saved report'} · {dateOf(report)}</option>; })}</select>{selected ? <div className="selected-report-preview"><strong>{selected.project_name || selected.upload_name || 'Saved report'}</strong><em>{scoreOf(selected)} score · {decisionOf(selected)}</em></div> : null}</label>;
 }
 
-export default function ComparePage() {
-  return (
-    <AuthGate nextPath="/compare" label="Checking access before comparing reports...">
-      <CompareContent />
-    </AuthGate>
-  );
+function ThreeColumnProgress({ before, after }: { before: ScanReport; after: ScanReport }) {
+  const beforeTitles = Array.from(new Set((before.remedy_plan?.steps || []).map((s) => s.title).filter(Boolean) as string[]));
+  const afterTitles = Array.from(new Set((after.remedy_plan?.steps || []).map((s) => s.title).filter(Boolean) as string[]));
+  const afterSet = new Set(afterTitles);
+  const fixed = beforeTitles.filter((title) => !afterSet.has(title)).slice(0, 4);
+  const open = afterTitles.slice(0, 4);
+  return <div className="remedy-progress-columns"><div><h3>Fixed</h3>{fixed.length ? fixed.map((item) => <p key={item}><CheckDot />{item}</p>) : <p>None confirmed from titles.</p>}</div><div><h3>Still open</h3>{open.length ? open.map((item) => <p key={item}><CheckDot />{item}</p>) : <p>No open remedy rows.</p>}</div><div><h3>Newly detected</h3><p>Review evidence table for newly added findings.</p></div></div>;
 }
+function CheckDot() { return <span className="tiny-dot" />; }
+
+export default function ComparePage() { return <AuthGate nextPath="/compare" label="Checking access before comparing reports..."><CompareContent /></AuthGate>; }
