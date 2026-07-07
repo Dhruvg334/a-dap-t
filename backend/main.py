@@ -128,6 +128,7 @@ def _require_authenticated_user(user: dict | None) -> dict:
 @app.get("/scan/demo/vulnerable", response_model=ScanResultSchema)
 async def scan_vulnerable_demo(
     save_report: bool = Query(False),
+    policy_id: str | None = Query(None),
     user=Depends(auth.get_current_user),
 ):
     user = _require_authenticated_user(user)
@@ -138,6 +139,7 @@ async def scan_vulnerable_demo(
         vulnerable_dir,
         project_name="vulnerable-support-agent",
         scan_type="demo_vulnerable",
+        extra_metadata={"policy_id": policy_id or "agent_with_tools"},
         enrich=False,
     )
 
@@ -159,9 +161,7 @@ async def scan_vulnerable_demo(
         "Keep system prompts server-side",
     ]
 
-    # Demo scores are fixed before AI enrichment so Gemini summaries match the displayed report.
-    result["safety_score"] = 32
-    result["status"] = compute_status(32)
+    # Keep demo scoring scanner-driven now that v3 artifacts cover API, dependency, AppSec, and context risks.
     result = attach_v2_report_artifacts(result)
     result = enrich_scan_result_with_ai(result)
     result = await _save_if_requested(result, user, save_report)
@@ -172,6 +172,7 @@ async def scan_vulnerable_demo(
 @app.get("/scan/demo/secured", response_model=ScanResultSchema)
 async def scan_secured_demo(
     save_report: bool = Query(False),
+    policy_id: str | None = Query(None),
     user=Depends(auth.get_current_user),
 ):
     user = _require_authenticated_user(user)
@@ -182,6 +183,7 @@ async def scan_secured_demo(
         secured_dir,
         project_name="secured-support-agent",
         scan_type="demo_secured",
+        extra_metadata={"policy_id": policy_id or "agent_with_tools"},
         enrich=False,
     )
 
@@ -201,9 +203,7 @@ async def scan_secured_demo(
         "Review approval logs periodically",
     ]
 
-    # Demo scores are fixed before AI enrichment so Gemini summaries match the displayed report.
-    result["safety_score"] = 94
-    result["status"] = compute_status(94)
+    # Keep demo scoring scanner-driven now that v3 artifacts cover API, dependency, AppSec, and context risks.
     result = attach_v2_report_artifacts(result)
     result = enrich_scan_result_with_ai(result)
     result = await _save_if_requested(result, user, save_report)
@@ -229,6 +229,7 @@ class GitHubScanRequest(BaseModel):
     repo_url: str
     branch: str | None = None
     save_report: bool = False
+    policy_id: str | None = None
 
 
 def _scan_zip_path(zip_path: str, project_name: str, scan_type: str, extra_metadata: dict | None = None) -> dict:
@@ -251,6 +252,7 @@ def _scan_zip_path(zip_path: str, project_name: str, scan_type: str, extra_metad
 async def scan_upload(
     file: UploadFile = File(...),
     save_report: bool = Query(False),
+    policy_id: str | None = Query(None),
     user=Depends(auth.get_current_user),
 ):
     user = _require_authenticated_user(user)
@@ -263,6 +265,7 @@ async def scan_upload(
             tmp_zip_path,
             project_name=file.filename or "uploaded_project",
             scan_type="upload",
+            extra_metadata={"policy_id": policy_id or "general_ai_app"},
         )
         result = await _save_if_requested(result, user, save_report)
         return JSONResponse(result)
@@ -290,6 +293,7 @@ async def scan_github_repo(payload: GitHubScanRequest, user=Depends(auth.get_cur
                 "repo_owner": repo.owner,
                 "repo_name": repo.repo,
                 "repo_branch": repo.branch or "main/master",
+                "policy_id": payload.policy_id or "general_ai_app",
             },
         )
         result = await _save_if_requested(result, user, payload.save_report)
@@ -312,6 +316,10 @@ def _scan_summary(scan: dict) -> dict:
         "safety_score": scan.get("safety_score"),
         "status": scan.get("status"),
         "summary": scan.get("summary"),
+        "v3_security_score": scan.get("v3_security_score"),
+        "v3_status": scan.get("v3_status"),
+        "policy_id": scan.get("policy_id"),
+        "policy_decision": (scan.get("policy_evaluation") or {}).get("decision"),
         "created_at": scan.get("created_at") or scan.get("timestamp"),
     }
 

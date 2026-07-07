@@ -1,24 +1,23 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import type { ScanReport } from '@/types/scan';
 import { apiFetch, formatApiError } from '@/lib/api';
 
 type Message = { role: 'user' | 'bot'; text: string };
 
 const quickQuestions = [
+  'Explain the policy decision.',
   'What should I fix first?',
-  'Can I deploy this?',
-  'Prove the highest risk path.',
-  'Which patch should I use?'
+  'Which guardrails are weakest?',
+  'Summarize the release risk.'
 ];
 
 export function DapPanel({ report }: { report: ScanReport }) {
   const [question, setQuestion] = useState('');
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    { role: 'bot', text: 'Ask DAP about this report. I can use findings, Prove Mode, patch previews, and the deployment gate.' }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
 
   async function ask(text: string) {
@@ -43,7 +42,7 @@ export function DapPanel({ report }: { report: ScanReport }) {
       responseLength = (data.answer || '').length;
       setMessages((prev) => [...prev.slice(0, -1), { role: 'bot', text: data.answer || 'DAP could not produce an answer.' }]);
     } catch (error) {
-      setMessages((prev) => [...prev.slice(0, -1), { role: 'bot', text: formatApiError(error, 'DAP is unavailable right now.') }]);
+      setMessages((prev) => [...prev.slice(0, -1), { role: 'bot', text: 'Error: Cannot contact Gemini. ' + formatApiError(error, 'DAP is unavailable right now.') }]);
     } finally {
       if (typeof pendo !== 'undefined') {
         pendo.track('dap_question_asked', {
@@ -82,8 +81,8 @@ export function DapPanel({ report }: { report: ScanReport }) {
         <div className="glass-card panel dap-box">
           <div className="panel-head dap-drawer-head">
             <div>
-              <div className="panel-label">DAP assistant</div>
-              <h2 className="panel-title">Ask the report.</h2>
+              <div className="panel-label">DAP security reviewer</div>
+              <h2 className="panel-title">Ask the release review.</h2>
             </div>
             <button className="btn btn-secondary btn-small" type="button" onClick={() => setOpen(false)}>Close</button>
           </div>
@@ -94,11 +93,13 @@ export function DapPanel({ report }: { report: ScanReport }) {
           </div>
           <div className="dap-messages">
             {messages.map((message, index) => (
-              <div className={`dap-msg ${message.role === 'user' ? 'user' : ''}`} key={`${message.role}-${index}`}>{message.text}</div>
+              <div className={`dap-msg ${message.role === 'user' ? 'user' : ''}`} key={`${message.role}-${index}`}>
+                <ReactMarkdown>{message.text}</ReactMarkdown>
+              </div>
             ))}
           </div>
           <form className="form-stack dap-form" onSubmit={onSubmit}>
-            <input className="input" value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="Ask about this scan..." />
+            <input className="input" value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="Ask about policy, guardrails, remedy, or evidence..." />
             <button className="btn btn-primary" type="submit" disabled={loading}>{loading ? 'Asking DAP...' : 'Ask DAP'}</button>
           </form>
         </div>

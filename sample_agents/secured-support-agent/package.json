@@ -1,0 +1,13 @@
+{
+  "name": "secured-ai-support-agent-demo",
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "uvicorn api:app --reload"
+  },
+  "dependencies": {
+    "next": "14.2.35",
+    "react": "18.3.1",
+    "axios": "1.7.9",
+    "jsonwebtoken": "9.0.2"
+  }
+}

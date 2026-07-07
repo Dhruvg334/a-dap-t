@@ -131,8 +131,381 @@ class DeploymentGateSchema(BaseModel):
     severity_counts: dict[str, int] = Field(default_factory=dict)
 
 
+class ProjectMetadataSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    project_name: str = ""
+    scan_type: str = ""
+    source_type: str = "unknown"
+    detected_languages: list[str] = Field(default_factory=list)
+    detected_frameworks: list[str] = Field(default_factory=list)
+    package_managers: list[str] = Field(default_factory=list)
+    total_files_scanned: int = 0
+    total_lines_scanned: int = 0
+
+
+class FileInventoryItemSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    path: str
+    extension: str = ""
+    language: str = "unknown"
+    size_bytes: int = 0
+    line_count: int = 0
+    role: str = "application_code"
+
+
+class FileInventorySchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    project_name: str = ""
+    total_files: int = 0
+    supported_files: int = 0
+    ignored_files: int = 0
+    total_lines: int = 0
+    total_size_bytes: int = 0
+    languages: dict[str, int] = Field(default_factory=dict)
+    roles: dict[str, int] = Field(default_factory=dict)
+    extensions: dict[str, int] = Field(default_factory=dict)
+    package_managers: list[str] = Field(default_factory=list)
+    files: list[FileInventoryItemSchema] = Field(default_factory=list)
+    truncated: bool = False
+
+
+class FrameworkDetectionSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    frontend: list[str] = Field(default_factory=list)
+    backend: list[str] = Field(default_factory=list)
+    agent_frameworks: list[str] = Field(default_factory=list)
+    package_managers: list[str] = Field(default_factory=list)
+    deployment: list[str] = Field(default_factory=list)
+    evidence: list[dict[str, str]] = Field(default_factory=list)
+
+
+
+
+class DependencyRecordSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    name: str
+    version: str = ""
+    ecosystem: str
+    manifest: str
+    source: str = ""
+    scope: str = "runtime"
+    exact: bool = False
+    lockfile_version: str = ""
+
+
+class DependencyRiskSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    id: str
+    title: str
+    severity: str
+    ecosystem: str
+    package: str = ""
+    version: str = ""
+    file: str
+    line: int = 1
+    risk_type: str
+    evidence: str = ""
+    why_it_matters: str
+    recommended_fix: str
+    related_dependency: str = ""
+
+
+class DependencyRiskReportSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    summary: dict[str, Any] = Field(default_factory=dict)
+    manifests: list[dict[str, Any]] = Field(default_factory=list)
+    dependencies: list[DependencyRecordSchema] = Field(default_factory=list)
+    risks: list[DependencyRiskSchema] = Field(default_factory=list)
+    truncated: bool = False
+    scanner_version: str = ""
+    notes: list[str] = Field(default_factory=list)
+
+
+
+
+class ApiEndpointSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    id: str
+    method: str
+    path: str
+    framework: str
+    file: str
+    line: int
+    handler: str = ""
+    auth_status: str = "unknown"
+    rate_limit_status: str = "unknown"
+    cors_status: str = "unknown"
+    request_body_status: str = "unknown"
+    risk_level: str = "low"
+    tags: list[str] | tuple[str, ...] = Field(default_factory=list)
+    evidence: str = ""
+
+
+class ApiRiskSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    id: str
+    title: str
+    severity: str
+    risk_type: str
+    endpoint_id: str
+    method: str
+    path: str
+    framework: str
+    file: str
+    line: int
+    evidence: str = ""
+    why_it_matters: str
+    recommended_fix: str
+    related_control: str = ""
+
+
+class ApiSurfaceReportSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    summary: dict[str, Any] = Field(default_factory=dict)
+    endpoints: list[ApiEndpointSchema] = Field(default_factory=list)
+    risks: list[ApiRiskSchema] = Field(default_factory=list)
+    scanner_version: str = ""
+    notes: list[str] = Field(default_factory=list)
+
+
+
+
+class ContextPoisoningRiskSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    id: str
+    title: str
+    severity: str
+    risk_type: str
+    file: str
+    line: int
+    evidence: str = ""
+    source: str = ""
+    sink: str = ""
+    missing_control: str = ""
+    why_it_matters: str
+    recommended_fix: str
+
+
+class ContextPoisoningReportSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    summary: dict[str, Any] = Field(default_factory=dict)
+    risks: list[ContextPoisoningRiskSchema] = Field(default_factory=list)
+    scanner_version: str = ""
+    notes: list[str] = Field(default_factory=list)
+
+
+
+
+class AppSecRiskSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    id: str
+    title: str
+    severity: str
+    risk_type: str
+    cwe: str = ""
+    file: str
+    line: int
+    evidence: str = ""
+    source: str = ""
+    sink: str = ""
+    missing_control: str = ""
+    confidence: str = "medium"
+    why_it_matters: str
+    recommended_fix: str
+
+
+class AppSecRiskReportSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    summary: dict[str, Any] = Field(default_factory=dict)
+    risks: list[AppSecRiskSchema] = Field(default_factory=list)
+    scanner_version: str = ""
+    notes: list[str] = Field(default_factory=list)
+
+
+
+class CapabilitySchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    id: str
+    name: str
+    label: str = ""
+    capability_type: str
+    source: str = ""
+    risk_level: str = "low"
+    file: str = ""
+    line: int = 1
+    language: str = "unknown"
+    evidence: str = ""
+    data_touched: list[str] = Field(default_factory=list)
+    external_effect: bool = False
+    requires_approval: bool = False
+    approval_found: bool = False
+    audit_logging_found: bool = False
+    allowlist_found: bool = False
+    control_gaps: list[str] = Field(default_factory=list)
+    related_findings: list[str] = Field(default_factory=list)
+    related_api_endpoints: list[str] = Field(default_factory=list)
+    related_appsec_risks: list[str] = Field(default_factory=list)
+    related_context_risks: list[str] = Field(default_factory=list)
+    confidence: str = "medium"
+    recommended_review: str = ""
+
+
+class CapabilityMapSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    summary: dict[str, Any] = Field(default_factory=dict)
+    capabilities: list[CapabilitySchema] = Field(default_factory=list)
+    scanner_version: str = ""
+    notes: list[str] = Field(default_factory=list)
+
+
+class TrustBoundarySchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    id: str
+    source: str
+    target: str
+    risk_type: str
+    status: str = "review"
+    severity: str = "Medium"
+    file: str = ""
+    line: int = 1
+    evidence: str = ""
+    related_capabilities: list[str] = Field(default_factory=list)
+    related_risks: list[str] = Field(default_factory=list)
+    recommended_control: str = ""
+
+
+class TrustBoundaryReportSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    summary: dict[str, Any] = Field(default_factory=dict)
+    boundaries: list[TrustBoundarySchema] = Field(default_factory=list)
+    scanner_version: str = ""
+    notes: list[str] = Field(default_factory=list)
+
+
+
+class GuardrailControlSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    control_id: str
+    label: str
+    category: str = "security"
+    status: str = "unknown"
+    coverage_percent: int | None = None
+    relevant_instances: int = 0
+    protected_instances: int = 0
+    risk_instances: int = 0
+    risk_level: str = "info"
+    evidence: list[dict[str, Any]] = Field(default_factory=list)
+    recommended_action: str = ""
+    related_artifacts: list[str] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)
+
+
+class GuardrailMatrixReportSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    summary: dict[str, Any] = Field(default_factory=dict)
+    controls: list[GuardrailControlSchema] = Field(default_factory=list)
+    scanner_version: str = ""
+    notes: list[str] = Field(default_factory=list)
+
+
+
+class PolicyEvaluationSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    selected_policy: dict[str, Any] = Field(default_factory=dict)
+    available_policies: list[dict[str, Any]] = Field(default_factory=list)
+    decision: str = "REVIEW"
+    summary: str = ""
+    minimum_safety_score: int = 75
+    safety_score: int = 0
+    legacy_safety_score: int = 0
+    score_basis: str = "legacy_safety_score"
+    score_passed: bool = False
+    v3_gate_score: int = 0
+    required_controls_total: int = 0
+    required_controls_passed: int = 0
+    required_controls_missing: int = 0
+    passed_controls: list[str] = Field(default_factory=list)
+    review_controls: list[str] = Field(default_factory=list)
+    missing_required_controls: list[dict[str, Any]] = Field(default_factory=list)
+    hard_blockers: list[dict[str, Any]] = Field(default_factory=list)
+    blocker_count: int = 0
+    review_count: int = 0
+    scanner_version: str = ""
+    notes: list[str] = Field(default_factory=list)
+
+
+class RemedyPlanStepSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    id: str
+    priority: int = 0
+    priority_score: int = 0
+    source: str = ""
+    title: str
+    severity: str = "Medium"
+    control_id: str = ""
+    affected_capabilities: list[str] = Field(default_factory=list)
+    related_artifacts: list[str] = Field(default_factory=list)
+    risk_instances: int = 0
+    recommended_fix: str = ""
+    why_it_matters: str = ""
+    estimated_effort: str = "medium"
+    expected_gate_impact: str = ""
+    validation_steps: list[str] = Field(default_factory=list)
+    evidence: list[dict[str, Any]] = Field(default_factory=list)
+    manual_review_required: bool = True
+
+
+class RemedyPlanReportSchema(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    summary: dict[str, Any] = Field(default_factory=dict)
+    steps: list[RemedyPlanStepSchema] = Field(default_factory=list)
+    release_path: list[str] = Field(default_factory=list)
+    summary_text: str = ""
+    scanner_version: str = ""
+    notes: list[str] = Field(default_factory=list)
+
 class ScanResultSchema(BaseModel):
     model_config = ConfigDict(extra="allow")
+
+    schema_version: str = "2.0"
+    v3_security_score: int | None = None
+    v3_status: str | None = None
+    v3_score_breakdown: dict[str, Any] | None = None
+    project_metadata: ProjectMetadataSchema | None = None
+    file_inventory: FileInventorySchema | None = None
+    framework_detection: FrameworkDetectionSchema | None = None
+    dependency_risks: DependencyRiskReportSchema | None = None
+    api_surface: ApiSurfaceReportSchema | None = None
+    context_poisoning_risks: ContextPoisoningReportSchema | None = None
+    appsec_risks: AppSecRiskReportSchema | None = None
+    capability_map: CapabilityMapSchema | None = None
+    trust_boundaries: TrustBoundaryReportSchema | None = None
+    guardrail_matrix: GuardrailMatrixReportSchema | None = None
+    policy_evaluation: PolicyEvaluationSchema | None = None
+    remedy_plan: RemedyPlanReportSchema | None = None
 
     project_name:          str
     scan_type:             str

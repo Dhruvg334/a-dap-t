@@ -10,10 +10,10 @@ import { BrandWord } from '@/components/ui/BrandWord';
 type LoginResponse = { idToken?: string; refreshToken?: string; expiresIn?: string; localId?: string; email?: string; displayName?: string };
 
 const accessReasons = [
-  ['Run scans', 'Use protected demo, GitHub, and ZIP scan endpoints.'],
+  ['Run scans', 'Use protected demo, GitHub, and ZIP scan endpoints with policy packs.'],
   ['Save history', 'Reopen previous reports and continue review later.'],
-  ['Ask DAP', 'Use the current report context for fix-first guidance.'],
-  ['Gate deploys', 'Generate workflow and policy artifacts for CI/CD.'],
+  ['Ask DAP', 'Use the current report context for release-review guidance.'],
+  ['Gate deploys', 'Review policy decisions, guardrail gaps, and remedy steps.'],
 ];
 
 export default function SignUpPage() {
@@ -65,7 +65,7 @@ export default function SignUpPage() {
         displayName: data.displayName || displayName,
       });
 
-      pendo.identify({
+      if (typeof pendo !== 'undefined') pendo.identify({
         visitor: {
           id: data.localId || '',
           email: data.email || email,
@@ -73,7 +73,6 @@ export default function SignUpPage() {
         },
       });
 
-      router.push(getNextPath());
       const redirectPath = getNextPath();
       if (typeof pendo !== 'undefined') {
         pendo.track('account_created', {
@@ -97,7 +96,7 @@ export default function SignUpPage() {
         <div className="glass-card auth-card shimmer">
           <div className="tech-label"><span className="pulse-dot" /> CREATE ACCESS</div>
           <h1>Start scanning.</h1>
-          <p className="muted">Create an account to run protected scans, save reports, and use DAP with report context.</p>
+          <p className="muted">Create an account to run protected scans, save reports, and review security artifacts.</p>
           <form className="form-stack" onSubmit={submit} style={{ marginTop: 22 }}>
             {error && <div className="form-error">{error}</div>}
             <label className="form-row">

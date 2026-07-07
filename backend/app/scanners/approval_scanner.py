@@ -38,6 +38,8 @@ APPROVAL_KEYWORDS: list[str] = [
     "confirm_before_execute",
     "approved_by",
     "approval_status",
+    "approval_id",
+    "reviewer",
     "approval_gate",
     "needs_review",
     "approve_before_execute",

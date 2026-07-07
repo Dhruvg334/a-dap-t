@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+requests>=2.0
+pyjwt
+langchain
+chromadb
+python-multipart
+PyYAML
+-e git+https://github.com/example/unsafe-agent-toolkit.git#egg=unsafe-agent-toolkit

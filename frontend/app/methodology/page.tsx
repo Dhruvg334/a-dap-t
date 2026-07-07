@@ -1,115 +1,147 @@
-import { BrandWord } from '@/components/ui/BrandWord';
+'use client';
 
-const riskRows = [
-  ['Prompt Injection', 'Committed prompts, unsafe prompt assembly, raw user input inside agent instructions.', 'Prompt Injection Risk'],
-  ['Secret Exposure', 'Hardcoded keys, tokens, JWT secrets, and credential-like source values.', 'Secret Exposure Risk'],
-  ['Tool Permission', 'Unscoped tools, dangerous functions, shell/code execution, external actions.', 'Tool Permission Risk'],
-  ['Human Approval', 'High-impact actions without confirmation, review, or approval patterns.', 'Human Approval Risk'],
-  ['Data Exposure', 'PII-like fields, customer records, and unmasked sensitive outputs.', 'Data Exposure Risk'],
-  ['Auditability', 'Missing logging around tool calls, agent decisions, or critical actions.', 'Auditability Risk'],
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { AdaptBadge, AdaptButton, PageHeader, SectionTitle } from '@/components/ui/AdaptUI';
+
+const pipeline = [
+  ['01', 'Inventory', 'Read source files as text, detect frameworks, package managers, config files, and project shape.'],
+  ['02', 'Map surface', 'Build dependency, API, AppSec, context, capability, and trust-boundary artifacts.'],
+  ['03', 'Check controls', 'Look for visible auth, rate limits, approval gates, audit logs, allowlists, masking, and isolation.'],
+  ['04', 'Apply policy', 'Combine score, hard blockers, and required controls into BLOCK, REVIEW, or ALLOW.'],
+  ['05', 'Plan remedy', 'Turn evidence into a fix-first sequence with expected gate impact and validation steps.'],
 ];
 
-const flow = [
-  ['01', 'Load source', 'GitHub ZIP, uploaded ZIP, or demo agent files are read as text only.'],
-  ['02', 'Run scanners', 'Rule modules detect agent-specific risks and produce stable finding IDs.'],
-  ['03', 'Build artifacts', 'The backend generates Prove Mode paths, patch previews, and a deployment gate decision.'],
-  ['04', 'Explain safely', 'Gemini summarizes the deterministic result. It does not decide the verdict.'],
-  ['05', 'Review report', 'Frontend shows score, risk panels, findings, patches, DAP, and export actions.'],
+const surfaces = [
+  ['Dependencies', 'Package hygiene and supply-chain drift.', 'Missing lockfile · unpinned spec · direct git dependency'],
+  ['API Surface', 'Routes and endpoint controls.', 'Auth · rate limit · CORS · upload boundary'],
+  ['AppSec Sinks', 'Risky static code paths.', 'SSRF · path traversal · command sink · unsafe extraction'],
+  ['Capabilities', 'What the app can actually do.', 'Tool action · external effect · sensitive data'],
+  ['Guardrails', 'Whether risky behavior is protected.', 'Approval · audit · allowlist · masking · isolation'],
+  ['Policy & Remedy', 'Whether the release can move forward.', 'Decision · blockers · fix sequence · validation'],
+];
+
+const limitations = [
+  ['Static review is not runtime proof', 'A-DAP-T reads project files and configuration. It does not execute uploaded projects or confirm live exploits.'],
+  ['Missing evidence is not always absence', 'Some controls may live outside the scanned repository. The report says what was visible in the submitted project.'],
+  ['AI explains, policy decides', 'The assistant helps interpret report evidence. It does not invent the verdict or replace manual security review.'],
 ];
 
 export default function MethodologyPage() {
+  const [openLimit, setOpenLimit] = useState(0);
+
   return (
-    <main className="page-shell">
-      <div className="container">
-        <div className="page-head centered">
-          <div>
-            <div className="tech-label page-kicker"><span className="pulse-dot" /> METHODOLOGY</div>
-            <h1 className="page-title">How the scanner decides risk.</h1>
-          </div>
-          <p className="page-desc">The security verdict is deterministic. Gemini explains results only after rule-based scanning creates findings, severity, scores, patch previews, attack paths, and deployment gate decisions.</p>
-        </div>
+    <main className="adapt-page methodology-workspace methodology-clean methodology-refined">
+      <div className="adapt-container">
+        <PageHeader label="Methodology" title="How A-DAP-T reviews AI application security">
+          A-DAP-T performs a static, evidence-led review of project files to map release risk, weak controls, policy blockers, and fix-first actions before deployment.
+        </PageHeader>
 
-        <section className="glass-card panel" style={{ marginBottom: 18 }}>
-          <div className="panel-head">
-            <div>
-              <div className="panel-label">Scan architecture</div>
-              <h2 className="panel-title">Text-only source analysis pipeline.</h2>
-            </div>
-            <span className="pill safe">No code execution</span>
-          </div>
-          <div className="arch-grid">
-            {flow.map(([num, title, body], index) => (
-              <div key={num} style={{ display: 'contents' }}>
-                <div className="arch-card">
-                  <div className="timeline-dot" style={{ margin: '0 auto 10px' }}>{num}</div>
-                  <strong>{title}</strong>
-                  <p className="faint" style={{ margin: '7px 0 0' }}>{body}</p>
-                </div>
-                {index < flow.length - 1 && <div className="arch-arrow">→</div>}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="grid grid-3" style={{ marginBottom: 18 }}>
-          {[
-            ['Rule engine owns verdict', 'Findings, severity, category scores, safety score, attack paths, patch previews, and gate decisions are generated by backend logic.'],
-            ['AI explains only', 'Gemini writes compact summaries and DAP answers grounded in the report. It does not invent findings or change scores.'],
-            ['Safe by design', 'GitHub repositories and ZIP files are safely extracted, limited, read as text, and never executed by the scanner.'],
-          ].map(([title, body]) => (
-            <article className="glass-card panel shimmer" key={title}>
-              <div className="panel-label">CONTROL</div>
-              <h2 className="panel-title">{title}</h2>
-              <p className="muted">{body}</p>
-            </article>
+        <nav className="methodology-mini-nav" aria-label="Methodology sections">
+          {['Pipeline', 'Surfaces', 'Decision logic', 'AI boundaries', 'Limitations'].map((item) => (
+            <a key={item} href={`#${item.toLowerCase().replaceAll(' ', '-')}`}>{item}</a>
           ))}
+        </nav>
+
+        <motion.section 
+          id="pipeline" 
+          className="adapt-panel method-compact-section method-hero-explain"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+        >
+          <SectionTitle label="Review pipeline" title="From project files to release decision">
+            The scanner turns project evidence into a release decision. Each step creates an artifact used by the report workspace.
+          </SectionTitle>
+          <div className="method-process-grid">
+            {pipeline.map(([num, title, body]) => (
+              <article key={title}>
+                <span>{num}</span>
+                <h3>{title}</h3>
+                <p>{body}</p>
+              </article>
+            ))}
+          </div>
+        </motion.section>
+
+        <motion.section 
+          id="surfaces" 
+          className="adapt-panel method-compact-section"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
+          <SectionTitle label="Security surfaces" title="What gets reviewed" />
+          <div className="surface-method-table compact refined">
+            {surfaces.map(([title, body, signal]) => (
+              <div key={title}>
+                <strong>{title}</strong>
+                <p>{body}</p>
+                <AdaptBadge tone="neutral">{signal}</AdaptBadge>
+              </div>
+            ))}
+          </div>
+        </motion.section>
+
+        <motion.section 
+          id="decision-logic" 
+          className="methodology-decision-card refined"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="adapt-panel">
+            <SectionTitle label="Scoring and policy" title="Score is not the whole decision" />
+            <p>A-DAP-T produces a security score, but release status also depends on required controls and hard blockers. A high score can still need review if a critical guardrail is missing.</p>
+          </div>
+          <div className="adapt-panel decision-chain-panel refined">
+            <span>Score check</span>
+            <span>Required controls</span>
+            <span>Hard blockers</span>
+            <strong>Final decision</strong>
+          </div>
+        </motion.section>
+
+        <section id="ai-boundaries" className="methodology-two-col compact-two-col refined">
+          <div className="adapt-panel">
+            <SectionTitle label="AI role" title="AI explains report evidence" />
+            <ul>
+              <li>Explain the policy decision</li>
+              <li>Summarize release risk</li>
+              <li>Prioritize fix-first actions</li>
+              <li>Write developer handoff briefs</li>
+            </ul>
+          </div>
+          <div className="adapt-panel">
+            <SectionTitle label="Boundaries" title="AI does not invent the verdict" />
+            <ul>
+              <li>Does not execute project code</li>
+              <li>Does not confirm live exploits</li>
+              <li>Does not guarantee production safety</li>
+              <li>Does not replace manual review</li>
+            </ul>
+          </div>
         </section>
 
-        <section className="glass-card panel" style={{ marginBottom: 18 }}>
-          <div className="panel-head">
-            <div>
-              <div className="panel-label">Risk categories</div>
-              <h2 className="panel-title">Six categories, one deployment decision.</h2>
-            </div>
-            <span className="pill neutral">Higher risk score is worse</span>
-          </div>
-          <div className="method-table">
-            <div className="method-row method-head">
-              <div className="method-cell">Category</div>
-              <div className="method-cell">What it checks</div>
-              <div className="method-cell">Report output</div>
-            </div>
-            {riskRows.map(([category, checks, output]) => (
-              <div className="method-row" key={category}>
-                <div className="method-cell"><strong>{category}</strong></div>
-                <div className="method-cell">{checks}</div>
-                <div className="method-cell">{output}</div>
-              </div>
+        <section id="limitations" className="adapt-panel method-compact-section">
+          <SectionTitle label="Limitations" title="What A-DAP-T does not claim" />
+          <div className="limit-accordion compact">
+            {limitations.map(([title, body], index) => (
+              <details key={title} open={openLimit === index} onToggle={(event) => { if ((event.target as HTMLDetailsElement).open) setOpenLimit(index); }}>
+                <summary>{title}</summary>
+                <p>{body}</p>
+              </details>
             ))}
           </div>
         </section>
 
-        <section className="grid grid-2">
-          <article className="glass-card panel">
-            <div className="panel-label">Scoring</div>
-            <h2 className="panel-title">Safety score vs category score.</h2>
-            <p className="muted">The overall safety score is higher when the agent is safer. Category scores are risk scores, so higher means worse in that specific area.</p>
-            <ul className="list-clean">
-              <li>0–39 category score: lower risk</li>
-              <li>40–69 category score: watch and review</li>
-              <li>70–100 category score: fix first</li>
-            </ul>
-          </article>
-          <article className="glass-card panel">
-            <div className="panel-label">Deployment gate</div>
-            <h2 className="panel-title">BLOCK, REVIEW, or ALLOW.</h2>
-            <p className="muted">The gate uses safety score, critical findings, secret exposure, unsafe high-impact tools, and missing approval gates to decide if a repo should move forward.</p>
-            <ul className="list-clean">
-              <li>BLOCK: unsafe before deployment</li>
-              <li>REVIEW: proceed only after human review</li>
-              <li>ALLOW: no hard blocker detected</li>
-            </ul>
-          </article>
+        <section className="final-method-cta compact-final-cta">
+          <h2>Ready to review a project?</h2>
+          <p>Start with the built-in demo, then scan your own GitHub repository or ZIP project.</p>
+          <div><AdaptButton tone="primary" href="/scanner">Start Scan</AdaptButton><AdaptButton tone="secondary" href="/report/current">View Report</AdaptButton></div>
         </section>
       </div>
     </main>

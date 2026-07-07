@@ -1,378 +1,315 @@
 'use client';
 
-import { useState } from 'react';
-import type { AttackSimulation, PatchPreview, ScanReport } from '@/types/scan';
-import { categoryName, gateClass, severityClass, severityLabel } from '@/lib/score';
+import { useMemo, useState } from 'react';
+import { AlertTriangle, ChevronRight, Download, Filter, Search, ShieldAlert } from 'lucide-react';
+import type { Capability, GuardrailControl, RemedyPlanStep, ScanReport } from '@/types/scan';
 import { copyText, downloadText } from '@/lib/api';
-import { DapPanel } from '@/components/dap/DapPanel';
+import { AdaptBadge, AdaptButton, EmptyState, SectionTitle, StatTile } from '@/components/ui/AdaptUI';
+import { categoryName, displayNumber, gateClass, riskClass, scoreTone, severityClass, severityLabel } from '@/lib/score';
 
-function riskFillStyle(value: number): string {
-  const score = Math.max(0, Math.min(100, Number(value) || 0));
-  if (score <= 39) return 'linear-gradient(90deg, #10b981 0%, #34d399 100%)';
-  if (score <= 69) return 'linear-gradient(90deg, #10b981 0%, #f59e0b 100%)';
-  return 'linear-gradient(90deg, #10b981 0%, #f59e0b 58%, #ef4444 100%)';
+type Panel = 'overview' | 'surfaces' | 'capabilities' | 'guardrails' | 'policy_remedy' | 'proof' | 'evidence';
+type FilterTone = 'all' | 'danger' | 'warning' | 'safe';
+
+const panels: Array<{ id: Panel; label: string }> = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'surfaces', label: 'Surfaces' },
+  { id: 'capabilities', label: 'Capabilities' },
+  { id: 'guardrails', label: 'Guardrails' },
+  { id: 'policy_remedy', label: 'Policy & Remedy' },
+  { id: 'proof', label: 'Proof' },
+  { id: 'evidence', label: 'Evidence' },
+];
+
+function text(value: unknown, fallback = '—'): string {
+  if (value === null || value === undefined || value === '') return fallback;
+  if (Array.isArray(value)) return value.filter(Boolean).join(', ') || fallback;
+  return String(value);
 }
 
-function gateLabel(decision?: string): string {
-  const clean = String(decision || 'REVIEW').toUpperCase();
-  if (clean === 'BLOCK') return 'BLOCKED';
-  if (clean === 'ALLOW') return 'ALLOWED';
-  return 'REVIEW';
+function decision(report: ScanReport) {
+  return report.policy_evaluation?.decision || report.deployment_gate?.decision || 'REVIEW';
 }
 
-function blockerCount(report: ScanReport): number {
-  return report.deployment_gate?.blockers?.length || 0;
+function securityScore(report: ScanReport) {
+  return displayNumber(report.v3_security_score ?? report.safety_score, 0);
+}
+
+function statusTone(value?: string): 'safe' | 'warning' | 'danger' | 'neutral' {
+  const tone = gateClass(value);
+  if (tone === 'safe' || tone === 'warning' || tone === 'danger') return tone;
+  return 'neutral';
+}
+
+function artifactCounts(report: ScanReport) {
+  return {
+    dependencies: report.dependency_risks?.risks?.length || 0,
+    api: report.api_surface?.risks?.length || 0,
+    appsec: report.appsec_risks?.risks?.length || 0,
+    context: report.context_poisoning_risks?.risks?.length || 0,
+    capabilities: report.capability_map?.capabilities?.length || 0,
+    boundaries: report.trust_boundaries?.boundaries?.length || 0,
+    weakGuardrails: displayNumber(report.guardrail_matrix?.summary?.risky_controls, 0),
+    remedy: report.remedy_plan?.steps?.length || 0,
+  };
+}
+
+function topBlockers(report: ScanReport) {
+  const items: string[] = [];
+  report.policy_evaluation?.hard_blockers?.slice(0, 4).forEach((blocker) => items.push(text(blocker.title || blocker.control_id || blocker.risk_type, 'Policy blocker')));
+  report.guardrail_matrix?.controls?.filter((control) => ['weak', 'partial'].includes(String(control.status).toLowerCase())).slice(0, 4).forEach((control) => {
+    const label = text(control.label || control.control_id, 'Guardrail gap');
+    if (!items.includes(label)) items.push(label);
+  });
+  return items.slice(0, 4);
+}
+
+function hasRealValue(value: unknown) {
+  return value !== undefined && value !== null && value !== '';
 }
 
 export function ReportWorkspace({ report }: { report: ScanReport }) {
-  const gate = report.deployment_gate || null;
-  const summary = report.summary || {};
-  const findings = report.findings || [];
-  const attacks = report.attack_simulations || [];
-  const patches = report.patches || [];
-  const categories = report.category_scores || {};
+  const [activePanel, setActivePanel] = useState<Panel>('overview');
+  const [capabilityFilter, setCapabilityFilter] = useState<FilterTone>('all');
+  const [guardrailFilter, setGuardrailFilter] = useState('all');
+  const [evidenceQuery, setEvidenceQuery] = useState('');
+  const [openCapability, setOpenCapability] = useState<Capability | null>(null);
+  const [openRemedy, setOpenRemedy] = useState<string | null>(null);
 
-  const projectName = report.project_name || report.repo_name || 'Current scan';
-  const score = Number(report.safety_score ?? 0);
-  const gateDecision = gate?.decision || (score >= 80 ? 'ALLOW' : score >= 60 ? 'REVIEW' : 'BLOCK');
-  const blockers = blockerCount(report);
+  const score = securityScore(report);
+  const counts = artifactCounts(report);
+  const projectName = report.project_name || report.repo_name || report.upload_name || 'Current scan';
+  const currentDecision = decision(report);
+  const findings = report.findings || [];
+
+  const filteredCapabilities = useMemo(() => {
+    const capabilities = report.capability_map?.capabilities || [];
+    if (capabilityFilter === 'all') return capabilities;
+    return capabilities.filter((cap) => riskClass(cap.risk_level) === capabilityFilter || severityClass(cap.risk_level) === capabilityFilter);
+  }, [report.capability_map?.capabilities, capabilityFilter]);
+
+  const filteredControls = useMemo(() => {
+    const controls = report.guardrail_matrix?.controls || [];
+    if (guardrailFilter === 'all') return controls;
+    return controls.filter((control) => String(control.status || '').toLowerCase() === guardrailFilter);
+  }, [report.guardrail_matrix?.controls, guardrailFilter]);
+
+  const evidenceRows = useMemo(() => {
+    const rows = [
+      ...findings.map((item) => ({ type: item.category || 'Finding', title: item.title || 'Finding', severity: item.severity, file: item.file, line: item.line, detail: item.description || item.why_it_matters || item.evidence, fix: item.suggested_fix })),
+      ...(report.appsec_risks?.risks || []).map((item) => ({ type: 'AppSec', title: item.title, severity: item.severity, file: item.file, line: item.line, detail: item.why_it_matters || item.evidence, fix: item.recommended_fix })),
+      ...(report.api_surface?.risks || []).map((item) => ({ type: 'API', title: item.title, severity: item.severity, file: item.file, line: item.line, detail: item.why_it_matters || item.evidence, fix: item.recommended_fix })),
+      ...(report.context_poisoning_risks?.risks || []).map((item) => ({ type: 'Context', title: item.title, severity: item.severity, file: item.file, line: item.line, detail: item.why_it_matters || item.evidence, fix: item.recommended_fix })),
+      ...(report.dependency_risks?.risks || []).map((item) => ({ type: 'Dependency', title: item.title || item.package, severity: item.severity, file: item.file, line: item.line, detail: item.why_it_matters || item.evidence, fix: item.recommended_fix })),
+    ];
+    const query = evidenceQuery.trim().toLowerCase();
+    if (!query) return rows;
+    return rows.filter((row) => JSON.stringify(row).toLowerCase().includes(query));
+  }, [report, findings, evidenceQuery]);
 
   return (
-    <main className="page-shell report-page-shell">
-      <div className="container report-container">
-        <div className="page-head centered report-hero-head">
-          <div>
-            <div className="tech-label page-kicker"><span className="pulse-dot" /> V2 REPORT WORKSPACE</div>
-            <h1 className="page-title">Deployment<br />verdict.</h1>
-            <p className="page-desc">Review score, policy blockers, findings, static proof paths, generated patch previews, and deployment gate output in one report workspace.</p>
-          </div>
-          <div className="report-export-actions">
-            <button className="btn btn-secondary" onClick={() => {
-              if (typeof pendo !== 'undefined') {
-                pendo.track('report_json_downloaded', {
-                  project_name: projectName,
-                  safety_score: score,
-                  gate_decision: gateDecision,
-                  findings_count: findings.length,
-                  file_format: 'json',
-                });
-              }
-              downloadText(`${projectName}-report.json`, JSON.stringify(report, null, 2), 'application/json');
-            }}>Download JSON</button>
-            <button className="btn btn-primary" onClick={() => {
-              if (typeof pendo !== 'undefined') {
-                pendo.track('report_pdf_exported', {
-                  project_name: projectName,
-                  safety_score: score,
-                  gate_decision: gateDecision,
-                  findings_count: findings.length,
-                });
-              }
-              window.print();
-            }}>Export PDF</button>
-          </div>
+    <main className="adapt-page report-workspace-page" style={{ paddingTop: '100px' }}>
+      <div className="adapt-container" style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '40px', alignItems: 'start', maxWidth: '1440px' }}>
+        
+        <aside style={{ display: 'flex', flexDirection: 'column', gap: '24px', position: 'sticky', top: '100px' }}>
+          
+          <nav aria-label="Report panels" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {panels.map((panel) => (
+              <button 
+                key={panel.id} 
+                onClick={() => setActivePanel(panel.id)}
+                style={{
+                  textAlign: 'left',
+                  padding: '12px 18px',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  fontWeight: activePanel === panel.id ? 700 : 500,
+                  background: activePanel === panel.id ? 'var(--adapt-border)' : 'transparent',
+                  color: activePanel === panel.id ? 'var(--adapt-accent)' : 'var(--adapt-muted)',
+                  transition: 'all 0.2s ease',
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                {panel.label}
+              </button>
+            ))}
+          </nav>
+        </aside>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', minWidth: 0 }}>
+          <header style={{ padding: '40px', background: 'var(--adapt-surface)', border: '1px solid var(--adapt-border)', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div>
+              <div className="adapt-kicker"><span />Security review report</div>
+              <h1 style={{ fontFamily: 'Space Grotesk, Inter, sans-serif', fontSize: 'clamp(28px, 3.5vw, 42px)', lineHeight: 1.1, margin: '16px 0 8px', textTransform: 'uppercase', letterSpacing: '-0.02em', color: 'var(--adapt-text)' }}>{projectName}</h1>
+              <p style={{ color: 'var(--adapt-muted)', fontSize: '15px' }}>Policy: {text(report.policy_evaluation?.selected_policy?.label || report.policy_id, 'General AI App')} · Source: {text(report.scan_type)}</p>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '12px' }}>
+              <AdaptButton tone="primary" href="/scanner">Open Scanner</AdaptButton>
+              <AdaptButton tone="secondary" href="/compare">Compare</AdaptButton>
+              <AdaptButton tone="secondary" onClick={() => downloadText(`${projectName}-adapt-report.json`, JSON.stringify(report, null, 2), 'application/json')}><Download size={14} />Export</AdaptButton>
+            </div>
+          </header>
+
+          <section className="report-panel-stage" style={{ background: 'transparent', border: 'none', padding: 0 }}>
+            {activePanel === 'overview' && <OverviewPanel report={report} score={score} counts={counts} blockers={topBlockers(report)} setPanel={setActivePanel} />}
+            {activePanel === 'surfaces' && <SurfacesPanel report={report} counts={counts} />}
+            {activePanel === 'capabilities' && <CapabilitiesPanel capabilities={filteredCapabilities} filter={capabilityFilter} setFilter={setCapabilityFilter} onOpen={setOpenCapability} />}
+            {activePanel === 'guardrails' && <GuardrailsPanel controls={filteredControls} filter={guardrailFilter} setFilter={setGuardrailFilter} />}
+            {activePanel === 'policy_remedy' && <PolicyRemedyPanel report={report} openRemedy={openRemedy} setOpenRemedy={setOpenRemedy} />}
+            {activePanel === 'proof' && <ProofPanel report={report} />}
+            {activePanel === 'evidence' && <EvidencePanel rows={evidenceRows} query={evidenceQuery} setQuery={setEvidenceQuery} />}
+          </section>
         </div>
-
-        <section className="stat-grid report-stat-grid">
-          <div className="glass-card stat shimmer">
-            <div className="stat-value">{score}</div>
-            <div className="stat-label">Safety Score</div>
-          </div>
-          <div className="glass-card stat">
-            <div className="stat-value text">{gateLabel(gateDecision)}</div>
-            <div className="stat-label">Deployment Gate</div>
-          </div>
-          <div className="glass-card stat">
-            <div className="stat-value">{summary.critical ?? 0}</div>
-            <div className="stat-label">Critical</div>
-          </div>
-          <div className="glass-card stat">
-            <div className="stat-value">{blockers}</div>
-            <div className="stat-label">Policy Blockers</div>
-          </div>
-        </section>
-
-        <div className="report-stack">
-          <ExecutiveVerdict report={report} />
-          <CategoryPanel categories={categories} />
-          <FindingsPanel findings={findings} />
-          <AttackPanel attacks={attacks} />
-          <PatchPanel patches={patches} />
-          <DeploymentGatePanel gate={gate} score={score} />
-        </div>
-
-        <DapPanel report={report} />
       </div>
+
+      {openCapability ? <CapabilityDrawer capability={openCapability} onClose={() => setOpenCapability(null)} /> : null}
     </main>
   );
 }
 
-function ExecutiveVerdict({ report }: { report: ScanReport }) {
-  const gate = report.deployment_gate;
-  const decision = gate?.decision || 'REVIEW';
-  const minimum = gate?.minimum_safety_score ?? 75;
-  const score = Number(report.safety_score ?? gate?.gate_score ?? 0);
-  const blockers = gate?.blockers || [];
-  const scorePasses = score >= minimum;
-  const isBlocked = String(decision).toUpperCase() === 'BLOCK';
-
-  let verdictText = gate?.summary || report.ai_report_summary || report.ai_summary || 'A-DAP-T generated a deterministic risk report for this agent.';
-  if (isBlocked && scorePasses && blockers.length) {
-    verdictText = `Score gate passed (${score}/${minimum}), but deployment is blocked because ${blockers.length} mandatory policy blocker${blockers.length === 1 ? '' : 's'} failed.`;
-  }
-
+function OverviewPanel({ report, score, counts, blockers, setPanel }: { report: ScanReport; score: number; counts: ReturnType<typeof artifactCounts>; blockers: string[]; setPanel: (panel: Panel) => void }) {
+  const fixes = report.remedy_plan?.steps?.slice(0, 3) || [];
+  const currentDecision = decision(report);
   return (
-    <section className="glass-card panel shimmer executive-verdict-card">
-      <div className="panel-head report-panel-head">
-        <div>
-          <div className="panel-label">Executive verdict</div>
-          <h2 className="panel-title">Can this agent ship?</h2>
+    <div className="report-panel-content overview-panel refined">
+      <section className="overview-release-card adapt-panel">
+        <div className="adapt-kicker"><span />Release decision</div>
+        <div className="overview-release-main">
+          <h2>Can this app ship?</h2>
+          <div className="overview-decision-badge"><AdaptBadge tone={statusTone(currentDecision)}>{currentDecision}</AdaptBadge><strong>{score}/100</strong></div>
         </div>
-        <span className={`pill ${gateClass(decision)}`}>{gate?.decision_badge || gateLabel(decision)}</span>
-      </div>
-      <p className="muted verdict-copy">{verdictText}</p>
-      {isBlocked && scorePasses && blockers.length ? <p className="faint">This is expected gate behavior: a high score does not override required approval, audit, or tool-safety controls.</p> : null}
-      {!isBlocked && gate?.decision_reason ? <p className="faint">{gate.decision_reason}</p> : null}
-      {gate?.required_action && <p><strong>Required action:</strong> <span className="muted">{gate.required_action}</span></p>}
-    </section>
+        <p>{report.policy_evaluation?.summary || 'The release decision is based on score, required controls, hard blockers, and visible evidence in the scan report.'}</p>
+        <div className="overview-score-row compact">
+          <StatTile label="Dependencies" value={counts.dependencies} />
+          <StatTile label="API risks" value={counts.api} />
+          <StatTile label="AppSec" value={counts.appsec} />
+          <StatTile label="Capabilities" value={counts.capabilities} />
+          <StatTile label="Weak guardrails" value={counts.weakGuardrails} tone={counts.weakGuardrails ? 'warning' : 'safe'} />
+        </div>
+      </section>
+
+      <section className="overview-action-grid">
+        <div className="adapt-panel">
+          <SectionTitle label="Top blockers" title="What stops release" />
+          {blockers.length ? <ul className="adapt-list refined-list">{blockers.map((item) => <li key={item}><ShieldAlert size={14} />{item}</li>)}</ul> : <p className="muted-copy">No hard blockers were returned by the selected policy.</p>}
+          <AdaptButton tone="secondary" onClick={() => setPanel('policy_remedy')}>Open policy logic</AdaptButton>
+        </div>
+        <div className="adapt-panel">
+          <SectionTitle label="Fix first" title="Next actions" />
+          {fixes.length ? <ol className="adapt-ordered-list refined-list">{fixes.map((step) => <li key={step.id || step.title}>{step.title}</li>)}</ol> : <p className="muted-copy">No remedy steps were generated for this report.</p>}
+          <AdaptButton tone="secondary" onClick={() => setPanel('policy_remedy')}>Open remedy plan</AdaptButton>
+        </div>
+      </section>
+    </div>
   );
 }
 
-function CategoryPanel({ categories }: { categories: Record<string, number> }) {
-  const entries = Object.entries(categories);
-  if (!entries.length) return null;
+function SurfacesPanel({ report, counts }: { report: ScanReport; counts: ReturnType<typeof artifactCounts> }) {
+  const surfaces = [
+    ['File Inventory', displayNumber(report.file_inventory?.supported_files), 'Supported files read as text and grouped by framework/module.'],
+    ['Dependencies', counts.dependencies, 'Package hygiene gaps such as unpinned specs, missing lockfiles, or direct-source dependencies.'],
+    ['API Surface', counts.api, 'Routes checked for visible auth, rate limits, CORS posture, upload paths, and costly AI endpoints.'],
+    ['AppSec Sinks', counts.appsec, 'Static code signals for path traversal, SSRF, command execution, SQL patterns, and unsafe extraction.'],
+    ['Context Risk', counts.context, 'Memory/RAG flows where untrusted retrieved text can influence tool or response behavior.'],
+    ['Capabilities', counts.capabilities, 'Tool, file, API, memory, database, and external-effect actions mapped to guardrail needs.'],
+    ['Trust Boundaries', counts.boundaries, 'Data/control flows crossing user, app, model, tool, storage, and external-service zones.'],
+    ['Guardrails', counts.weakGuardrails, 'Coverage for auth, approval, audit, rate limits, masking, allowlists, and isolation.'],
+  ];
+  return <div className="report-panel-content"><SectionTitle label="Security surfaces" title="What A-DAP-T reviewed" /><div className="surface-review-grid refined">{surfaces.map(([name, value, note]) => <div className="surface-review-row" key={String(name)}><strong>{name}</strong><span>{value}</span><p>{note}</p></div>)}</div></div>;
+}
 
+function CapabilitiesPanel({ capabilities, filter, setFilter, onOpen }: { capabilities: Capability[]; filter: FilterTone; setFilter: (filter: FilterTone) => void; onOpen: (cap: Capability) => void }) {
   return (
-    <section className="glass-card panel report-panel-card">
-      <div className="panel-head report-panel-head">
-        <div>
-          <div className="panel-label">Category risk scoring</div>
-          <h2 className="panel-title">Where the risk is concentrated.</h2>
-        </div>
-        <span className="pill neutral">Higher is worse</span>
-      </div>
-      {entries.map(([key, value]) => (
-        <div className="category-row" key={key}>
-          <div className="category-name">{categoryName(key)}</div>
-          <div className="risk-bar"><div className="risk-fill" style={{ width: `${Math.min(100, Math.max(0, Number(value)))}%`, background: riskFillStyle(Number(value)) }} /></div>
-          <div className="faint">{value}</div>
-        </div>
-      ))}
-    </section>
+    <div className="report-panel-content">
+      <SectionTitle label="Capability map" title="What this app can actually do" action={<FilterChips values={['all', 'danger', 'warning', 'safe']} active={filter} onSelect={setFilter} />} />
+      {capabilities.length ? <div className="capability-table refined"><div className="capability-row head"><span>Capability</span><span>Type</span><span>Approval</span><span>Audit</span><span>Risk</span></div>{capabilities.slice(0, 24).map((cap) => <button key={cap.id || cap.name} className="capability-row" onClick={() => onOpen(cap)}><span><strong>{cap.label || cap.name}</strong><small>{text(cap.file)}:{text(cap.line, '')}</small></span><span>{categoryName(text(cap.capability_type, 'capability'))}</span><span>{cap.approval_found || !cap.requires_approval ? 'Covered' : 'Missing'}</span><span>{cap.audit_logging_found ? 'Visible' : 'Missing'}</span><span><AdaptBadge tone={riskClass(cap.risk_level) as any}>{text(cap.risk_level, 'review')}</AdaptBadge></span></button>)}</div> : <EmptyState title="No capabilities detected">The scanner did not identify tool, file, memory, database, or external-action capabilities.</EmptyState>}
+    </div>
   );
 }
 
-function FindingsPanel({ findings }: { findings: ScanReport['findings'] }) {
-  if (!findings?.length) return null;
-
+function GuardrailsPanel({ controls, filter, setFilter }: { controls: GuardrailControl[]; filter: string; setFilter: (filter: string) => void }) {
   return (
-    <section className="report-section">
-      <div className="panel-head report-section-head">
-        <div>
-          <div className="panel-label">Findings</div>
-          <h2 className="section-title">What needs attention.</h2>
-        </div>
-      </div>
-      <div className="grid report-finding-grid">
-        {findings.map((finding, index) => (
-          <article className="glass-card finding-card report-finding-card" key={finding.id || `${finding.title}-${index}`}>
-            <div className="finding-title-row report-card-heading">
-              <div className="report-card-copy">
-                <div className="report-pill-row">
-                  <span className={`pill ${severityClass(finding.severity)}`}>{severityLabel(finding.severity)}</span>
-                  {finding.category && <span className="pill neutral">{finding.category}</span>}
-                  {finding.id && <span className="pill neutral">{finding.id}</span>}
+    <div className="report-panel-content">
+      <SectionTitle label="Guardrail matrix" title="Controls protecting the release surface" action={<FilterChips values={['all', 'weak', 'partial', 'strong', 'not_applicable']} active={filter} onSelect={setFilter} />} />
+      {controls.length ? <div className="guardrail-card-grid">{controls.map((control) => <details key={control.control_id} className={`guardrail-card ${String(control.status || '').toLowerCase()}`}><summary><div><strong>{control.label || control.control_id}</strong><small>{categoryName(text(control.category))}</small></div><AdaptBadge tone={riskClass(control.status) as any}>{text(control.status)}</AdaptBadge></summary><div className="guardrail-card-body"><span>Coverage: {control.coverage_percent == null ? 'N/A' : `${control.coverage_percent}%`}</span><span>Risk instances: {displayNumber(control.risk_instances)}</span><p>{text(control.recommended_action)}</p></div></details>)}</div> : <EmptyState title="No guardrail controls">No guardrail matrix controls were returned.</EmptyState>}
+    </div>
+  );
+}
+
+function PolicyRemedyPanel({ report, openRemedy, setOpenRemedy }: { report: ScanReport; openRemedy: string | null; setOpenRemedy: (id: string | null) => void }) {
+  const policy = report.policy_evaluation;
+  const steps = report.remedy_plan?.steps || [];
+  return (
+    <div className="report-panel-content policy-remedy-panel">
+      <section className="adapt-panel policy-summary-card">
+        <SectionTitle label="Policy evaluation" title={text(policy?.selected_policy?.label || policy?.selected_policy?.policy_id || report.policy_id, 'Selected policy')} />
+        <div className="policy-decision-chain"><span>Score check</span><ChevronRight size={14} /><span>Required controls</span><ChevronRight size={14} /><span>Hard blockers</span><ChevronRight size={14} /><strong>{policy?.decision || decision(report)}</strong></div>
+        <div className="surface-metric-row compact"><StatTile label="Score" value={policy?.safety_score ?? securityScore(report)} /><StatTile label="Minimum" value={policy?.minimum_safety_score ?? '—'} /><StatTile label="Controls passed" value={`${policy?.required_controls_passed || 0}/${policy?.required_controls_total || 0}`} /><StatTile label="Blockers" value={policy?.blocker_count || 0} tone={(policy?.blocker_count || 0) > 0 ? 'danger' : 'safe'} /></div>
+        {policy?.hard_blockers?.length ? <ul className="adapt-list refined-list policy-blockers">{policy.hard_blockers.map((blocker, index) => <li key={index}><AlertTriangle size={14} />{text(blocker.title || blocker.control_id || blocker.risk_type)}</li>)}</ul> : <p className="muted-copy">No hard blockers returned.</p>}
+      </section>
+      <section className="adapt-panel">
+        <SectionTitle label="Remedy plan" title="Fix sequence by release impact" />
+        {steps.length ? <div className="remedy-workqueue refined">{steps.map((step, index) => { const id = step.id || step.title || String(index); const isOpen = openRemedy === id; return <article className="remedy-workitem" key={id}><button onClick={() => setOpenRemedy(isOpen ? null : id)}><span>{String(index + 1).padStart(2, '0')}</span><strong>{step.title}</strong><AdaptBadge tone={severityClass(step.severity) as any}>{severityLabel(step.severity)}</AdaptBadge></button><div className="remedy-workitem-meta"><em>Impact: {text(step.expected_gate_impact)}</em><em>Effort: {text(step.estimated_effort)}</em><button onClick={() => copyText(`${step.title}\n${step.recommended_fix || ''}`)}>Copy fix brief</button></div>{isOpen ? <div className="remedy-detail"><p>{step.why_it_matters}</p><strong>Recommended fix</strong><p>{step.recommended_fix}</p>{step.validation_steps?.length ? <ul>{step.validation_steps.map((v) => <li key={v}>{v}</li>)}</ul> : null}</div> : null}</article>; })}</div> : <EmptyState title="No remedy steps generated">The selected policy did not return prioritized remediation work for this report.</EmptyState>}
+      </section>
+    </div>
+  );
+}
+
+function ProofPanel({ report }: { report: ScanReport }) {
+  const attacks = report.attack_simulations || [];
+  const patches = report.patches || [];
+  const fallbackProofs = [
+    { title: 'Unapproved external action path', goal: 'A sensitive tool or external-effect function can be reached without visible reviewer approval.', input: 'Attempt the action without approval_id or reviewer context.', fix: 'Require approval state before executing external-effect actions.' },
+    { title: 'Memory-influenced tool path', goal: 'Retrieved context can influence a downstream tool decision.', input: 'Inject instructions into stored context that change tool behavior.', fix: 'Isolate retrieved memory from tool execution and require explicit intent checks.' },
+    { title: 'Untraceable action path', goal: 'A risky action executes without enough audit evidence for later review.', input: 'Complete a sensitive operation without logging actor, target, result, and timestamp.', fix: 'Add structured audit logging before or after high-impact tool calls.' },
+  ];
+  const proofRows = attacks.length ? attacks.slice(0, 6).map((attack) => ({ title: attack.title || 'Attack path', goal: attack.attack_goal || attack.impact || 'Static path that demonstrates why a guardrail is needed.', input: attack.malicious_input || '', fix: attack.guardrail || attack.required_fix || 'Add the missing guardrail before release.' })) : fallbackProofs;
+  return <div className="report-panel-content"><SectionTitle label="Static proof" title="Attack paths and fix previews">Proof paths are static simulations. They explain risk paths without executing the target project.</SectionTitle><div className="proof-grid proof-grid-refined">{proofRows.map((attack, index) => <article className="adapt-panel proof-card" key={`${attack.title}-${index}`}><AdaptBadge tone="warning">Static proof only</AdaptBadge><h3>{attack.title}</h3><p>{attack.goal}</p>{attack.input ? <pre>{attack.input}</pre> : null}<div className="proof-fix"><strong>Guardrail needed</strong><span>{attack.fix}</span></div></article>)}</div>{patches.length ? <div className="patch-preview-strip"><SectionTitle label="Patch previews" title="Generated fix artifacts" /><div className="proof-grid proof-grid-refined">{patches.slice(0, 3).map((patch, index) => <article className="adapt-panel proof-card" key={patch.finding_id || patch.title || index}><h3>{patch.title}</h3><p>{patch.risk_reduction || patch.explanation}</p><AdaptButton tone="secondary" onClick={() => downloadText(patch.patch_filename || 'adapt.patch', patch.diff || '')}>Download patch</AdaptButton></article>)}</div></div> : null}</div>;
+}
+
+function EvidencePanel({ rows, query, setQuery }: { rows: any[]; query: string; setQuery: (query: string) => void }) {
+  return (
+    <div className="report-panel-content">
+      <SectionTitle label="Evidence" title="Evidence index" action={<label className="evidence-search"><Search size={14} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search evidence..." /></label>} />
+      {rows.length ? (
+        <div className="evidence-card-list" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {rows.slice(0, 50).map((row, index) => (
+            <details className="adapt-panel evidence-item-card" key={`${row.title}-${index}`} style={{ background: 'var(--adapt-surface)', border: '1px solid var(--adapt-border)', padding: '20px', borderRadius: '12px', cursor: 'pointer' }}>
+              <summary style={{ display: 'flex', flexDirection: 'column', gap: '12px', listStyle: 'none' }}>
+                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+                   <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                     <AdaptBadge tone={severityClass(row.severity) as any}>{severityLabel(row.severity)}</AdaptBadge>
+                     <span style={{ fontSize: '13px', color: 'var(--adapt-muted)', fontFamily: 'JetBrains Mono, monospace' }}>{row.type}</span>
+                   </div>
+                   <span style={{ fontSize: '12px', color: 'var(--adapt-faint)' }}>{text(row.file)}:{text(row.line, '')}</span>
+                 </div>
+                 <strong style={{ fontSize: '16px', lineHeight: 1.4, color: 'var(--adapt-text)', paddingRight: '24px' }}>{text(row.title)}</strong>
+              </summary>
+              <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--adapt-border)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                  <strong style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--adapt-faint)', marginBottom: '6px' }}>Details</strong>
+                  <p style={{ margin: 0, color: 'var(--adapt-muted)', lineHeight: 1.6 }}>{text(row.detail)}</p>
                 </div>
-                <h3 className="finding-title">{finding.title || 'Untitled finding'}</h3>
-                <p className="muted">{finding.description || finding.why_it_matters}</p>
-              </div>
-              <span className="faint path-label">{finding.file}{finding.line ? `:${finding.line}` : ''}</span>
-            </div>
-            {finding.evidence && <pre className="code-block">{finding.evidence}</pre>}
-            {finding.suggested_fix && <p><strong>Suggested fix:</strong> <span className="muted">{finding.suggested_fix}</span></p>}
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function AttackPanel({ attacks }: { attacks: AttackSimulation[] }) {
-  if (!attacks.length) return null;
-  return (
-    <section className="report-section">
-      <div className="panel-head report-section-head">
-        <div>
-          <div className="panel-label">Prove Mode</div>
-          <h2 className="section-title">Static attack paths.</h2>
-        </div>
-        <span className="pill warning">No live exploit</span>
-      </div>
-      <div className="report-attack-grid">
-        {attacks.slice(0, 8).map((attack, index) => <AttackCard key={`${attack.finding_id}-${index}`} attack={attack} />)}
-      </div>
-    </section>
-  );
-}
-
-function AttackCard({ attack }: { attack: AttackSimulation }) {
-  const path = attack.location || attack.file || 'Project path unavailable';
-  return (
-    <article className="glass-card artifact-card attack-path-card">
-      <div className="attack-card-head">
-        <div className="report-card-copy">
-          <div className="report-pill-row">
-            <span className="pill danger">{attack.simulation_type || attack.risk_level || 'attack path'}</span>
-            {attack.priority_score ? <span className="pill neutral">priority {attack.priority_score}</span> : null}
-          </div>
-          <h3>{attack.title || 'Static attack simulation'}</h3>
-        </div>
-        <span className="path-label">{path}</span>
-      </div>
-      <p className="muted"><strong>Goal:</strong> {attack.attack_goal || 'Demonstrate a plausible risky path without executing the target project.'}</p>
-      {attack.malicious_input && <pre className="code-block attack-input">{attack.malicious_input}</pre>}
-      {attack.attack_steps?.length ? <ol className="list-clean attack-steps">{attack.attack_steps.map((step, i) => <li key={i}>{step}</li>)}</ol> : null}
-      {attack.detection_signal && <p className="faint"><strong>Detection signal:</strong> {attack.detection_signal}</p>}
-      {attack.guardrail && <p><strong>Guardrail:</strong> <span className="muted">{attack.guardrail}</span></p>}
-    </article>
-  );
-}
-
-function PatchPanel({ patches }: { patches: PatchPreview[] }) {
-  const [openId, setOpenId] = useState<string | null>(null);
-  if (!patches.length) return null;
-
-  return (
-    <section className="report-section">
-      <div className="panel-head report-section-head">
-        <div>
-          <div className="panel-label">Generated fixes</div>
-          <h2 className="section-title">Patch previews.</h2>
-        </div>
-        <span className="pill neutral">Preview only</span>
-      </div>
-      <div className="grid report-patch-grid">
-        {patches.slice(0, 8).map((patch, index) => {
-          const id = patch.finding_id || `${patch.title}-${index}`;
-          const isOpen = openId === id;
-          return (
-            <article className="glass-card artifact-card report-patch-card" key={id}>
-              <div className="finding-title-row report-card-heading">
-                <div className="report-card-copy">
-                  <div className="report-pill-row">
-                    <span className="pill safe">{patch.patch_type || 'patch'}</span>
-                    {patch.estimated_effort && <span className="pill neutral">{patch.estimated_effort} effort</span>}
-                  </div>
-                  <h3 className="finding-title">{patch.title || 'Generated patch preview'}</h3>
-                  <p className="muted">{patch.risk_reduction || patch.explanation}</p>
-                </div>
-                <div className="patch-action-row">
-                  <button className="btn btn-secondary btn-small" onClick={() => setOpenId(isOpen ? null : id)}>{isOpen ? 'Hide diff' : 'View diff'}</button>
-                  <button className="btn btn-secondary btn-small" onClick={() => {
-                    if (typeof pendo !== 'undefined') {
-                      pendo.track('patch_diff_copied', {
-                        finding_id: patch.finding_id || '',
-                        patch_type: patch.patch_type || '',
-                        patch_title: (patch.title || '').substring(0, 100),
-                        estimated_effort: patch.estimated_effort || '',
-                        risk_reduction: patch.risk_reduction || '',
-                        confidence: patch.confidence || '',
-                      });
-                    }
-                    copyText(patch.diff || '');
-                  }}>Copy</button>
-                  <button className="btn btn-primary btn-small" onClick={() => {
-                    if (typeof pendo !== 'undefined') {
-                      pendo.track('patch_downloaded', {
-                        finding_id: patch.finding_id || '',
-                        patch_filename: patch.patch_filename || 'adapt.patch',
-                        patch_type: patch.patch_type || '',
-                        patch_title: (patch.title || '').substring(0, 100),
-                        estimated_effort: patch.estimated_effort || '',
-                        risk_reduction: patch.risk_reduction || '',
-                        confidence: patch.confidence || '',
-                      });
-                    }
-                    downloadText(patch.patch_filename || 'adapt.patch', patch.diff || '');
-                  }}>Download</button>
+                <div>
+                  <strong style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--adapt-faint)', marginBottom: '6px' }}>Recommended Fix</strong>
+                  <p style={{ margin: 0, color: 'var(--adapt-text)', lineHeight: 1.6 }}>{text(row.fix)}</p>
                 </div>
               </div>
-              {isOpen && <pre className="code-block">{patch.diff || 'No diff provided.'}</pre>}
-              {patch.validation_steps?.length ? <ul className="list-clean">{patch.validation_steps.map((step, i) => <li key={i}>{step}</li>)}</ul> : null}
-            </article>
-          );
-        })}
-      </div>
-    </section>
+            </details>
+          ))}
+        </div>
+      ) : (
+        <EmptyState title="No evidence rows">No matching evidence for the current query.</EmptyState>
+      )}
+    </div>
   );
 }
 
-function DeploymentGatePanel({ gate, score }: { gate: ScanReport['deployment_gate']; score: number }) {
-  if (!gate) return null;
-  const workflow = gate.github_actions_yaml || '';
-  const policy = gate.policy_json || JSON.stringify(gate.recommended_policy || {}, null, 2);
-  const minimum = gate.minimum_safety_score ?? 75;
-  const scorePasses = score >= minimum;
-  return (
-    <section className="glass-card panel shimmer deployment-gate-panel">
-      <div className="panel-head report-panel-head">
-        <div>
-          <div className="panel-label">Deployment gate</div>
-          <h2 className="panel-title">Block unsafe releases.</h2>
-        </div>
-        <span className={`pill ${gateClass(gate.decision)}`}>{gate.decision_badge || gateLabel(gate.decision)}</span>
-      </div>
-      <div className="gate-summary-strip">
-        <div><span>Score gate</span><strong className={scorePasses ? 'text-emerald' : 'text-red'}>{scorePasses ? 'Passed' : 'Failed'}</strong></div>
-        <div><span>Gate score</span><strong>{gate.gate_score ?? score}</strong></div>
-        <div><span>Minimum</span><strong>{minimum}</strong></div>
-        <div><span>Policy blockers</span><strong>{gate.blockers?.length || 0}</strong></div>
-      </div>
-      <div className="grid grid-2 gate-detail-grid">
-        <div>
-          {gate.blockers?.length ? <ul className="list-clean">{gate.blockers.map((b, i) => <li key={i}>{b}</li>)}</ul> : <p className="muted">No hard policy blockers were returned by the gate.</p>}
-        </div>
-        <div>
-          {gate.next_actions?.length ? <ul className="list-clean">{gate.next_actions.map((a, i) => <li key={i}>{a}</li>)}</ul> : null}
-          <div className="gate-action-row">
-            <button className="btn btn-secondary btn-small" onClick={() => {
-              if (typeof pendo !== 'undefined') {
-                pendo.track('gate_workflow_copied', {
-                  gate_decision: gate.decision || '',
-                  safety_score: score,
-                  minimum_safety_score: minimum,
-                  blockers_count: gate.blockers?.length || 0,
-                });
-              }
-              copyText(workflow);
-            }}>Copy workflow</button>
-            <button className="btn btn-secondary btn-small" onClick={() => {
-              if (typeof pendo !== 'undefined') {
-                pendo.track('gate_workflow_downloaded', {
-                  gate_decision: gate.decision || '',
-                  safety_score: score,
-                  minimum_safety_score: minimum,
-                  blockers_count: gate.blockers?.length || 0,
-                  workflow_filename: gate.workflow_filename || 'adapt-safety-gate.yml',
-                });
-              }
-              downloadText(gate.workflow_filename || 'adapt-safety-gate.yml', workflow, 'text/yaml');
-            }}>Download workflow</button>
-            <button className="btn btn-primary btn-small" onClick={() => {
-              if (typeof pendo !== 'undefined') {
-                pendo.track('gate_policy_downloaded', {
-                  gate_decision: gate.decision || '',
-                  safety_score: score,
-                  minimum_safety_score: minimum,
-                  blockers_count: gate.blockers?.length || 0,
-                  policy_filename: gate.policy_filename || 'adapt-policy.json',
-                });
-              }
-              downloadText(gate.policy_filename || 'adapt-policy.json', policy, 'application/json');
-            }}>Download policy</button>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
+function CapabilityDrawer({ capability, onClose }: { capability: Capability; onClose: () => void }) {
+  return <div className="adapt-drawer-backdrop" onClick={onClose}><aside className="adapt-drawer" onClick={(e) => e.stopPropagation()}><button className="drawer-close" onClick={onClose}>Close</button><div className="adapt-kicker"><span />Capability detail</div><h2>{capability.label || capability.name}</h2><p>{capability.recommended_review}</p><dl><div><dt>Type</dt><dd>{categoryName(text(capability.capability_type))}</dd></div><div><dt>Risk</dt><dd>{text(capability.risk_level)}</dd></div><div><dt>Data touched</dt><dd>{text(capability.data_touched)}</dd></div><div><dt>Approval</dt><dd>{capability.approval_found ? 'Visible' : 'Missing or not required'}</dd></div><div><dt>Audit log</dt><dd>{capability.audit_logging_found ? 'Visible' : 'Missing'}</dd></div></dl>{hasRealValue(capability.evidence) ? <pre>{capability.evidence}</pre> : null}</aside></div>;
+}
+
+function FilterChips<T extends string>({ values, active, onSelect }: { values: T[]; active: T; onSelect: (value: T) => void }) {
+  return <div className="filter-chip-row"><Filter size={14} />{values.map((value) => <button key={value} className={active === value ? 'active' : ''} onClick={() => onSelect(value)}>{categoryName(value)}</button>)}</div>;
 }

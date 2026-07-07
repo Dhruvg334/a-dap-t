@@ -7,6 +7,8 @@ import type { ScanReport } from '@/types/scan';
 import { getAuthState } from '@/lib/auth';
 import { loadCurrentReport } from '@/lib/report-storage';
 import { ReportWorkspace } from '@/components/report/ReportWorkspace';
+import { DapPanel } from '@/components/dap/DapPanel';
+import { ReportSkeleton } from '@/components/report/ReportSkeleton';
 
 export default function CurrentReportPage() {
   const router = useRouter();
@@ -24,11 +26,7 @@ export default function CurrentReportPage() {
   }, [router]);
 
   if (!checked) {
-    return (
-      <main className="page-shell">
-        <div className="container"><div className="form-success">Loading report workspace...</div></div>
-      </main>
-    );
+    return <ReportSkeleton />;
   }
 
   if (!report) {
@@ -37,8 +35,8 @@ export default function CurrentReportPage() {
         <div className="container">
           <section className="glass-card panel shimmer" style={{ textAlign: 'center', padding: '64px 24px' }}>
             <div className="tech-label" style={{ justifyContent: 'center' }}><span className="pulse-dot" /> NO ACTIVE REPORT</div>
-            <h1 className="section-title" style={{ margin: '18px auto', maxWidth: 720 }}>Run a scan to open the V2 report workspace.</h1>
-            <p className="page-desc" style={{ margin: '0 auto 26px' }}>The current report page reads the latest scan from local session storage. Start with the vulnerable demo for the strongest walkthrough.</p>
+            <h1 className="section-title" style={{ margin: '18px auto', maxWidth: 720 }}>Run a scan to open the report workspace.</h1>
+            <p className="page-desc" style={{ margin: '0 auto 26px' }}>The current report page reads the latest scan from local session storage. Start with the vulnerable demo to see dependency, API, AppSec, context, guardrail, policy, and remedy artifacts.</p>
             <Link className="btn btn-primary" href="/scanner">Go to scanner</Link>
           </section>
         </div>
@@ -46,5 +44,8 @@ export default function CurrentReportPage() {
     );
   }
 
-  return <ReportWorkspace report={report} />;
+  return <>
+    <ReportWorkspace report={report} />
+    <DapPanel report={report} />
+  </>;
 }

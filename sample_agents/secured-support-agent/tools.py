@@ -1,24 +1,11 @@
-from datetime import datetime
+import zipfile
 
+import requests
 
-def audit_log(event_type, user_id, action, approval_status):
-    return {
-        "event_type": event_type,
-        "user_id": user_id,
-        "action": action,
-        "approval_status": approval_status,
-        "timestamp": datetime.utcnow().isoformat()
-    }
+from audit import audit_log
+from security import mask_pii, require_approval, safe_extract_zip, safe_join_invoice, validate_url
 
-
-def mask_customer_record(customer):
-    return {
-        "user_id": customer["user_id"],
-        "name": customer["name"],
-        "email": "ri***@example.com",
-        "plan": customer["plan"],
-        "refund_eligible": customer["refund_eligible"]
-    }
+TOOL_ALLOWLIST = {"get_customer_record", "request_human_review", "issue_refund", "send_email", "call_customer_webhook", "download_invoice"}
 
 
 def get_customer_record(user_id):
@@ -26,49 +13,48 @@ def get_customer_record(user_id):
         "user_id": user_id,
         "name": "Riya Sharma",
         "email": "riya.demo@example.com",
+        "phone": "+91-90000-11111",
+        "address": "221 Demo Street, Bengaluru",
         "plan": "Premium",
-        "refund_eligible": True
+        "refund_eligible": True,
     }
-    return mask_customer_record(customer)
+    audit_log("customer_read", user_id, "get_customer_record", "not_required")
+    return mask_pii(customer)
 
 
-def request_human_review(user_id, amount):
-    approval_required = True
-    return {
-        "approval_required": approval_required,
-        "approval_status": "pending",
-        "user_id": user_id,
-        "amount": amount
-    }
+def request_human_review(user_id, amount, action="issue_refund"):
+    audit_log("approval_requested", user_id, action, "pending", metadata={"amount": amount})
+    return {"approval_required": True, "approval_status": "pending", "user_id": user_id, "amount": amount, "action": action}
 
 
-def issue_refund(user_id, amount, approved_by=None):
-    if approved_by is None:
-        audit_log("refund_blocked", user_id, "issue_refund", "missing_approval")
-        return {
-            "status": "blocked",
-            "reason": "Human approval is required before refund execution."
-        }
-
-    audit_log("refund_processed", user_id, "issue_refund", "approved")
-    return {
-        "status": "refund_processed",
-        "user_id": user_id,
-        "amount": amount,
-        "approved_by": approved_by
-    }
+def issue_refund(user_id, amount, approval_id=None, reviewer=None):
+    approval = require_approval(approval_id, reviewer)
+    audit_log("refund_processed", user_id, "issue_refund", approval["approval_status"], metadata={"amount": amount})
+    return {"status": "refund_processed", "user_id": user_id, "amount": amount, "approved_by": reviewer}
 
 
-def send_email(customer_email, message, confirm_action=False):
-    if not confirm_action:
-        return {
-            "status": "blocked",
-            "reason": "Email confirmation required."
-        }
+def send_email(customer_email, message, approval_id=None, reviewer=None):
+    approval = require_approval(approval_id, reviewer)
+    audit_log("email_sent", 102, "send_email", approval["approval_status"])
+    return {"status": "email_sent", "to": "ri***@example.com", "message": message[:500]}
 
-    audit_log("email_sent", 102, "send_email", "confirmed")
-    return {
-        "status": "email_sent",
-        "to": customer_email,
-        "message": message
-    }
+
+def call_customer_webhook(callback_url, payload, approval_id=None, reviewer=None):
+    approval = require_approval(approval_id, reviewer)
+    safe_url = validate_url(callback_url)
+    audit_log("webhook_called", 102, "call_customer_webhook", approval["approval_status"], metadata={"host": safe_url})
+    return requests.post(safe_url, json=payload, timeout=3).json()
+
+
+def download_invoice(file_name):
+    invoice_path = safe_join_invoice(file_name)
+    audit_log("invoice_read", 102, "download_invoice", "not_required")
+    with open(invoice_path, "r", encoding="utf-8") as invoice_file:
+        return invoice_file.read()
+
+
+def extract_support_archive(upload_path):
+    with zipfile.ZipFile(upload_path) as archive:
+        safe_extract_zip(archive)
+    audit_log("archive_extracted", 102, "extract_support_archive", "approved")
+    return {"status": "extracted"}
