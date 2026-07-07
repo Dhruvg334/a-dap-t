@@ -1,0 +1,69 @@
+A-DAP-T Source-Available Attribution License
+Version 1.0
+
+Copyright (c) 2026 Dhruv Gupta
+
+This license applies to the A-DAP-T project, including its source code,
+documentation, design assets, sample projects, report logic, scanner logic,
+frontend implementation, backend implementation, and project identity.
+
+1. Permission Granted
+
+You may:
+
+- view and study the source code;
+- fork the repository for personal, educational, or contribution purposes;
+- open issues;
+- submit pull requests;
+- reference the project publicly with clear attribution to the original author and repository;
+- use small code excerpts for learning, review, or discussion with attribution.
+
+2. Attribution Requirement
+
+Any public use, reference, fork, derivative, excerpt, article, demo, or repository
+based on this project must clearly attribute:
+
+- the original project name: A-DAP-T;
+- the original author: Dhruv Gupta;
+- the original repository URL, when available.
+
+Attribution must not be hidden, misleading, or removed from source files,
+documentation, or public project descriptions.
+
+3. Restrictions
+
+You may not, without prior written permission from the copyright holder:
+
+- copy this project and present it as your own original work;
+- remove or alter author attribution, copyright notices, or license notices;
+- rebrand this project or a substantially similar derivative as a different product;
+- redistribute modified or unmodified versions without attribution;
+- sell, sublicense, commercially host, or package this project as a competing product;
+- use the A-DAP-T name, logo, branding, or identity for another project or product;
+- imply endorsement by the original author without written permission.
+
+4. Contributions
+
+Contributions are welcome through issues and pull requests.
+
+By submitting a contribution, you grant the project maintainer a perpetual,
+worldwide, royalty-free right to use, modify, distribute, and sublicense your
+contribution as part of this project under this license or a future project
+license chosen by the maintainer.
+
+You retain ownership of your original contribution, but you agree that the
+contribution may be incorporated into A-DAP-T.
+
+5. No Warranty
+
+The project is provided "as is", without warranty of any kind, express or
+implied, including but not limited to warranties of merchantability, fitness for
+a particular purpose, and non-infringement.
+
+The author is not liable for any claim, damages, security incident, data loss,
+or other liability arising from use of the project.
+
+6. Reservation of Rights
+
+All rights not explicitly granted in this license are reserved by the copyright
+holder.
