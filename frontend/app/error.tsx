@@ -19,7 +19,7 @@ export default function ErrorBoundary({
       position: 'fixed',
       inset: 0,
       zIndex: 999999,
-      backgroundColor: 'rgba(5,5,5,0.85)',
+      backgroundColor: 'rgba(255,255,255,0.92)',
       backdropFilter: 'blur(12px)',
       display: 'flex',
       alignItems: 'center',
@@ -27,14 +27,14 @@ export default function ErrorBoundary({
       padding: '24px'
     }}>
       <div style={{
-        background: 'var(--adapt-surface, #111)',
-        border: '1px solid var(--adapt-border, #333)',
+        background: 'var(--adapt-surface, #ffffff)',
+        border: '1px solid var(--adapt-border, #dcefe2)',
         borderRadius: '16px',
         maxWidth: '480px',
         width: '100%',
         padding: '32px',
         textAlign: 'center',
-        boxShadow: '0 24px 48px rgba(0,0,0,0.5)',
+        boxShadow: '0 24px 48px rgba(22, 163, 74, 0.12)',
       }}>
         <div style={{
           width: '64px',

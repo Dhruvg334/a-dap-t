@@ -121,8 +121,8 @@ function ProfileContent() {
           <StatTile label="Average score" value={summary.average || '—'} tone={scoreTone(summary.average) as any} />
         </section>
 
-        <section className="report-controls-bar profile-search-card">
-          <label className="adapt-search"><Search size={15} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search reports…" /></label>
+        <section className="report-controls-bar profile-search-card" style={{ background: 'var(--adapt-surface)', border: '1px solid var(--adapt-border)', borderRadius: 'var(--adapt-radius)' }}>
+          <label className="adapt-search" style={{ background: 'var(--adapt-surface)', color: 'var(--adapt-text)' }}><Search size={15} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search reports…" style={{ background: 'transparent', color: 'var(--adapt-text)' }} /></label>
           <div className="filter-chip-row">{(['all', 'block', 'review', 'allow', 'demo', 'github', 'zip'] as Filter[]).map((item) => <button key={item} className={filter === item ? 'active' : ''} onClick={() => setFilter(item)}>{item.toUpperCase()}</button>)}</div>
         </section>
 

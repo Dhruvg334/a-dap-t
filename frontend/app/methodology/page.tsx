@@ -138,9 +138,9 @@ export default function MethodologyPage() {
           </div>
         </section>
 
-        <section className="final-method-cta compact-final-cta">
-          <h2>Ready to review a project?</h2>
-          <p>Start with the built-in demo, then scan your own GitHub repository or ZIP project.</p>
+        <section className="final-method-cta compact-final-cta" style={{ background: 'var(--adapt-surface)', color: 'var(--adapt-text)', border: '1px solid var(--adapt-border)' }}>
+          <h2 style={{ color: 'var(--adapt-text)' }}>Ready to review a project?</h2>
+          <p style={{ color: 'var(--adapt-muted)' }}>Start with the built-in demo, then scan your own GitHub repository or ZIP project.</p>
           <div><AdaptButton tone="primary" href="/scanner">Start Scan</AdaptButton><AdaptButton tone="secondary" href="/report/current">View Report</AdaptButton></div>
         </section>
       </div>
