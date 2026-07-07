@@ -102,7 +102,7 @@ function CompareContent() {
 
         {error ? <div className="adapt-alert danger">{error}</div> : null}
         {loading ? <div className="adapt-panel">Loading saved reports…</div> : null}
-        {!loading && reports.length < 2 ? <EmptyState title="Run at least two scans first">Compare needs a baseline report and a target report. Run the vulnerable and secured demos for the cleanest walkthrough.<AdaptButton tone="primary" href="/scanner">Run scans</AdaptButton></EmptyState> : null}
+        {!loading && reports.length < 2 ? <EmptyState title="Run at least two scans first"><p>Compare needs a baseline report and a target report. Run the vulnerable and secured demos for the cleanest walkthrough.</p><div className="adapt-empty-action"><AdaptButton tone="primary" href="/scanner">Run scans</AdaptButton></div></EmptyState> : null}
 
         {reports.length >= 2 ? <section className="compare-selector-panel">
           <ReportSelect label="Baseline report" value={beforeId} onChange={setBeforeId} reports={reports} disabledId={afterId} />

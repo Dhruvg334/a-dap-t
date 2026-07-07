@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { AdaptBadge, AdaptButton, PageHeader, SectionTitle } from '@/components/ui/AdaptUI';
 
 const pipeline = [
@@ -42,11 +43,18 @@ export default function MethodologyPage() {
           ))}
         </nav>
 
-        <section id="pipeline" className="adapt-panel method-compact-section method-hero-explain">
+        <motion.section 
+          id="pipeline" 
+          className="adapt-panel method-compact-section method-hero-explain"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+        >
           <SectionTitle label="Review pipeline" title="From project files to release decision">
             The scanner turns project evidence into a release decision. Each step creates an artifact used by the report workspace.
           </SectionTitle>
-          <div className="method-step-row refined">
+          <div className="method-process-grid">
             {pipeline.map(([num, title, body]) => (
               <article key={title}>
                 <span>{num}</span>
@@ -55,9 +63,16 @@ export default function MethodologyPage() {
               </article>
             ))}
           </div>
-        </section>
+        </motion.section>
 
-        <section id="surfaces" className="adapt-panel method-compact-section">
+        <motion.section 
+          id="surfaces" 
+          className="adapt-panel method-compact-section"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
           <SectionTitle label="Security surfaces" title="What gets reviewed" />
           <div className="surface-method-table compact refined">
             {surfaces.map(([title, body, signal]) => (
@@ -68,9 +83,16 @@ export default function MethodologyPage() {
               </div>
             ))}
           </div>
-        </section>
+        </motion.section>
 
-        <section id="decision-logic" className="methodology-decision-card refined">
+        <motion.section 
+          id="decision-logic" 
+          className="methodology-decision-card refined"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+        >
           <div className="adapt-panel">
             <SectionTitle label="Scoring and policy" title="Score is not the whole decision" />
             <p>A-DAP-T produces a security score, but release status also depends on required controls and hard blockers. A high score can still need review if a critical guardrail is missing.</p>
@@ -81,7 +103,7 @@ export default function MethodologyPage() {
             <span>Hard blockers</span>
             <strong>Final decision</strong>
           </div>
-        </section>
+        </motion.section>
 
         <section id="ai-boundaries" className="methodology-two-col compact-two-col refined">
           <div className="adapt-panel">

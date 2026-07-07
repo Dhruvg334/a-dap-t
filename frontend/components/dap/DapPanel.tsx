@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import type { ScanReport } from '@/types/scan';
 import { apiFetch, formatApiError } from '@/lib/api';
 
@@ -16,9 +17,7 @@ const quickQuestions = [
 export function DapPanel({ report }: { report: ScanReport }) {
   const [question, setQuestion] = useState('');
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    { role: 'bot', text: 'Ask DAP about this report. I can use the security score, policy blockers, guardrails, capabilities, remedy steps, and proof artifacts.' }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
 
   async function ask(text: string) {
@@ -43,7 +42,7 @@ export function DapPanel({ report }: { report: ScanReport }) {
       responseLength = (data.answer || '').length;
       setMessages((prev) => [...prev.slice(0, -1), { role: 'bot', text: data.answer || 'DAP could not produce an answer.' }]);
     } catch (error) {
-      setMessages((prev) => [...prev.slice(0, -1), { role: 'bot', text: formatApiError(error, 'DAP is unavailable right now.') }]);
+      setMessages((prev) => [...prev.slice(0, -1), { role: 'bot', text: 'Error: Cannot contact Gemini. ' + formatApiError(error, 'DAP is unavailable right now.') }]);
     } finally {
       if (typeof pendo !== 'undefined') {
         pendo.track('dap_question_asked', {
@@ -94,7 +93,9 @@ export function DapPanel({ report }: { report: ScanReport }) {
           </div>
           <div className="dap-messages">
             {messages.map((message, index) => (
-              <div className={`dap-msg ${message.role === 'user' ? 'user' : ''}`} key={`${message.role}-${index}`}>{message.text}</div>
+              <div className={`dap-msg ${message.role === 'user' ? 'user' : ''}`} key={`${message.role}-${index}`}>
+                <ReactMarkdown>{message.text}</ReactMarkdown>
+              </div>
             ))}
           </div>
           <form className="form-stack dap-form" onSubmit={onSubmit}>

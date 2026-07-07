@@ -8,6 +8,7 @@ import { getAuthState } from '@/lib/auth';
 import { loadCurrentReport } from '@/lib/report-storage';
 import { ReportWorkspace } from '@/components/report/ReportWorkspace';
 import { DapPanel } from '@/components/dap/DapPanel';
+import { ReportSkeleton } from '@/components/report/ReportSkeleton';
 
 export default function CurrentReportPage() {
   const router = useRouter();
@@ -25,11 +26,7 @@ export default function CurrentReportPage() {
   }, [router]);
 
   if (!checked) {
-    return (
-      <main className="page-shell">
-        <div className="container"><div className="form-success">Loading report workspace...</div></div>
-      </main>
-    );
+    return <ReportSkeleton />;
   }
 
   if (!report) {

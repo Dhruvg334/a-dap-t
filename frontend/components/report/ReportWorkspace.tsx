@@ -107,39 +107,60 @@ export function ReportWorkspace({ report }: { report: ScanReport }) {
   }, [report, findings, evidenceQuery]);
 
   return (
-    <main className="adapt-page report-workspace-page">
-      <div className="adapt-container report-shell-grid">
-        <section className={`report-hero-card report-hero-refined ${statusTone(currentDecision)}`}>
-          <div className="report-hero-copy">
-            <div className="adapt-kicker"><span />Security review report</div>
-            <h1>{projectName}</h1>
-            <p>Policy: {text(report.policy_evaluation?.selected_policy?.label || report.policy_id, 'General AI App')} · Source: {text(report.scan_type)} · Static text scan</p>
-          </div>
-          <div className="report-score-card refined">
-            <span className="report-score-label">Security score</span>
-            <strong>{score}<small>/100</small></strong>
-            <AdaptBadge tone={statusTone(currentDecision)}>{String(currentDecision).toUpperCase()}</AdaptBadge>
-          </div>
-          <div className="report-hero-actions">
-            <AdaptButton tone="secondary" onClick={() => downloadText(`${projectName}-adapt-report.json`, JSON.stringify(report, null, 2), 'application/json')}><Download size={14} />Export</AdaptButton>
-            <AdaptButton tone="secondary" href="/compare">Compare</AdaptButton>
-            <AdaptButton tone="primary" href="/scanner">Open Scanner</AdaptButton>
-          </div>
-        </section>
+    <main className="adapt-page report-workspace-page" style={{ paddingTop: '100px' }}>
+      <div className="adapt-container" style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '40px', alignItems: 'start', maxWidth: '1440px' }}>
+        
+        <aside style={{ display: 'flex', flexDirection: 'column', gap: '24px', position: 'sticky', top: '100px' }}>
+          
+          <nav aria-label="Report panels" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {panels.map((panel) => (
+              <button 
+                key={panel.id} 
+                onClick={() => setActivePanel(panel.id)}
+                style={{
+                  textAlign: 'left',
+                  padding: '12px 18px',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  fontWeight: activePanel === panel.id ? 700 : 500,
+                  background: activePanel === panel.id ? 'var(--adapt-border)' : 'transparent',
+                  color: activePanel === panel.id ? 'var(--adapt-accent)' : 'var(--adapt-muted)',
+                  transition: 'all 0.2s ease',
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                {panel.label}
+              </button>
+            ))}
+          </nav>
+        </aside>
 
-        <nav className="report-panel-nav" aria-label="Report panels">
-          {panels.map((panel) => <button key={panel.id} className={activePanel === panel.id ? 'active' : ''} onClick={() => setActivePanel(panel.id)}>{panel.label}</button>)}
-        </nav>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', minWidth: 0 }}>
+          <header style={{ padding: '40px', background: 'var(--adapt-surface)', border: '1px solid var(--adapt-border)', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div>
+              <div className="adapt-kicker"><span />Security review report</div>
+              <h1 style={{ fontFamily: 'Space Grotesk, Inter, sans-serif', fontSize: 'clamp(28px, 3.5vw, 42px)', lineHeight: 1.1, margin: '16px 0 8px', textTransform: 'uppercase', letterSpacing: '-0.02em', color: 'var(--adapt-text)' }}>{projectName}</h1>
+              <p style={{ color: 'var(--adapt-muted)', fontSize: '15px' }}>Policy: {text(report.policy_evaluation?.selected_policy?.label || report.policy_id, 'General AI App')} · Source: {text(report.scan_type)}</p>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '12px' }}>
+              <AdaptButton tone="primary" href="/scanner">Open Scanner</AdaptButton>
+              <AdaptButton tone="secondary" href="/compare">Compare</AdaptButton>
+              <AdaptButton tone="secondary" onClick={() => downloadText(`${projectName}-adapt-report.json`, JSON.stringify(report, null, 2), 'application/json')}><Download size={14} />Export</AdaptButton>
+            </div>
+          </header>
 
-        <section className="report-panel-stage">
-          {activePanel === 'overview' && <OverviewPanel report={report} score={score} counts={counts} blockers={topBlockers(report)} setPanel={setActivePanel} />}
-          {activePanel === 'surfaces' && <SurfacesPanel report={report} counts={counts} />}
-          {activePanel === 'capabilities' && <CapabilitiesPanel capabilities={filteredCapabilities} filter={capabilityFilter} setFilter={setCapabilityFilter} onOpen={setOpenCapability} />}
-          {activePanel === 'guardrails' && <GuardrailsPanel controls={filteredControls} filter={guardrailFilter} setFilter={setGuardrailFilter} />}
-          {activePanel === 'policy_remedy' && <PolicyRemedyPanel report={report} openRemedy={openRemedy} setOpenRemedy={setOpenRemedy} />}
-          {activePanel === 'proof' && <ProofPanel report={report} />}
-          {activePanel === 'evidence' && <EvidencePanel rows={evidenceRows} query={evidenceQuery} setQuery={setEvidenceQuery} />}
-        </section>
+          <section className="report-panel-stage" style={{ background: 'transparent', border: 'none', padding: 0 }}>
+            {activePanel === 'overview' && <OverviewPanel report={report} score={score} counts={counts} blockers={topBlockers(report)} setPanel={setActivePanel} />}
+            {activePanel === 'surfaces' && <SurfacesPanel report={report} counts={counts} />}
+            {activePanel === 'capabilities' && <CapabilitiesPanel capabilities={filteredCapabilities} filter={capabilityFilter} setFilter={setCapabilityFilter} onOpen={setOpenCapability} />}
+            {activePanel === 'guardrails' && <GuardrailsPanel controls={filteredControls} filter={guardrailFilter} setFilter={setGuardrailFilter} />}
+            {activePanel === 'policy_remedy' && <PolicyRemedyPanel report={report} openRemedy={openRemedy} setOpenRemedy={setOpenRemedy} />}
+            {activePanel === 'proof' && <ProofPanel report={report} />}
+            {activePanel === 'evidence' && <EvidencePanel rows={evidenceRows} query={evidenceQuery} setQuery={setEvidenceQuery} />}
+          </section>
+        </div>
       </div>
 
       {openCapability ? <CapabilityDrawer capability={openCapability} onClose={() => setOpenCapability(null)} /> : null}
@@ -248,7 +269,41 @@ function ProofPanel({ report }: { report: ScanReport }) {
 }
 
 function EvidencePanel({ rows, query, setQuery }: { rows: any[]; query: string; setQuery: (query: string) => void }) {
-  return <div className="report-panel-content"><SectionTitle label="Evidence" title="Evidence index" action={<label className="evidence-search"><Search size={14} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search evidence..." /></label>} />{rows.length ? <div className="evidence-table refined"><div className="evidence-row head"><span>Severity</span><span>Category</span><span>Location</span><span>Signal</span><span>Recommended fix</span></div>{rows.slice(0, 50).map((row, index) => <details className="evidence-row" key={`${row.title}-${index}`}><summary><span><AdaptBadge tone={severityClass(row.severity) as any}>{severityLabel(row.severity)}</AdaptBadge></span><span>{row.type}</span><span>{text(row.file)}:{text(row.line, '')}</span><span>{text(row.title)}</span><span>{text(row.fix).slice(0, 96)}</span></summary><p>{text(row.detail)}</p><p><strong>Fix:</strong> {text(row.fix)}</p></details>)}</div> : <EmptyState title="No evidence rows">No matching evidence for the current query.</EmptyState>}</div>;
+  return (
+    <div className="report-panel-content">
+      <SectionTitle label="Evidence" title="Evidence index" action={<label className="evidence-search"><Search size={14} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search evidence..." /></label>} />
+      {rows.length ? (
+        <div className="evidence-card-list" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {rows.slice(0, 50).map((row, index) => (
+            <details className="adapt-panel evidence-item-card" key={`${row.title}-${index}`} style={{ background: 'var(--adapt-surface)', border: '1px solid var(--adapt-border)', padding: '20px', borderRadius: '12px', cursor: 'pointer' }}>
+              <summary style={{ display: 'flex', flexDirection: 'column', gap: '12px', listStyle: 'none' }}>
+                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+                   <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                     <AdaptBadge tone={severityClass(row.severity) as any}>{severityLabel(row.severity)}</AdaptBadge>
+                     <span style={{ fontSize: '13px', color: 'var(--adapt-muted)', fontFamily: 'JetBrains Mono, monospace' }}>{row.type}</span>
+                   </div>
+                   <span style={{ fontSize: '12px', color: 'var(--adapt-faint)' }}>{text(row.file)}:{text(row.line, '')}</span>
+                 </div>
+                 <strong style={{ fontSize: '16px', lineHeight: 1.4, color: 'var(--adapt-text)', paddingRight: '24px' }}>{text(row.title)}</strong>
+              </summary>
+              <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--adapt-border)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                  <strong style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--adapt-faint)', marginBottom: '6px' }}>Details</strong>
+                  <p style={{ margin: 0, color: 'var(--adapt-muted)', lineHeight: 1.6 }}>{text(row.detail)}</p>
+                </div>
+                <div>
+                  <strong style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--adapt-faint)', marginBottom: '6px' }}>Recommended Fix</strong>
+                  <p style={{ margin: 0, color: 'var(--adapt-text)', lineHeight: 1.6 }}>{text(row.fix)}</p>
+                </div>
+              </div>
+            </details>
+          ))}
+        </div>
+      ) : (
+        <EmptyState title="No evidence rows">No matching evidence for the current query.</EmptyState>
+      )}
+    </div>
+  );
 }
 
 function CapabilityDrawer({ capability, onClose }: { capability: Capability; onClose: () => void }) {

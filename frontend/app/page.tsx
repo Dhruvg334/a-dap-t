@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 
 const loopSteps = [
   ['01', 'Scan', 'Parse project files, dependencies, APIs, and security sinks.'],
@@ -104,7 +105,7 @@ export default function HomePage() {
         <div className="landing-video-overlay" />
         <div className="landing-hero-content">
           <span className="landing-hero-kicker">Pre-deployment AI application review</span>
-          <h1>Review AI Apps Before They Reach Production</h1>
+          <h1>Review AI Apps Before Production</h1>
           <p>
             A-DAP-T scans code, dependencies, APIs, agent capabilities, memory risks, guardrails, and release policy to show what can break before deployment.
           </p>
@@ -120,50 +121,105 @@ export default function HomePage() {
         </div>
       </header>
 
-      <section className="landing-section" id="loop">
+      <motion.section 
+        className="landing-section alt" 
+        id="preview"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+      >
+        <SectionHeader label="Comprehensive Report" title="Deep AI Security Profiling" center>
+          See exactly how A-DAP-T breaks down a project's risk profile, capabilities, and necessary guardrails before deployment.
+        </SectionHeader>
+        
+        <div style={{ maxWidth: '1100px', margin: '40px auto 0', border: '1px solid var(--adapt-border)', borderRadius: '16px', background: 'var(--adapt-surface)', overflow: 'hidden', boxShadow: '0 24px 48px rgba(0,0,0,0.4)' }}>
+          <div style={{ padding: '24px', borderBottom: '1px solid var(--adapt-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: 'rgba(255,255,255,0.02)' }}>
+            <div>
+              <span style={{ fontSize: '11px', color: 'var(--adapt-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Project Analysis</span>
+              <h3 style={{ margin: '4px 0 0', fontSize: '20px', fontFamily: 'Chivo, sans-serif' }}>DHRUVG334/CLOSIRA-SMB-SUPPORT-AGENT</h3>
+            </div>
+            <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+              <div style={{ textAlign: 'right' }}>
+                <span style={{ fontSize: '10px', color: 'var(--adapt-faint)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Security Score</span>
+                <strong style={{ display: 'block', fontSize: '36px', color: 'var(--adapt-accent)', lineHeight: 1 }}>84<small style={{ fontSize: '16px', color: 'var(--adapt-faint)' }}>/100</small></strong>
+              </div>
+              <div style={{ padding: '12px 24px', background: 'var(--adapt-accent)', border: '1px solid var(--adapt-accent)', borderRadius: '8px', color: '#000000', fontWeight: 'bold', letterSpacing: '0.1em' }}>ALLOW</div>
+            </div>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1px', background: 'var(--adapt-border)' }}>
+            <div style={{ padding: '24px', background: 'var(--adapt-surface)' }}>
+              <h4 style={{ margin: '0 0 16px', fontSize: '14px', color: 'var(--adapt-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Key Capabilities</h4>
+              <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><span style={{ color: 'var(--adapt-accent)' }}>✓</span> Customer Profile Write</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><span style={{ color: 'var(--adapt-accent)' }}>✓</span> Database Query</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><span style={{ color: 'var(--adapt-warning)' }}>⚠</span> External API Request</li>
+              </ul>
+            </div>
+            <div style={{ padding: '24px', background: 'var(--adapt-surface)' }}>
+              <h4 style={{ margin: '0 0 16px', fontSize: '14px', color: 'var(--adapt-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Active Guardrails</h4>
+              <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><span style={{ color: 'var(--adapt-accent)' }}>✓</span> Human Approval Gate</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><span style={{ color: 'var(--adapt-accent)' }}>✓</span> PII Masking</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><span style={{ color: 'var(--adapt-danger)' }}>✕</span> Rate Limiting</li>
+              </ul>
+            </div>
+            <div style={{ padding: '24px', background: 'var(--adapt-surface)' }}>
+              <h4 style={{ margin: '0 0 16px', fontSize: '14px', color: 'var(--adapt-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Remediation Queue</h4>
+              <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px', color: 'var(--adapt-muted)' }}>
+                <li style={{ paddingBottom: '8px', borderBottom: '1px solid var(--adapt-border)' }}>Implement rate limiting on tool: 'send_email'</li>
+                <li style={{ paddingBottom: '8px', borderBottom: '1px solid var(--adapt-border)' }}>Add explicit boundary context separation</li>
+                <li>Audit logging for external API calls</li>
+              </ul>
+            </div>
+          </div>
+          <div style={{ padding: '16px 24px', background: 'rgba(255,255,255,0.02)', textAlign: 'center', borderTop: '1px solid var(--adapt-border)' }}>
+            <Link href="/report/current" style={{ color: 'var(--adapt-accent)', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.1em', textDecoration: 'none' }}>View Full Example Report →</Link>
+          </div>
+        </div>
+      </motion.section>
+
+      <motion.section 
+        className="landing-section" 
+        id="loop"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+      >
         <SectionHeader label="Pipeline analysis" title="Scan — Map — Guardrail — Remedy — Release" center>
           A-DAP-T turns raw project code into structured release intelligence.
         </SectionHeader>
         <div className="loop-track" aria-label="A-DAP-T review loop">
           <div className="loop-line" aria-hidden="true" />
           {loopSteps.map(([num, title, copy], index) => (
-            <article className={`loop-node ${index === loopSteps.length - 1 ? 'active' : ''}`} key={title}>
+            <motion.article 
+              className={`loop-node ${index === loopSteps.length - 1 ? 'active' : ''}`} 
+              key={title}
+              initial={{ opacity: 0, y: 15 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.1, duration: 0.4 }}
+            >
               <div>{num}</div>
               <h3>{title}</h3>
               <p>{copy}</p>
-            </article>
+            </motion.article>
           ))}
         </div>
-      </section>
+      </motion.section>
 
-      <section className="landing-section alt" id="proof">
-        <SectionHeader label="Impact analysis" title="Same App. Different Surface.">
-          Compare the release posture before and after remediation controls are visible in the project.
-        </SectionHeader>
-        <div className="proof-grid">
-          {proofCards.map((card) => (
-            <article key={card.title} className={`proof-card ${card.tone}`}>
-              <div className="proof-card-head">
-                <div>
-                  <span className="proof-eyebrow">{card.eyebrow}</span>
-                  <h3>{card.title}</h3>
-                </div>
-                <div className="proof-score"><strong>{card.score}</strong><span>Security Score</span></div>
-              </div>
-              <div className="proof-list">
-                {card.rows.map(([title, copy]) => (
-                  <div key={title}>
-                    <strong>{title}</strong>
-                    <p>{copy}</p>
-                  </div>
-                ))}
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
 
-      <section className="landing-section" id="surfaces">
+
+      <motion.section 
+        className="landing-section" 
+        id="surfaces"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+      >
         <SectionHeader label="Security surfaces" title="What A-DAP-T Reviews">
           Analyze application surfaces across dependencies, APIs, AppSec patterns, capabilities, guardrails, and policy.
         </SectionHeader>
@@ -182,7 +238,14 @@ export default function HomePage() {
               </button>
             ))}
           </div>
-          <article className="surface-panel" role="tabpanel">
+          <motion.article 
+            className="surface-panel" 
+            role="tabpanel"
+            key={activeSurface}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
             <div className="surface-panel-head">
               <span>Selected surface</span>
               <h3>{selectedSurface.title}</h3>
@@ -195,18 +258,24 @@ export default function HomePage() {
               <span>why this matters</span>
               <strong>{selectedSurface.differentiator}</strong>
             </div>
-          </article>
+          </motion.article>
         </div>
-      </section>
+      </motion.section>
 
-      <section className="landing-cta">
+      <motion.section 
+        className="landing-cta"
+        initial={{ opacity: 0, scale: 0.95 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+      >
         <h2>Check The Release Surface Before You Ship.</h2>
         <p>Run a scan, inspect weak guardrails, review policy blockers, and follow the remedy plan before deployment.</p>
         <div className="landing-actions center">
           <Link href="/scanner" className="landing-button primary">Start Scan</Link>
           <Link href="/methodology" className="landing-button secondary">Read Methodology</Link>
         </div>
-      </section>
+      </motion.section>
     </main>
   );
 }

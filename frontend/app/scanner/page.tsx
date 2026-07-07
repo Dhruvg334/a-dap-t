@@ -8,6 +8,7 @@ import { apiFetch, formatApiError } from '@/lib/api';
 import { AuthGate } from '@/components/auth/AuthGate';
 import { saveCurrentReport } from '@/lib/report-storage';
 import { AdaptBadge, AdaptButton, InlineProgress, PageHeader, SectionTitle, StatTile } from '@/components/ui/AdaptUI';
+import { LoadingOverlay } from '@/components/ui/LoadingOverlay';
 
 type ScanMode = 'vulnerable' | 'secured' | 'github' | 'zip';
 type PolicyId = 'general_ai_app' | 'agent_with_tools' | 'ai_coding_agent' | 'customer_support_agent' | 'data_sensitive_app' | 'public_saas_api';
@@ -105,12 +106,12 @@ function ScannerContent() {
   return (
     <main className="adapt-page scanner-workspace">
       <div className="adapt-container">
-        <PageHeader label="Scan launcher" title="Start a security review" actions={<AdaptButton tone="primary" onClick={() => runScan()} disabled={loading}>{loading ? 'Running…' : 'Run Scan'}</AdaptButton>}>
+        <PageHeader label="Scan launcher" title="Start a security review">
           Choose a project source, select a release policy, and run a static review across dependencies, APIs, capabilities, guardrails, and remedy planning.
         </PageHeader>
 
         {error ? <div className="adapt-alert danger"><AlertTriangle size={18} />{error}</div> : null}
-        {loading ? <div className="adapt-panel scan-progress-panel"><InlineProgress steps={progressSteps} activeIndex={progressIndex} /><p>Running static review. Project code is not executed.</p></div> : null}
+        <LoadingOverlay isVisible={loading} steps={progressSteps} activeIndex={progressIndex} />
 
         <div className="scanner-grid">
           <section className="scanner-main">
